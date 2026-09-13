@@ -1,0 +1,724 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Flappy-Henri</title>
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+  <style>
+    * {
+      box-sizing: border-box;
+      user-select: none;
+      -webkit-user-select: none;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background: #0f0c20;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      font-family: 'Press Start 2P', monospace;
+      overflow: hidden;
+    }
+
+    #game-container {
+      position: relative;
+      border: 6px solid #ffcc00;
+      border-radius: 12px;
+      box-shadow: 0 0 30px rgba(255, 204, 0, 0.4), 0 15px 40px rgba(0,0,0,0.9);
+      overflow: hidden;
+      background: #70c5ce;
+    }
+
+    canvas {
+      display: block;
+      image-rendering: pixelated;
+      image-rendering: crisp-edges;
+    }
+  </style>
+</head>
+<body>
+
+<div id="game-container">
+  <canvas id="gameCanvas" width="400" height="680"></canvas>
+</div>
+
+<script>
+  const canvas = document.getElementById('gameCanvas');
+  const ctx = canvas.getContext('2d');
+
+  // Spiel-Zustände
+  const STATE = { START: 0, PLAYING: 1, GAMEOVER: 2 };
+  let currentState = STATE.START;
+
+  // Spielvariablen
+  let score = 0;
+  let highScore = localStorage.getItem('flappyHenriHighScore') || 0;
+  let frames = 0;
+
+  // Parallax-Offsets
+  let bgXFar = 0;   // Wolken & Stadt
+  let bgXMid = 0;   // Büsche
+  let bgXFore = 0;  // Boden
+
+  // --- HENRI (SPIELFIGUR) ---
+  const henri = {
+    x: 100,
+    y: 300,
+    width: 52,
+    height: 52,
+    gravity: 0.38,
+    jump: -7.5,
+    velocity: 0,
+    rotation: 0,
+
+    reset() {
+      this.y = 300;
+      this.velocity = 0;
+      this.rotation = 0;
+    },
+
+    flap() {
+      this.velocity = this.jump;
+    },
+
+    update() {
+      if (currentState === STATE.PLAYING) {
+        this.velocity += this.gravity;
+        this.y += this.velocity;
+
+        // Dynamic Rotation
+        this.rotation = Math.min(Math.PI / 4, Math.max(-Math.PI / 5, this.velocity * 0.07));
+
+        // Boden-Kollision (Bodenhöhe = 75px)
+        if (this.y + this.height / 2 >= canvas.height - 75) {
+          this.y = canvas.height - 75 - this.height / 2;
+          gameOver();
+        }
+
+        // Decken-Kollision
+        if (this.y - this.height / 2 <= 0) {
+          this.y = this.height / 2;
+          this.velocity = 0;
+        }
+      } else if (currentState === STATE.START) {
+        this.y = 300 + Math.sin(frames * 0.07) * 10;
+        this.rotation = Math.sin(frames * 0.05) * 0.05;
+      }
+    },
+
+    draw() {
+      ctx.save();
+      ctx.translate(this.x, this.y);
+      ctx.rotate(this.rotation);
+
+      // --- 1. STECKENPFERD ---
+      // Holzstange
+      ctx.fillStyle = '#5c3310';
+      ctx.fillRect(-28, 14, 46, 6);
+      ctx.fillStyle = '#8b5a2b';
+      ctx.fillRect(-28, 15, 46, 2);
+
+      // Endknauf
+      ctx.fillStyle = '#3a1e08';
+      ctx.fillRect(-32, 12, 6, 10);
+
+      // Pferdekopf
+      ctx.fillStyle = '#8b4513';
+      ctx.beginPath();
+      ctx.ellipse(22, -2, 16, 13, 0.15, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Schnauze
+      ctx.fillStyle = '#a0522d';
+      ctx.beginPath();
+      ctx.ellipse(32, 4, 9, 8, 0, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Nüstern
+      ctx.fillStyle = '#3a1e08';
+      ctx.fillRect(36, 3, 3, 4);
+
+      // Ohren
+      ctx.fillStyle = '#8b4513';
+      ctx.beginPath();
+      ctx.moveTo(14, -14);
+      ctx.lineTo(21, -24);
+      ctx.lineTo(26, -13);
+      ctx.fill();
+      ctx.fillStyle = '#d2b48c';
+      ctx.fillRect(18, -19, 4, 6);
+
+      // Mähne
+      ctx.fillStyle = '#3a1e08';
+      ctx.fillRect(8, -22, 6, 12);
+      ctx.fillRect(14, -18, 6, 10);
+      ctx.fillRect(4, -14, 6, 10);
+      ctx.fillStyle = '#d4af37';
+      ctx.fillRect(11, -20, 3, 8);
+
+      // Auge
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(20, -7, 6, 6);
+      ctx.fillStyle = '#000000';
+      ctx.fillRect(22, -6, 4, 4);
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(24, -6, 2, 2);
+
+      // Zaumzeug
+      ctx.strokeStyle = '#c0392b';
+      ctx.lineWidth = 2.5;
+      ctx.beginPath();
+      ctx.moveTo(32, 4);
+      ctx.lineTo(22, -3);
+      ctx.lineTo(18, -13);
+      ctx.stroke();
+
+      ctx.fillStyle = '#f1c40f';
+      ctx.fillRect(30, 2, 4, 4);
+
+      // Zügel
+      ctx.strokeStyle = '#f39c12';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(31, 4);
+      ctx.quadraticCurveTo(12, 12, -2, 2);
+      ctx.stroke();
+
+      // --- 2. HENRI ---
+      // Beine & Jeans
+      ctx.fillStyle = '#1a388a';
+      ctx.fillRect(-14, 8, 16, 14);
+      ctx.fillRect(-8, 10, 14, 12);
+      ctx.fillStyle = '#f39c12';
+      ctx.fillRect(-14, 20, 16, 2);
+
+      // Sneaker
+      ctx.fillStyle = '#e74c3c';
+      ctx.fillRect(-18, 20, 14, 6);
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(-18, 24, 15, 3);
+      ctx.fillRect(-6, 20, 3, 5);
+
+      // Roter Pullover
+      ctx.fillStyle = '#d63031';
+      ctx.fillRect(-18, -12, 22, 20);
+      ctx.fillStyle = '#b2bec3';
+      ctx.fillRect(-14, -14, 14, 3);
+
+      // Gelber Stern
+      ctx.fillStyle = '#f1c40f';
+      ctx.fillRect(-11, -6, 7, 7);
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(-9, -4, 3, 3);
+
+      // Arm & Hand
+      ctx.fillStyle = '#d63031';
+      ctx.fillRect(-6, -5, 12, 7);
+      ctx.fillStyle = '#ffdbac';
+      ctx.fillRect(3, -3, 6, 6);
+
+      // Kopf & Gesicht
+      ctx.fillStyle = '#ffdbac';
+      ctx.fillRect(-13, -28, 18, 16);
+      ctx.fillStyle = '#ff7675';
+      ctx.fillRect(-2, -18, 5, 4);
+
+      // Auge
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(-4, -24, 7, 7);
+      ctx.fillStyle = '#0984e3';
+      ctx.fillRect(-2, -23, 4, 6);
+      ctx.fillStyle = '#000000';
+      ctx.fillRect(-1, -22, 2, 4);
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(-2, -24, 2, 2);
+
+      // Mund
+      ctx.fillStyle = '#c0392b';
+      ctx.fillRect(-2, -14, 5, 2);
+
+      // Blondes Haar
+      ctx.fillStyle = '#f1c40f';
+      ctx.fillRect(-17, -33, 23, 8);
+      ctx.fillRect(-17, -28, 6, 12);
+      ctx.fillRect(-7, -27, 12, 5);
+      ctx.fillStyle = '#ffeaa7';
+      ctx.fillRect(-13, -33, 8, 3);
+      ctx.fillRect(-3, -32, 6, 2);
+
+      ctx.restore();
+    }
+  };
+
+  // --- HINDERNISSE ---
+  const obstacles = [];
+  const obstacleGap = 168;
+  const spawnRate = 110;
+
+  class Obstacle {
+    constructor() {
+      this.x = canvas.width;
+      this.topHeight = Math.floor(Math.random() * (canvas.height - 75 - obstacleGap - 110)) + 50;
+      this.bottomY = this.topHeight + obstacleGap;
+      this.width = 62;
+      this.passed = false;
+      this.type = Math.random() > 0.5 ? 'pipe' : 'lego';
+      this.legoColors = ['#e74c3c', '#3498db', '#f1c40f', '#2ecc71', '#e67e22', '#9b59b6'];
+    }
+
+    update() {
+      this.x -= 2.2;
+    }
+
+    draw() {
+      if (this.type === 'pipe') {
+        this.drawPipe(0, 0, this.width, this.topHeight, true);
+        this.drawPipe(0, this.bottomY, this.width, canvas.height - 75 - this.bottomY, false);
+      } else {
+        this.drawLego(0, 0, this.width, this.topHeight, true);
+        this.drawLego(0, this.bottomY, this.width, canvas.height - 75 - this.bottomY, false);
+      }
+    }
+
+    drawPipe(xOffset, y, w, h, isTop) {
+      const px = this.x + xOffset;
+      ctx.fillStyle = '#73bf2e';
+      ctx.fillRect(px, y, w, h);
+
+      ctx.fillStyle = '#9ce659';
+      ctx.fillRect(px + 5, y, 8, h);
+      ctx.fillStyle = '#529e1c';
+      ctx.fillRect(px + w - 10, y, 8, h);
+
+      const lipHeight = 26;
+      const lipY = isTop ? y + h - lipHeight : y;
+      ctx.fillStyle = '#73bf2e';
+      ctx.fillRect(px - 4, lipY, w + 8, lipHeight);
+      ctx.fillStyle = '#9ce659';
+      ctx.fillRect(px - 2, lipY, 8, lipHeight);
+      ctx.fillStyle = '#529e1c';
+      ctx.fillRect(px + w - 6, lipY, 8, lipHeight);
+
+      ctx.strokeStyle = '#2d570f';
+      ctx.lineWidth = 2;
+      ctx.strokeRect(px - 4, lipY, w + 8, lipHeight);
+      ctx.strokeRect(px, y, w, h);
+    }
+
+    drawLego(xOffset, y, w, h, isTop) {
+      const px = this.x + xOffset;
+      const blockHeight = 28;
+      let currentY = y;
+      let colorIdx = 0;
+
+      while (currentY < y + h) {
+        const drawH = Math.min(blockHeight, y + h - currentY);
+        const color = this.legoColors[colorIdx % this.legoColors.length];
+
+        ctx.fillStyle = color;
+        ctx.fillRect(px, currentY, w, drawH);
+
+        ctx.fillStyle = 'rgba(255,255,255,0.35)';
+        ctx.fillRect(px, currentY, w, 3);
+        ctx.fillStyle = 'rgba(0,0,0,0.25)';
+        ctx.fillRect(px, currentY + drawH - 3, w, 3);
+
+        if (drawH === blockHeight) {
+          ctx.fillStyle = color;
+          for (let st = 6; st < w; st += 15) {
+            ctx.fillRect(px + st, currentY - 5, 9, 5);
+            ctx.fillStyle = 'rgba(255,255,255,0.4)';
+            ctx.fillRect(px + st, currentY - 5, 9, 1);
+            ctx.fillStyle = color;
+          }
+        }
+
+        ctx.strokeStyle = '#000';
+        ctx.lineWidth = 1.5;
+        ctx.strokeRect(px, currentY, w, drawH);
+
+        currentY += blockHeight;
+        colorIdx++;
+      }
+    }
+  }
+
+  // --- ORIGINAL FLAPPY BIRD HINTERGRUND ---
+  function drawParallaxBackground() {
+    // 1. HIMMEL (Blaues Retro-Fundament)
+    ctx.fillStyle = '#70c5ce';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    // 2. WOLKEN (Langsame Schicht - 0.4 px/frame)
+    if (currentState === STATE.PLAYING) bgXFar += 0.4;
+    if (currentState === STATE.START) bgXFar += 0.15;
+
+    const cloudLoop = 320;
+    const cloudOffset = bgXFar % cloudLoop;
+
+    for (let i = -1; i <= 2; i++) {
+      const cx = (i * cloudLoop) - cloudOffset;
+      
+      // Wolke 1
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.85)';
+      ctx.beginPath();
+      ctx.arc(cx + 40, 110, 18, 0, Math.PI * 2);
+      ctx.arc(cx + 58, 98, 24, 0, Math.PI * 2);
+      ctx.arc(cx + 82, 110, 20, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Wolke 2
+      ctx.beginPath();
+      ctx.arc(cx + 210, 160, 22, 0, Math.PI * 2);
+      ctx.arc(cx + 232, 145, 28, 0, Math.PI * 2);
+      ctx.arc(cx + 260, 160, 22, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    // 3. STADT-SKYLINE (Mittlere Schicht - 0.8 px/frame)
+    if (currentState === STATE.PLAYING) bgXMid += 0.8;
+    if (currentState === STATE.START) bgXMid += 0.3;
+
+    const cityY = canvas.height - 75 - 110; // Steht direkt über den Büschen
+    const cityLoop = 360;
+    const cityOffset = bgXMid % cityLoop;
+
+    for (let i = -1; i <= 2; i++) {
+      const bx = (i * cityLoop) - cityOffset;
+
+      // Gebäude Silhouetten (Pastellgrün)
+      ctx.fillStyle = '#83d39c';
+      ctx.fillRect(bx + 0, cityY + 25, 38, 85);
+      ctx.fillRect(bx + 35, cityY + 10, 32, 100);
+      ctx.fillRect(bx + 62, cityY + 45, 45, 65);
+      ctx.fillRect(bx + 102, cityY + 20, 35, 90);
+      ctx.fillRect(bx + 132, cityY + 50, 48, 60);
+      ctx.fillRect(bx + 175, cityY + 15, 30, 95);
+      ctx.fillRect(bx + 200, cityY + 35, 42, 75);
+      ctx.fillRect(bx + 238, cityY + 55, 48, 55);
+      ctx.fillRect(bx + 280, cityY + 30, 38, 80);
+      ctx.fillRect(bx + 312, cityY + 8, 36, 102);
+
+      // Gebäude Schatten/Kanten
+      ctx.fillStyle = '#5fb87b';
+      ctx.fillRect(bx + 33, cityY + 25, 5, 85);
+      ctx.fillRect(bx + 62, cityY + 10, 5, 100);
+      ctx.fillRect(bx + 102, cityY + 45, 5, 65);
+      ctx.fillRect(bx + 132, cityY + 20, 5, 90);
+      ctx.fillRect(bx + 175, cityY + 50, 5, 60);
+      ctx.fillRect(bx + 200, cityY + 15, 5, 95);
+      ctx.fillRect(bx + 238, cityY + 35, 5, 75);
+
+      // Retro Fensterchen
+      ctx.fillStyle = '#eef79b';
+      for (let wy = cityY + 35; wy < cityY + 100; wy += 16) {
+        ctx.fillRect(bx + 10, wy, 4, 6);
+        ctx.fillRect(bx + 22, wy, 4, 6);
+        ctx.fillRect(bx + 44, wy, 4, 6);
+        ctx.fillRect(bx + 112, wy, 4, 6);
+        ctx.fillRect(bx + 182, wy, 4, 6);
+        ctx.fillRect(bx + 212, wy, 4, 6);
+        ctx.fillRect(bx + 290, wy, 4, 6);
+        ctx.fillRect(bx + 322, wy, 4, 6);
+      }
+    }
+
+    // 4. BÜSCHE (Vor der Stadt - 1.4 px/frame)
+    const bushY = canvas.height - 75 - 38;
+    const bushLoop = 280;
+    const bushOffset = (bgXMid * 1.5) % bushLoop;
+
+    for (let i = -1; i <= 2; i++) {
+      const bx = (i * bushLoop) - bushOffset;
+
+      // Büsche Form
+      ctx.fillStyle = '#53be1a';
+      ctx.beginPath();
+      ctx.arc(bx + 25, bushY + 22, 22, 0, Math.PI * 2);
+      ctx.arc(bx + 55, bushY + 14, 28, 0, Math.PI * 2);
+      ctx.arc(bx + 90, bushY + 20, 24, 0, Math.PI * 2);
+      ctx.arc(bx + 130, bushY + 12, 30, 0, Math.PI * 2);
+      ctx.arc(bx + 170, bushY + 24, 22, 0, Math.PI * 2);
+      ctx.arc(bx + 205, bushY + 16, 26, 0, Math.PI * 2);
+      ctx.arc(bx + 240, bushY + 22, 20, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Busch Highlights (Hellgrün)
+      ctx.fillStyle = '#83e648';
+      ctx.beginPath();
+      ctx.arc(bx + 53, bushY + 10, 14, 0, Math.PI * 2);
+      ctx.arc(bx + 128, bushY + 8, 16, 0, Math.PI * 2);
+      ctx.arc(bx + 203, bushY + 12, 12, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Busch Dunkelkante unten
+      ctx.fillStyle = '#3a8711';
+      ctx.fillRect(bx, bushY + 34, 280, 6);
+    }
+
+    // 5. BODEN (Vordergrund - Synchron zu Hindernissen: 2.2 px/frame)
+    if (currentState === STATE.PLAYING) bgXFore += 2.2;
+    if (currentState === STATE.START) bgXFore += 0.8;
+
+    const floorY = canvas.height - 75;
+
+    // Sand/Erde Basis
+    ctx.fillStyle = '#ddd894';
+    ctx.fillRect(0, floorY, canvas.width, 75);
+
+    // Grüne Grasnarbe
+    ctx.fillStyle = '#73bf2e';
+    ctx.fillRect(0, floorY, canvas.width, 16);
+
+    // Gras-Schatten & Glanz
+    ctx.fillStyle = '#9ce659';
+    ctx.fillRect(0, floorY, canvas.width, 3);
+    ctx.fillStyle = '#529e1c';
+    ctx.fillRect(0, floorY + 13, canvas.width, 3);
+
+    // Schwarze Trennlinie zum Sand
+    ctx.fillStyle = '#575229';
+    ctx.fillRect(0, floorY + 16, canvas.width, 2);
+
+    // Diagonales Streifenmuster auf dem Sand (Flappy Bird Stil)
+    ctx.fillStyle = '#c8c279';
+    const stripeW = 18;
+    const offsetFore = bgXFore % stripeW;
+
+    for (let x = -stripeW * 2; x < canvas.width + stripeW * 2; x += stripeW) {
+      ctx.beginPath();
+      ctx.moveTo(x - offsetFore, floorY + 18);
+      ctx.lineTo(x - offsetFore + 10, floorY + 18);
+      ctx.lineTo(x - offsetFore - 4, canvas.height);
+      ctx.lineTo(x - offsetFore - 14, canvas.height);
+      ctx.closePath();
+      ctx.fill();
+    }
+  }
+
+  // --- KOLLISIONSPRÜFUNG ---
+  function checkCollision(henri, obs) {
+    const margin = 8;
+    const henriBox = {
+      left: henri.x - henri.width / 2 + margin,
+      right: henri.x + henri.width / 2 - margin,
+      top: henri.y - henri.height / 2 + margin,
+      bottom: henri.y + henri.height / 2 - margin
+    };
+
+    const topBox = {
+      left: obs.x,
+      right: obs.x + obs.width,
+      top: 0,
+      bottom: obs.topHeight
+    };
+
+    const bottomBox = {
+      left: obs.x,
+      right: obs.x + obs.width,
+      top: obs.bottomY,
+      bottom: canvas.height - 75
+    };
+
+    function intersects(r1, r2) {
+      return !(r2.left > r1.right || 
+               r2.right < r1.left || 
+               r2.top > r1.bottom || 
+               r2.bottom < r1.top);
+    }
+
+    return intersects(henriBox, topBox) || intersects(henriBox, bottomBox);
+  }
+
+  // --- EINGABE-HANDLING ---
+  function handleInput(e) {
+    if (e.type === 'keydown' && e.code !== 'Space' && e.code !== 'ArrowUp') return;
+    if (e.type === 'touchstart') e.preventDefault();
+
+    if (currentState === STATE.START) {
+      currentState = STATE.PLAYING;
+      henri.flap();
+    } else if (currentState === STATE.PLAYING) {
+      henri.flap();
+    } else if (currentState === STATE.GAMEOVER) {
+      resetGame();
+      currentState = STATE.PLAYING;
+      henri.flap();
+    }
+  }
+
+  window.addEventListener('keydown', handleInput);
+  canvas.addEventListener('mousedown', handleInput);
+  canvas.addEventListener('touchstart', handleInput, { passive: false });
+
+  function gameOver() {
+    currentState = STATE.GAMEOVER;
+    if (score > highScore) {
+      highScore = score;
+      localStorage.setItem('flappyHenriHighScore', highScore);
+    }
+  }
+
+  function resetGame() {
+    score = 0;
+    obstacles.length = 0;
+    frames = 0;
+    henri.reset();
+  }
+
+  // --- TITELBANNER & STARTBILDSCHIRM ---
+  function drawTitleBanner() {
+    ctx.save();
+    ctx.translate(canvas.width / 2, 130 + Math.sin(frames * 0.06) * 6);
+
+    ctx.fillStyle = '#000000';
+    ctx.fillRect(-164, -54, 328, 98);
+    ctx.fillStyle = '#ffcc00';
+    ctx.fillRect(-160, -50, 320, 90);
+    ctx.fillStyle = '#d63031';
+    ctx.fillRect(-154, -44, 308, 78);
+
+    ctx.textAlign = 'center';
+    ctx.font = '22px "Press Start 2P"';
+
+    ctx.fillStyle = '#000000';
+    for (let o = 1; o <= 5; o++) {
+      ctx.fillText('FLAPPY-HENRI', o, 5 + o);
+    }
+
+    ctx.fillStyle = '#f1c40f';
+    ctx.fillText('FLAPPY-HENRI', -2, 3);
+    ctx.fillStyle = '#ffffff';
+    ctx.fillText('FLAPPY-HENRI', 0, 0);
+
+    ctx.fillStyle = '#f1c40f';
+    ctx.fillText('★', -130, 8);
+    ctx.fillText('★', 130, 8);
+
+    ctx.restore();
+  }
+
+  // --- HAUPTSPIEL-SCHLEIFE (GAME LOOP) ---
+  function loop() {
+    frames++;
+
+    // 1. Hintergrund
+    drawParallaxBackground();
+
+    // 2. Hindernisse
+    if (currentState === STATE.PLAYING) {
+      if (frames % spawnRate === 0) {
+        obstacles.push(new Obstacle());
+      }
+
+      for (let i = obstacles.length - 1; i >= 0; i--) {
+        obstacles[i].update();
+        obstacles[i].draw();
+
+        if (checkCollision(henri, obstacles[i])) {
+          gameOver();
+        }
+
+        if (!obstacles[i].passed && obstacles[i].x + obstacles[i].width < henri.x) {
+          obstacles[i].passed = true;
+          score++;
+        }
+
+        if (obstacles[i].x + obstacles[i].width < -80) {
+          obstacles.splice(i, 1);
+        }
+      }
+    } else {
+      for (let obs of obstacles) {
+        obs.draw();
+      }
+    }
+
+    // 3. Henri
+    henri.update();
+    henri.draw();
+
+    // 4. UI / Text-Overlays
+    ctx.textAlign = 'center';
+
+    if (currentState === STATE.START) {
+      drawTitleBanner();
+
+      if (Math.floor(frames / 25) % 2 === 0) {
+        ctx.font = '12px "Press Start 2P"';
+        ctx.fillStyle = '#000000';
+        ctx.fillText('PRESS START / TOUCH', canvas.width / 2 + 2, 452);
+        ctx.fillStyle = '#ffffff';
+        ctx.fillText('PRESS START / TOUCH', canvas.width / 2, 450);
+      }
+
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+      ctx.fillRect(30, 490, 340, 95);
+      ctx.strokeStyle = '#ffcc00';
+      ctx.lineWidth = 2;
+      ctx.strokeRect(30, 490, 340, 95);
+
+      ctx.font = '9px "Press Start 2P"';
+      ctx.fillStyle = '#ffffff';
+      ctx.fillText('STEUERUNG:', canvas.width / 2, 515);
+      ctx.fillStyle = '#ffeaa7';
+      ctx.fillText('🖱️ Mausklick', canvas.width / 2, 538);
+      ctx.fillText('⌨️ Leertaste / Pfeil-Oben', canvas.width / 2, 553);
+      ctx.fillText('📱 Touchscreen Tip', canvas.width / 2, 568);
+
+    } else if (currentState === STATE.PLAYING) {
+      ctx.font = '26px "Press Start 2P"';
+      ctx.fillStyle = '#000000';
+      ctx.fillText(score, canvas.width / 2 + 3, 63);
+      ctx.fillStyle = '#ffffff';
+      ctx.fillText(score, canvas.width / 2, 60);
+
+    } else if (currentState === STATE.GAMEOVER) {
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.65)';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      const boxX = 35;
+      const boxY = 210;
+      const boxW = 330;
+      const boxH = 230;
+
+      ctx.fillStyle = '#2c3e50';
+      ctx.fillRect(boxX, boxY, boxW, boxH);
+      ctx.strokeStyle = '#f1c40f';
+      ctx.lineWidth = 4;
+      ctx.strokeRect(boxX, boxY, boxW, boxH);
+
+      ctx.font = '18px "Press Start 2P"';
+      ctx.fillStyle = '#e74c3c';
+      ctx.fillText('GAME OVER', canvas.width / 2, boxY + 45);
+
+      ctx.font = '11px "Press Start 2P"';
+      ctx.fillStyle = '#ffffff';
+      ctx.fillText(`PUNKTE:   ${score}`, canvas.width / 2, boxY + 100);
+      ctx.fillStyle = '#f1c40f';
+      ctx.fillText(`REKORD:   ${highScore}`, canvas.width / 2, boxY + 130);
+
+      if (score > 0 && score >= highScore) {
+        ctx.fillStyle = '#f1c40f';
+        ctx.fillText('NEUER REKORD! 🏆', canvas.width / 2, boxY + 160);
+      }
+
+      if (Math.floor(frames / 20) % 2 === 0) {
+        ctx.font = '10px "Press Start 2P"';
+        ctx.fillStyle = '#2ecc71';
+        ctx.fillText('KLICK ZUM NEUSTART', canvas.width / 2, boxY + 200);
+      }
+    }
+
+    requestAnimationFrame(loop);
+  }
+
+  // Spiel starten
+  loop();
+</script>
+</body>
+</html>

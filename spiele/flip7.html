@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Flip7 Pro Score</title>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <style>
+        :root {
+            --bg-gradient: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+            --card-bg: rgba(255, 255, 255, 0.08);
+            --accent: #38bdf8;
+            --success: #4ade80;
+            --gold: #fbbf24;
+            --text-main: #f8fafc;
+            --text-dim: #94a3b8;
+        }
+
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--bg-gradient);
+            background-attachment: fixed;
+            color: var(--text-main);
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 450px;
+            animation: fadeIn 0.5s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        h1 { 
+            text-align: center; 
+            font-size: 2.5rem; 
+            font-weight: 800; 
+            margin-bottom: 5px;
+            background: linear-gradient(to right, #fff, var(--accent));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .subtitle { 
+            text-align: center; 
+            color: var(--text-dim); 
+            margin-bottom: 30px; 
+            font-weight: 500;
+            text-transform: uppercase;
+            font-size: 0.8rem;
+            letter-spacing: 2px;
+        }
+
+        .setup-card {
+            background: var(--card-bg);
+            backdrop-filter: blur(10px);
+            padding: 20px;
+            border-radius: 20px;
+            border: 1px solid rgba(255,255,255,0.1);
+            margin-bottom: 25px;
+        }
+
+        .input-group { display: flex; gap: 10px; }
+
+        input {
+            background: rgba(0,0,0,0.2);
+            border: 1px solid rgba(255,255,255,0.1);
+            color: white;
+            padding: 14px;
+            border-radius: 12px;
+            font-size: 16px;
+            transition: all 0.2s;
+        }
+
+        input:focus { outline: none; border-color: var(--accent); }
+        input[type="text"] { flex-grow: 1; }
+        input[type="number"] { width: 80px; text-align: center; font-weight: bold; font-size: 1.2rem; }
+
+        button {
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            font-weight: 700;
+            transition: all 0.2s;
+        }
+
+        .btn-add { background: var(--accent); color: #0f172a; padding: 0 20px; }
+        .btn-confirm { 
+            background: var(--success); 
+            color: #064e3b; 
+            width: 100%; 
+            padding: 18px;
+            font-size: 1.1rem;
+            margin-top: 25px;
+            box-shadow: 0 10px 20px rgba(74, 222, 128, 0.2);
+        }
+        
+        .btn-undo {
+            background: transparent;
+            color: var(--text-dim);
+            width: 100%;
+            margin-top: 15px;
+            font-size: 0.9rem;
+            border: 1px solid rgba(255,255,255,0.1);
+            padding: 10px;
+        }
+
+        .player-card {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 12px;
+            background: var(--card-bg);
+            padding: 16px;
+            border-radius: 18px;
+            border: 1px solid rgba(255,255,255,0.05);
+            transition: all 0.3s ease;
+        }
+
+        .leader { border-color: rgba(251, 191, 36, 0.3); }
+
+        .winner-card {
+            background: linear-gradient(145deg, rgba(251, 191, 36, 0.2), rgba(251, 191, 36, 0.05));
+            border: 2px solid var(--gold);
+            transform: scale(1.03);
+        }
+
+        .player-info { flex-grow: 1; }
+        .player-name { font-size: 1.2rem; font-weight: 700; }
+        .score-stats { font-size: 0.8rem; color: var(--text-dim); margin-top: 4px; }
+        .total-val { color: var(--accent); font-weight: 800; font-size: 1rem; }
+        .winner-text { color: var(--gold); font-weight: bold; }
+
+        .crown { font-size: 1.2rem; margin-right: 5px; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>Flip7</h1>
+    <p class="subtitle">Ziel: 200 Punkte</p>
+
+    <div class="setup-card">
+        <div class="input-group">
+            <input type="text" id="playerName" placeholder="Spielername..." onkeypress="if(event.key==='Enter') addPlayer()">
+            <button class="btn-add" onclick="addPlayer()">+</button>
+        </div>
+    </div>
+
+    <div id="gameArea" style="display:none;">
+        <div id="playerInputList"></div>
+        <button class="btn-confirm" onclick="submitRound()">RUNDE ABSCHLIESSEN</button>
+        <button id="undoBtn" class="btn-undo" onclick="undoLastRound()" style="display:none;">↩ Korrigieren</button>
+    </div>
+</div>
+
+<script>
+    let players = [];
+    let history = []; 
+    let hasWonBefore = false; // Verhindert Dauer-Konfetti bei Korrekturen
+    const TARGET_SCORE = 200;
+
+    function addPlayer() {
+        const nameInput = document.getElementById('playerName');
+        const name = nameInput.value.trim();
+        if (name !== "") {
+            players.push({ name: name, score: 0 });
+            nameInput.value = "";
+            renderList();
+        }
+    }
+
+    function renderList() {
+        const gameArea = document.getElementById('gameArea');
+        const inputList = document.getElementById('playerInputList');
+        const undoBtn = document.getElementById('undoBtn');
+
+        if (players.length > 0) gameArea.style.display = "block";
+        undoBtn.style.display = history.length > 0 ? "block" : "none";
+
+        const maxScore = Math.max(...players.map(p => p.score));
+        const gameFinished = maxScore >= TARGET_SCORE;
+
+        // Konfetti auslösen, wenn das Spiel gerade erst gewonnen wurde
+        if (gameFinished && !hasWonBefore) {
+            shootConfetti();
+            hasWonBefore = true;
+        } else if (!gameFinished) {
+            hasWonBefore = false;
+        }
+
+        inputList.innerHTML = "";
+
+        players.forEach((player, index) => {
+            const isWinner = gameFinished && player.score === maxScore;
+            const isLeader = !gameFinished && player.score === maxScore && maxScore > 0;
+            const pointsToWin = TARGET_SCORE - player.score;
+            
+            const div = document.createElement('div');
+            div.className = `player-card ${isWinner ? 'winner-card' : ''} ${isLeader ? 'leader' : ''}`;
+            
+            div.innerHTML = `
+                <div class="player-info">
+                    <div>
+                        ${isWinner || isLeader ? '<span class="crown">👑</span>' : ''}
+                        <span class="player-name">${player.name}</span>
+                    </div>
+                    <div class="score-stats">
+                        <span class="total-val">${player.score}</span> 
+                        <span style="margin: 0 8px; opacity: 0.3">/</span>
+                        <span class="${isWinner ? 'winner-text' : ''}">${isWinner ? 'CHAMPION! 🏆' : 'noch ' + (pointsToWin > 0 ? pointsToWin : 0)}</span>
+                    </div>
+                </div>
+                <input type="number" class="score-input" data-index="${index}" placeholder="0" inputmode="numeric" onfocus="this.select()">
+            `;
+            inputList.appendChild(div);
+        });
+    }
+
+    function submitRound() {
+        history.push(players.map(p => p.score));
+        const inputs = document.querySelectorAll('.score-input');
+        let hasChanges = false;
+
+        inputs.forEach(input => {
+            const idx = input.getAttribute('data-index');
+            const val = parseInt(input.value) || 0;
+            if (val !== 0) {
+                players[idx].score += val;
+                hasChanges = true;
+            }
+            input.value = ""; 
+        });
+
+        if (hasChanges) renderList();
+    }
+
+    function undoLastRound() {
+        if (history.length > 0) {
+            const previousScores = history.pop();
+            players.forEach((player, index) => {
+                player.score = previousScores[index];
+            });
+            renderList();
+        }
+    }
+
+    function shootConfetti() {
+        const duration = 3 * 1000;
+        const end = Date.now() + duration;
+
+        (function frame() {
+            confetti({
+                particleCount: 3,
+                angle: 60,
+                spread: 55,
+                origin: { x: 0 },
+                colors: ['#38bdf8', '#fbbf24', '#4ade80']
+            });
+            confetti({
+                particleCount: 3,
+                angle: 120,
+                spread: 55,
+                origin: { x: 1 },
+                colors: ['#38bdf8', '#fbbf24', '#4ade80']
+            });
+
+            if (Date.now() < end) {
+                requestAnimationFrame(frame);
+            }
+        }());
+    }
+</script>
+
+</body>
+</html>

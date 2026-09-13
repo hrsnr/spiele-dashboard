@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wizard Deluxe Scoreboard</title>
+    <style>
+        :root {
+            --table-green: #1a472a;
+            --card-white: #ffffff;
+            --wizard-purple: #4b0082;
+            --wizard-gold: #ffd700;
+            --text-dark: #2d3436;
+            --error-red: #d63031;
+            --success-green: #27ae60;
+        }
+
+        body {
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background: radial-gradient(circle, #2c3e50 0%, #000000 100%);
+            color: var(--card-white);
+            margin: 0;
+            padding: 20px;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+
+        /* Karten-Stil */
+        .card {
+            background: var(--card-white);
+            color: var(--text-dark);
+            border-radius: 15px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+            padding: 25px;
+            margin-bottom: 20px;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+
+        h1 {
+            text-align: center;
+            font-family: 'Georgia', serif;
+            color: var(--wizard-gold);
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+            font-size: 2.5rem;
+            margin-bottom: 30px;
+        }
+
+        /* Setup-Phase */
+        .setup-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+        }
+
+        input[type="text"] {
+            padding: 12px;
+            border: 2px solid #dfe6e9;
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: border-color 0.3s;
+        }
+
+        input[type="text"]:focus {
+            border-color: var(--wizard-purple);
+            outline: none;
+        }
+
+        /* Spieler-Karten im Spiel */
+        .player-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+
+        .player-status-card {
+            background: linear-gradient(145deg, #ffffff, #f0f0f0);
+            padding: 15px;
+            border-radius: 12px;
+            text-align: center;
+            position: relative;
+            transition: transform 0.3s;
+            border-top: 5px solid var(--wizard-purple);
+        }
+
+        .player-status-card.leader {
+            border-top: 5px solid var(--wizard-gold);
+            box-shadow: 0 0 15px rgba(255, 215, 0, 0.4);
+            transform: translateY(-5px);
+        }
+
+        .leader-crown {
+            position: absolute;
+            top: -20px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 1.5rem;
+        }
+
+        .score-val {
+            font-size: 2rem;
+            font-weight: 800;
+            display: block;
+            color: var(--wizard-purple);
+        }
+
+        /* Eingabe-Bereich */
+        .input-card {
+            background: #f8f9fa;
+            border-left: 8px solid var(--wizard-purple);
+        }
+
+        .round-info-badge {
+            background: var(--wizard-purple);
+            color: white;
+            padding: 5px 15px;
+            border-radius: 20px;
+            display: inline-block;
+            margin-bottom: 15px;
+        }
+
+        .input-group-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 10px;
+        }
+
+        .mini-card-input {
+            background: white;
+            padding: 10px;
+            border-radius: 10px;
+            border: 1px solid #ddd;
+            text-align: center;
+        }
+
+        .mini-card-input input {
+            width: 50px;
+            padding: 8px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            text-align: center;
+            font-size: 1.1rem;
+            font-weight: bold;
+        }
+
+        /* Buttons */
+        .btn {
+            padding: 15px 25px;
+            border: none;
+            border-radius: 8px;
+            font-weight: bold;
+            cursor: pointer;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            transition: all 0.2s;
+        }
+
+        .btn-gold { background: var(--wizard-gold); color: #000; width: 100%; }
+        .btn-next { background: var(--success-green); color: white; flex: 2; }
+        .btn-undo { background: #636e72; color: white; flex: 1; }
+
+        /* Tabelle */
+        .table-card {
+            overflow-x: auto;
+            padding: 0;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th {
+            background: #f1f2f6;
+            padding: 15px;
+            text-transform: uppercase;
+            font-size: 0.8rem;
+        }
+
+        td {
+            padding: 12px;
+            text-align: center;
+            border-bottom: 1px solid #eee;
+        }
+
+        .pts-pos { color: var(--success-green); font-weight: bold; }
+        .pts-neg { color: var(--error-red); font-weight: bold; }
+        .sub-data { font-size: 0.7rem; color: #999; display: block; }
+
+        /* Winner Overlay */
+        #winner-overlay {
+            display: none;
+            position: fixed;
+            top:0; left:0; width:100%; height:100%;
+            background: rgba(0,0,0,0.9);
+            z-index: 999;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+        }
+
+        .winner-card {
+            background: white;
+            padding: 40px;
+            border-radius: 20px;
+            color: var(--text-dark);
+            border: 5px solid var(--wizard-gold);
+        }
+    </style>
+</head>
+<body>
+
+<div id="winner-overlay">
+    <div class="winner-card">
+        <div style="font-size: 4rem;">🧙‍♂️✨</div>
+        <h2 style="font-size: 2.5rem; margin: 10px 0;">Der Meister-Magier!</h2>
+        <h3 id="winner-name" style="font-size: 2rem; color: var(--wizard-purple);">Spieler</h3>
+        <p style="font-size: 1.2rem;">Sieg mit <span id="winner-score">0</span> Punkten</p>
+        <button class="btn btn-gold" onclick="location.reload()" style="margin-top: 20px;">Neues Turnier starten</button>
+    </div>
+</div>
+
+<div class="container">
+    <h1>WIZARD</h1>
+
+    <div id="setup-screen" class="card">
+        <h3 style="margin-top:0">Gefährten wählen</h3>
+        <div class="setup-grid">
+            <input type="text" class="p-name" placeholder="Name Spieler 1">
+            <input type="text" class="p-name" placeholder="Name Spieler 2">
+            <input type="text" class="p-name" placeholder="Name Spieler 3">
+            <input type="text" class="p-name" placeholder="Name Spieler 4 (opt)">
+            <input type="text" class="p-name" placeholder="Name Spieler 5 (opt)">
+            <input type="text" class="p-name" placeholder="Name Spieler 6 (opt)">
+        </div>
+        <br>
+        <button class="btn btn-gold" onclick="initGame()">Spiel beginnen</button>
+    </div>
+
+    <div id="game-screen" style="display:none;">
+        
+        <div id="player-display" class="player-row"></div>
+        
+        <div class="card input-card" id="input-container">
+            <div class="round-info-badge" id="round-title">Runde 1 / 20</div>
+            <div id="input-fields" class="input-group-grid"></div>
+            
+            <div class="controls" style="display: flex; gap: 10px; margin-top: 25px;">
+                <button class="btn btn-undo" onclick="undoLastRound()">Korrektur</button>
+                <button class="btn btn-next" onclick="submitRound()">Runde abschließen</button>
+            </div>
+        </div>
+
+        <div class="card table-card">
+            <table>
+                <thead><tr id="history-head"><th style="width: 50px;">Rnd</th></tr></thead>
+                <tbody id="history-body"></tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script>
+    let players = [];
+    let currentRound = 1;
+    let maxRounds = 0;
+    let history = [];
+
+    function initGame() {
+        const inputs = document.querySelectorAll('.p-name');
+        players = Array.from(inputs).map(i => i.value.trim()).filter(n => n !== "");
+
+        if (players.length < 3) {
+            alert("Ein Wizard-Duell benötigt mindestens 3 Magier!");
+            return;
+        }
+
+        maxRounds = 60 / players.length;
+        document.getElementById('setup-screen').style.display = 'none';
+        document.getElementById('game-screen').style.display = 'block';
+        
+        setupTable();
+        renderRoundInputs();
+        updateDisplay();
+    }
+
+    function setupTable() {
+        const head = document.getElementById('history-head');
+        players.forEach(p => {
+            const th = document.createElement('th');
+            th.innerText = p;
+            head.appendChild(th);
+        });
+    }
+
+    function renderRoundInputs() {
+        document.getElementById('round-title').innerText = `RUNDE ${currentRound} VON ${maxRounds}`;
+        const container = document.getElementById('input-fields');
+        container.innerHTML = '';
+
+        players.forEach(p => {
+            container.innerHTML += `
+                <div class="mini-card-input">
+                    <div style="font-weight:bold; margin-bottom:8px; font-size: 0.9rem;">${p}</div>
+                    <div style="display:flex; justify-content: center; gap: 5px;">
+                        <input type="number" class="bid-in" placeholder="Soll" min="0" onchange="validateVal(this)">
+                        <input type="number" class="got-in" placeholder="Ist" min="0" onchange="autoFillIst(this)">
+                    </div>
+                </div>
+            `;
+        });
+    }
+
+    function validateVal(el) {
+        if (parseInt(el.value) > currentRound) {
+            alert(`In dieser Runde sind nur ${currentRound} Stiche möglich!`);
+            el.value = "";
+        }
+    }
+
+    function autoFillIst(el) {
+        const istInputs = document.querySelectorAll('.got-in');
+        let sum = 0;
+        let filled = 0;
+
+        istInputs.forEach(input => {
+            if (input.value !== "") {
+                sum += parseInt(input.value);
+                filled++;
+            }
+        });
+
+        if (sum > currentRound) {
+            alert("Halt! Es wurden mehr Stiche verteilt als Karten im Spiel sind.");
+            el.value = "";
+            return;
+        }
+
+        if (sum === currentRound || filled === players.length - 1) {
+            istInputs.forEach(input => {
+                if (input.value === "") {
+                    input.value = Math.max(0, currentRound - sum);
+                    sum = currentRound;
+                }
+            });
+        }
+    }
+
+    function submitRound() {
+        const bids = document.querySelectorAll('.bid-in');
+        const gots = document.querySelectorAll('.got-in');
+        let roundData = { round: currentRound, results: [] };
+        let totalStiche = 0;
+
+        for (let i = 0; i < players.length; i++) {
+            let b = parseInt(bids[i].value);
+            let g = parseInt(gots[i].value);
+
+            if (isNaN(b) || isNaN(g)) {
+                alert("Alle Magier müssen ihre Vorhersagen und Ergebnisse eintragen!");
+                return;
+            }
+            totalStiche += g;
+            
+            let pts = (b === g) ? (20 + g * 10) : (Math.abs(b - g) * -10);
+            roundData.results.push({ bid: b, got: g, points: pts });
+        }
+
+        if (totalStiche !== currentRound) {
+            alert(`Die Summe der Stiche muss genau ${currentRound} ergeben!`);
+            return;
+        }
+
+        history.push(roundData);
+        addRoundToTable(roundData);
+        
+        if (currentRound >= maxRounds) {
+            updateDisplay();
+            showWinner();
+        } else {
+            currentRound++;
+            renderRoundInputs();
+            updateDisplay();
+        }
+    }
+
+    function addRoundToTable(data) {
+        const tbody = document.getElementById('history-body');
+        const tr = document.createElement('tr');
+        let html = `<td><b>${data.round}</b></td>`;
+        data.results.forEach(res => {
+            const css = res.points >= 0 ? 'pts-pos' : 'pts-neg';
+            html += `<td><span class="${css}">${res.points}</span><span class="sub-data">${res.bid} / ${res.got}</span></td>`;
+        });
+        tr.innerHTML = html;
+        tbody.prepend(tr); 
+    }
+
+    function updateDisplay() {
+        const container = document.getElementById('player-display');
+        container.innerHTML = '';
+        
+        let totals = players.map((p, i) => {
+            return { name: p, score: history.reduce((sum, r) => sum + r.results[i].points, 0) };
+        });
+
+        let maxScore = Math.max(...totals.map(t => t.score));
+
+        totals.forEach(t => {
+            const isLeader = t.score === maxScore && history.length > 0;
+            container.innerHTML += `
+                <div class="player-status-card ${isLeader ? 'leader' : ''}">
+                    ${isLeader ? '<div class="leader-crown">🧙‍♂️</div>' : ''}
+                    <div style="font-size: 0.8rem; text-transform: uppercase; color: #666;">${t.name}</div>
+                    <span class="score-val">${t.score}</span>
+                </div>
+            `;
+        });
+    }
+
+    function showWinner() {
+        let totals = players.map((p, i) => {
+            return { name: p, score: history.reduce((sum, r) => sum + r.results[i].points, 0) };
+        });
+        totals.sort((a, b) => b.score - a.score);
+        
+        document.getElementById('winner-name').innerText = totals[0].name;
+        document.getElementById('winner-score').innerText = totals[0].score;
+        document.getElementById('winner-overlay').style.display = 'flex';
+    }
+
+    function undoLastRound() {
+        if (history.length === 0) return;
+        history.pop();
+        currentRound = history.length + 1;
+        
+        const tbody = document.getElementById('history-body');
+        tbody.removeChild(tbody.firstChild);
+        renderRoundInputs();
+        updateDisplay();
+        document.getElementById('input-container').style.display = 'block';
+        document.getElementById('winner-overlay').style.display = 'none';
+    }
+</script>
+</body>
+</html>

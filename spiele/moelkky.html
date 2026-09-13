@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Mölkky Score Master Pro</title>
+    <style>
+        :root {
+            --primary: #27ae60;
+            --primary-dark: #1e8449;
+            --bg: #f8fafc;
+            --text-main: #2c3e50;
+            --card-bg: #ffffff;
+            --danger: #e74c3c;
+            --winner: #f1c40f;
+            --radius: 16px;
+            --shadow: 0 4px 15px rgba(0,0,0,0.08);
+        }
+
+        /* Fixiertes Grundlayout gegen Springen */
+        html, body { 
+            height: 100%;
+            width: 100%;
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background-color: var(--bg);
+            position: fixed; /* Verhindert das Scrollen des gesamten Bodys auf Mobile */
+        }
+
+        .app-shell {
+            display: flex;
+            flex-direction: column;
+            height: 100dvh; /* Nutzt die dynamische Viewport-Höhe für Mobile */
+            max-width: 500px;
+            margin: 0 auto;
+            position: relative;
+        }
+
+        header { 
+            padding: 15px 15px 5px;
+            text-align: center;
+            background: var(--bg);
+            flex-shrink: 0;
+        }
+        
+        .setup-card {
+            display: inline-block;
+            margin-bottom: 8px;
+            padding: 12px;
+            background: var(--card-bg);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+        }
+
+        .setup-img { 
+            display: block;
+            width: 120px; 
+            height: auto; 
+            margin: 0 auto;
+        }
+
+        h1 { 
+            font-size: 1.2rem; margin: 0 0 8px; 
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+            font-weight: 800;
+        }
+
+        .admin-area { 
+            display: flex; gap: 8px; background: white; padding: 6px;
+            border-radius: var(--radius); box-shadow: var(--shadow);
+            margin: 0 15px 10px;
+        }
+
+        input[type="text"] { flex: 1; padding: 10px; border: 1px solid #edf2f7; border-radius: 10px; font-size: 1rem; outline: none; }
+        .btn { border: none; border-radius: 10px; font-weight: bold; cursor: pointer; }
+        .btn-add { background: var(--primary); color: white; width: 45px; font-size: 1.2rem; }
+        .btn-undo { background: #f1f5f9; color: #64748b; padding: 0 12px; }
+
+        /* Scroll-Bereich optimiert */
+        #scrollContainer {
+            flex: 1;
+            overflow-y: auto;
+            padding: 5px 15px 30px;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .player-list { display: grid; gap: 10px; padding-bottom: 20px; }
+        
+        .player-card { 
+            background: var(--card-bg); padding: 15px; border-radius: var(--radius); box-shadow: var(--shadow);
+            display: flex; justify-content: space-between; align-items: center;
+            border: 2px solid transparent; transition: border 0.2s;
+            scroll-margin-top: 20px;
+        }
+
+        .player-card.active { border-color: var(--primary); background: #f0fff4; }
+        .player-card.eliminated { background: #fff5f5; border-color: #feb2b2; opacity: 0.8; }
+        .player-card.winner { background: #fffdf2; border-color: var(--winner); }
+
+        .player-info h3 { margin: 0; font-size: 1rem; font-weight: 700; }
+        .player-stats { font-size: 0.8rem; color: #7f8c8d; margin-top: 4px; display: flex; align-items: center; gap: 8px; }
+        
+        .miss-dots { display: flex; gap: 3px; }
+        .dot { width: 8px; height: 8px; border-radius: 50%; border: 1px solid #ddd; }
+        .dot.filled { background: var(--danger); border-color: var(--danger); }
+
+        .score-big { font-size: 1.5rem; font-weight: 800; color: var(--primary); }
+
+        /* Tastenfeld - Absolut stabil am unteren Rand */
+        .input-panel { 
+            background: white;
+            padding: 12px 12px 20px 12px;
+            border-top: 1px solid #edf2f7;
+            box-shadow: 0 -5px 20px rgba(0,0,0,0.05);
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 6px;
+            flex-shrink: 0;
+            z-index: 1000;
+        }
+
+        .panel-label { grid-column: span 4; text-align: center; font-weight: 600; margin-bottom: 4px; font-size: 0.8rem; }
+        .num-btn { 
+            background: #f8fafc; border: 1px solid #edf2f7; padding: 10px 0; 
+            border-radius: 10px; font-size: 1rem; font-weight: 700; color: var(--text-main);
+            touch-action: manipulation; /* Verhindert Zoom-Verzögerung auf Mobile */
+        }
+        .num-btn.zero { background: #fff5f5; color: var(--danger); border-color: #fed7d7; }
+        .num-btn:active { background: var(--primary); color: white; }
+
+    </style>
+</head>
+<body>
+
+<div class="app-shell">
+    <header>
+        <div class="setup-card">
+            <img src="https://www.molkky.world/img/the-rules/molkky-formation.svg" alt="Mölkky" class="setup-img">
+        </div>
+        <h1>Mölkky Master</h1>
+        <div class="admin-area">
+            <input type="text" id="playerName" placeholder="Spieler..." autocomplete="off">
+            <button class="btn btn-add" onclick="addPlayer()">+</button>
+            <button class="btn btn-undo" id="undoBtn" onclick="undo()" disabled>↩</button>
+        </div>
+    </header>
+
+    <div id="scrollContainer">
+        <div id="playerList" class="player-list"></div>
+    </div>
+
+    <div id="inputPanel" class="input-panel" style="display: none;">
+        <div class="panel-label">Wurf für <span id="currentPlayerName" style="color: var(--primary);">...</span></div>
+        <button class="num-btn zero" onclick="submitScore(0)">0</button>
+        <button class="num-btn" onclick="submitScore(1)">1</button>
+        <button class="num-btn" onclick="submitScore(2)">2</button>
+        <button class="num-btn" onclick="submitScore(3)">3</button>
+        <button class="num-btn" onclick="submitScore(4)">4</button>
+        <button class="num-btn" onclick="submitScore(5)">5</button>
+        <button class="num-btn" onclick="submitScore(6)">6</button>
+        <button class="num-btn" onclick="submitScore(7)">7</button>
+        <button class="num-btn" onclick="submitScore(8)">8</button>
+        <button class="num-btn" onclick="submitScore(9)">9</button>
+        <button class="num-btn" onclick="submitScore(10)">10</button>
+        <button class="num-btn" onclick="submitScore(11)">11</button>
+        <button class="num-btn" onclick="submitScore(12)">12</button>
+    </div>
+</div>
+
+<script>
+    let players = [];
+    let history = [];
+    let activeIndex = 0;
+
+    function saveState() {
+        history.push(JSON.stringify({players, activeIndex}));
+        document.getElementById('undoBtn').disabled = false;
+    }
+
+    function undo() {
+        if (history.length > 0) {
+            const state = JSON.parse(history.pop());
+            players = state.players;
+            activeIndex = state.activeIndex;
+            if (history.length === 0) document.getElementById('undoBtn').disabled = true;
+            render();
+            scrollToActive();
+        }
+    }
+
+    function addPlayer() {
+        const input = document.getElementById('playerName');
+        if (!input.value.trim()) return;
+        saveState();
+        players.push({ name: input.value.trim(), score: 0, misses: 0, eliminated: false, winner: false });
+        input.value = "";
+        render();
+    }
+
+    function checkWinCondition() {
+        const activePlayers = players.filter(p => !p.eliminated);
+        if (activePlayers.length === 1 && players.length > 1) {
+            activePlayers[0].winner = true;
+            return true;
+        }
+        return players.some(p => p.winner);
+    }
+
+    function submitScore(points) {
+        if (players.length === 0 || checkWinCondition()) return;
+        saveState();
+        const p = players[activeIndex];
+        if (points === 0) {
+            p.misses++;
+            if (p.misses >= 3) p.eliminated = true;
+        } else {
+            p.misses = 0;
+            p.score += points;
+            if (p.score === 50) p.winner = true;
+            else if (p.score > 50) p.score = 25;
+        }
+        if (!checkWinCondition()) nextTurn();
+        render();
+        scrollToActive();
+    }
+
+    function nextTurn() {
+        const eligible = players.filter(p => !p.eliminated && !p.winner);
+        if (eligible.length === 0) return;
+        
+        // Suche nächsten spielberechtigten Index
+        let nextIdx = activeIndex;
+        do {
+            nextIdx = (nextIdx + 1) % players.length;
+        } while (players[nextIdx].eliminated || players[nextIdx].winner);
+        
+        activeIndex = nextIdx;
+    }
+
+    function scrollToActive() {
+        setTimeout(() => {
+            const activeCard = document.querySelector('.player-card.active');
+            if (activeCard) {
+                activeCard.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            }
+        }, 100);
+    }
+
+    function render() {
+        const list = document.getElementById('playerList');
+        const panel = document.getElementById('inputPanel');
+        list.innerHTML = "";
+        const isGameOver = checkWinCondition();
+
+        if (players.length > 0 && !isGameOver) {
+            panel.style.display = 'grid';
+            document.getElementById('currentPlayerName').innerText = players[activeIndex].name;
+        } else {
+            panel.style.display = 'none';
+        }
+
+        players.forEach((p, i) => {
+            const card = document.createElement('div');
+            card.className = `player-card ${(!isGameOver && i === activeIndex) ? 'active' : ''} ${p.eliminated ? 'eliminated' : ''} ${p.winner ? 'winner' : ''}`;
+            let dots = '';
+            for(let d=1; d<=3; d++) dots += `<div class="dot ${p.misses >= d ? 'filled' : ''}"></div>`;
+
+            card.innerHTML = `
+                <div class="player-info">
+                    <h3>${p.name} ${p.winner ? '🏆' : ''}</h3>
+                    <div class="player-stats">
+                        <span>${p.winner ? 'GEWONNEN' : (p.eliminated ? 'AUSGESCHIEDEN' : 'Rest: ' + (50-p.score))}</span>
+                        ${!p.winner && !p.eliminated ? `<div class="miss-dots">${dots}</div>` : ''}
+                    </div>
+                </div>
+                <div class="score-big">${p.score}</div>
+            `;
+            list.appendChild(card);
+        });
+    }
+</script>
+</body>
+</html>

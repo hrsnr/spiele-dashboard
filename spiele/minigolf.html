@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Minigolf Pro Tracker</title>
+    <style>
+        :root {
+            --primary: #2e7d32;
+            --primary-light: #4caf50;
+            --bg: #f8f9fa;
+            --card: #ffffff;
+            --text-main: #212529;
+            --text-sub: #6c757d;
+            --accent: #007aff;
+            --danger: #ff3b30;
+            --winner-gold: #fffdf0;
+            --winner-border: #ffd700;
+        }
+
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+        body {
+            font-family: -apple-system, system-ui, sans-serif;
+            background-color: var(--bg);
+            color: var(--text-main);
+            margin: 0;
+            height: 100svh; 
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        header {
+            background: var(--card);
+            padding: 12px;
+            text-align: center;
+            font-weight: 800;
+            border-bottom: 1px solid #eee;
+            flex-shrink: 0;
+        }
+
+        /* --- SETUP --- */
+        #setup-screen { padding: 20px; display: flex; flex-direction: column; align-items: center; overflow-y: auto; }
+        .card {
+            background: var(--card);
+            padding: 20px;
+            border-radius: 20px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+            width: 100%;
+            max-width: 400px;
+        }
+
+        .input-group { display: flex; gap: 8px; margin-bottom: 15px; }
+        input { flex-grow: 1; padding: 14px; border: 2px solid #eee; border-radius: 12px; font-size: 1rem; outline: none; }
+
+        .btn-add { background: var(--accent); color: white; width: 50px; border:none; border-radius:12px; font-size: 1.5rem; cursor: pointer; }
+        .btn-start { background: var(--primary); color: white; width: 100%; padding: 16px; border:none; border-radius:12px; font-weight:700; font-size:1rem; margin-top:10px; cursor: pointer; }
+        
+        .player-tag {
+            display: inline-flex;
+            align-items: center;
+            background: #fff;
+            padding: 8px 15px;
+            border-radius: 20px;
+            margin: 5px;
+            font-size: 0.9rem;
+            border: 1px solid var(--accent);
+            color: var(--accent);
+            cursor: pointer;
+        }
+        .player-tag::after { content: '✕'; margin-left: 8px; font-size: 0.7rem; opacity: 0.6; }
+
+        /* --- GAME --- */
+        #game-screen { display: none; flex-direction: column; height: 100%; }
+        .table-container { 
+            flex: 1; 
+            overflow: auto; 
+            padding: 0 10px; 
+            padding-bottom: 30px; /* Puffer für flüssiges Scrollen */
+        }
+        table { width: 100%; border-collapse: separate; border-spacing: 0; }
+        thead th { position: sticky; top: 0; background: var(--card); z-index: 20; padding: 10px 5px; border-bottom: 2px solid var(--primary); font-size: 0.7rem; }
+        
+        .score-val { font-size: 1.1rem; color: var(--primary); display: block; font-weight: 800; }
+        .progress-val { font-size: 0.6rem; color: var(--text-sub); }
+
+        td { padding: 12px 5px; text-align: center; border-bottom: 1px solid #eee; background: white; }
+        tr td:first-child { font-weight: bold; color: var(--text-sub); border-right: 1px solid #eee; width: 40px; }
+
+        .active-cell { background-color: #e8f5e9 !important; box-shadow: inset 0 0 0 2px var(--primary-light); }
+
+        /* --- KEYPAD (MODERN & GROSS) --- */
+        .keypad-container {
+            background: var(--card);
+            /* Padding unten erhöht, damit nichts abgeschnitten wird */
+            padding: 15px 15px calc(25px + env(safe-area-inset-bottom));
+            border-radius: 25px 25px 0 0;
+            box-shadow: 0 -5px 25px rgba(0,0,0,0.1);
+            flex-shrink: 0;
+            z-index: 30;
+        }
+
+        .turn-info { text-align: center; margin-bottom: 12px; font-size: 0.95rem; }
+        .turn-info b { color: var(--primary); font-size: 1.2rem; }
+
+        .grid-pad { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; max-width: 500px; margin: 0 auto; }
+        .key {
+            background: #f1f3f5;
+            height: 80px; /* Gewünschte Höhe */
+            border-radius: 15px;
+            font-size: 1.5rem;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+        }
+        .key:active { background: #e2e6ea; transform: scale(0.95); }
+        .key.back { background: #fff0f0; color: var(--danger); font-size: 1.8rem; }
+
+        /* --- RESULTS --- */
+        #result-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.92); display: none; z-index: 100; align-items: center; justify-content: center; padding: 15px; }
+        .result-card { background: white; width: 100%; max-width: 400px; border-radius: 30px; padding: 30px 20px; text-align: center; position: relative; }
+        
+        .winner-row { 
+            background: linear-gradient(135deg, var(--winner-gold) 0%, #ffecb3 100%); 
+            border: 2px solid var(--winner-border); 
+            padding: 20px; 
+            border-radius: 20px; 
+            margin-bottom: 20px; 
+            box-shadow: 0 15px 30px rgba(255, 215, 0, 0.3); 
+            animation: float 3s ease-in-out infinite; 
+        }
+        
+        @keyframes float { 0%, 100% { transform: translateY(0) scale(1.02); } 50% { transform: translateY(-8px) scale(1.05); } }
+        
+        .result-item { display: flex; justify-content: space-between; padding: 15px; border-bottom: 1px solid #eee; font-size: 1.1rem; align-items: center; }
+        .result-item:last-of-type { border-bottom: none; }
+        
+        #confetti-container { position: absolute; inset: 0; pointer-events: none; z-index: 105; overflow: hidden; }
+        .confetti { position: absolute; width: 10px; height: 10px; border-radius: 2px; opacity: 0; }
+        @keyframes cannonLeft { 0% { transform: translate(-10vw, 100vh) rotate(0); opacity: 1; } 100% { transform: translate(110vw, -10vh) rotate(720deg); opacity: 0; } }
+        @keyframes cannonRight { 0% { transform: translate(110vw, 100vh) rotate(0); opacity: 1; } 100% { transform: translate(-10vw, -10vh) rotate(720deg); opacity: 0; } }
+    </style>
+</head>
+<body>
+
+<header>⛳️ Minigolf Master</header>
+
+<div id="setup-screen">
+    <div class="card">
+        <h3 style="margin-top:0">👥 Spieler hinzufügen</h3>
+        <p style="font-size: 0.8rem; color: var(--text-sub); margin-top: -10px;">Klicke Namen zum Entfernen</p>
+        <div class="input-group">
+            <input type="text" id="player-input" placeholder="Name..." autocomplete="off">
+            <button class="btn-add" onclick="addPlayer()">+</button>
+        </div>
+        <div id="player-list" style="min-height: 40px; margin-bottom: 15px;"></div>
+        
+        <h3 style="margin-top:10px">🚩 Bahnen</h3>
+        <input type="number" id="hole-count" value="18" min="1" max="36">
+        
+        <button class="btn-start" onclick="startGame()">Spiel starten</button>
+    </div>
+</div>
+
+<div id="game-screen">
+    <div class="table-container"><table id="score-table"></table></div>
+    <div class="keypad-container">
+        <div class="turn-info">Bahn <span id="active-hole-label">1</span>: <b id="active-name-label">-</b></div>
+        <div class="grid-pad">
+            <div class="key" onclick="setScore(1)">1</div>
+            <div class="key" onclick="setScore(2)">2</div>
+            <div class="key" onclick="setScore(3)">3</div>
+            <div class="key" onclick="setScore(4)">4</div>
+            <div class="key" onclick="setScore(5)">5</div>
+            <div class="key" onclick="setScore(6)">6</div>
+            <div class="key" onclick="setScore(7)">7</div>
+            <div class="key back" onclick="undoStep()">↩</div>
+        </div>
+    </div>
+</div>
+
+<div id="result-overlay">
+    <div id="confetti-container"></div>
+    <div class="result-card">
+        <h2 style="margin-top:0; color: var(--primary); font-size: 1.8rem;">Endergebnis 🏆</h2>
+        <div id="final-list" style="margin: 20px 0;"></div>
+        <button class="btn-start" onclick="location.reload()">Neues Spiel</button>
+    </div>
+</div>
+
+<script>
+    let players = [];
+    let holes = 18;
+    let scores = {};
+    let curP = 0, curH = 1;
+    let history = []; 
+
+    function addPlayer() {
+        const input = document.getElementById('player-input');
+        const name = input.value.trim();
+        if (name && !players.includes(name)) {
+            players.push(name);
+            scores[name] = {};
+            renderSetupPlayers();
+            input.value = '';
+            input.focus();
+        }
+    }
+
+    function removePlayer(name) {
+        players = players.filter(p => p !== name);
+        delete scores[name];
+        renderSetupPlayers();
+    }
+
+    function renderSetupPlayers() {
+        const container = document.getElementById('player-list');
+        container.innerHTML = players.map(p => 
+            `<span class="player-tag" onclick="removePlayer('${p}')">${p}</span>`
+        ).join('');
+    }
+
+    function startGame() {
+        if (players.length === 0) return alert("Bitte mindestens einen Spieler hinzufügen!");
+        holes = parseInt(document.getElementById('hole-count').value) || 18;
+        document.getElementById('setup-screen').style.display = 'none';
+        document.getElementById('game-screen').style.display = 'flex';
+        renderTable();
+        updateDisplay();
+    }
+
+    function renderTable() {
+        const table = document.getElementById('score-table');
+        let html = `<thead><tr><th>Bahn</th>`;
+        players.forEach(p => {
+            let sum = 0, played = 0;
+            for(let h=1; h<=holes; h++) { if(scores[p][h]) { sum += scores[p][h]; played++; } }
+            html += `<th>${p}<br><span class="score-val">${sum}</span><span class="progress-val">${played}/${holes}</span></th>`;
+        });
+        html += `</tr></thead><tbody>`;
+        for (let h = 1; h <= holes; h++) {
+            html += `<tr><td>${h}</td>`;
+            players.forEach((p, pIdx) => {
+                const active = (pIdx === curP && h === curH) ? 'active-cell' : '';
+                html += `<td class="${active}" onclick="selectCell(${pIdx}, ${h})">${scores[p][h] || ''}</td>`;
+            });
+            html += `</tr>`;
+        }
+        table.innerHTML = html + `</tbody>`;
+        const active = document.querySelector('.active-cell');
+        if (active) active.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+
+    function selectCell(pIdx, hIdx) {
+        curP = pIdx; curH = hIdx;
+        renderTable(); updateDisplay();
+    }
+
+    function setScore(num) {
+        history.push({ p: curP, h: curH, oldVal: scores[players[curP]][curH] });
+        scores[players[curP]][curH] = num;
+        
+        if (checkGameOver()) {
+            renderTable();
+            setTimeout(showResults, 500);
+            return;
+        }
+
+        curP++;
+        if (curP >= players.length) { curP = 0; curH++; }
+        if (curH > holes) curH = holes;
+        
+        renderTable(); updateDisplay();
+    }
+
+    function undoStep() {
+        if (history.length === 0) return;
+        const last = history.pop();
+        curP = last.p;
+        curH = last.h;
+        scores[players[curP]][curH] = last.oldVal || null;
+        renderTable();
+        updateDisplay();
+    }
+
+    function checkGameOver() {
+        return players.every(p => {
+            for(let h=1; h<=holes; h++) { if(!scores[p][h]) return false; }
+            return true;
+        });
+    }
+
+    function updateDisplay() {
+        document.getElementById('active-name-label').innerText = players[curP];
+        document.getElementById('active-hole-label').innerText = curH;
+    }
+
+    function showResults() {
+        const results = players.map(p => {
+            const total = Object.values(scores[p]).reduce((a, b) => a + (b || 0), 0);
+            return { name: p, total };
+        }).sort((a, b) => a.total - b.total);
+
+        let resHtml = "";
+        results.forEach((r, i) => {
+            const isWinner = i === 0;
+            resHtml += `
+                <div class="result-item ${isWinner ? 'winner-row' : ''}">
+                    <span>${isWinner ? '🏆 ' : (i+1)+'. '} <b>${r.name}</b></span>
+                    <span><b>${r.total}</b> Schläge</span>
+                </div>`;
+        });
+        
+        document.getElementById('final-list').innerHTML = resHtml;
+        document.getElementById('result-overlay').style.display = 'flex';
+        createConfetti();
+    }
+
+    function createConfetti() {
+        const container = document.getElementById('confetti-container');
+        const colors = ['#f44336', '#e91e63', '#2196f3', '#4CAF50', '#FFC107', '#FF5722', '#9c27b0'];
+        for (let i = 0; i < 130; i++) {
+            const div = document.createElement('div');
+            div.classList.add('confetti');
+            div.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+            div.style.animationName = Math.random() > 0.5 ? 'cannonLeft' : 'cannonRight';
+            div.style.animationDuration = (Math.random() * 2 + 2) + 's';
+            div.style.animationDelay = (Math.random() * 1.5) + 's';
+            const size = (Math.random() * 7 + 5) + 'px';
+            div.style.width = size; div.style.height = size;
+            container.appendChild(div);
+        }
+    }
+
+    document.getElementById('player-input').addEventListener('keypress', e => {
+        if (e.key === 'Enter') addPlayer();
+    });
+</script>
+</body>
+</html>

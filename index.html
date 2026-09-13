@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Spiele-Dashboard</title>
+  <link rel="stylesheet" href="styles.css">
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#1e293b">
+  <!-- PWA iOS Support -->
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+</head>
+<body>
+
+  <header class="header">
+    <h1>🎲 Spiele-Helfer</h1>
+    <p class="subtitle">Wähle dein Spiel und halte die Punkte fest</p>
+  </header>
+
+  <main class="grid-container">
+    
+    <a href="spiele/wizard.html" class="card card-wizard">
+      <div class="card-icon">🧙‍♂️</div>
+      <div class="card-content">
+        <h2>Wizard</h2>
+        <p>Stiche vorhersagen & Punkte berechnen</p>
+      </div>
+    </a>
+
+    <a href="spiele/flip7.html" class="card card-flip7">
+      <div class="card-icon">🃏</div>
+      <div class="card-content">
+        <h2>Flip7</h2>
+        <p>Rundenpunkte bis 200 verwalten</p>
+      </div>
+    </a>
+
+    <a href="spiele/moelkky.html" class="card card-moelkky">
+      <div class="card-icon">🪵</div>
+      <div class="card-content">
+        <h2>Mölkky</h2>
+        <p>Wurf-Punkte & Fehlwurf-Penalties bis 50</p>
+      </div>
+    </a>
+
+    <a href="spiele/minigolf.html" class="card card-minigolf">
+      <div class="card-icon">⛳</div>
+      <div class="card-content">
+        <h2>Minigolf</h2>
+        <p>18 Bahnen Trackkarte für alle Spieler</p>
+      </div>
+    </a>
+
+    <a href="spiele/flappy_henri.html" class="card card-henri">
+      <div class="card-icon">🕹️</div>
+      <div class="card-content">
+        <h2>Flappy-Henri</h2>
+        <p>Mini-Arcade-Game für Spielpausen</p>
+      </div>
+    </a>
+
+  </main>
+
+  <script>
+    // Registrierung des Service Workers für Offline-Funktionalität (PWA)
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./sw.js')
+          .then(reg => console.log('Service Worker registriert:', reg.scope))
+          .catch(err => console.log('Service Worker Fehler:', err));
+      });
+    }
+  </script>
+</body>
+</html>
