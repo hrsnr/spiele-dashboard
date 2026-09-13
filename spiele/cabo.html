@@ -1,0 +1,704 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cabo Punktehelfer</title>
+  <style>
+    :root {
+      --bg: #0f172a;
+      --card-bg: rgba(255, 255, 255, 0.06);
+      --card-border: rgba(255, 255, 255, 0.12);
+      --text: #f8fafc;
+      --text-sub: #94a3b8;
+      --accent: #38bdf8;
+      --accent-green: #22c55e;
+      --accent-yellow: #eab308;
+      --accent-orange: #f97316;
+      --accent-red: #ef4444;
+      --accent-purple: #a855f7;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      padding: 20px 15px;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 650px;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 24px;
+      position: relative;
+    }
+
+    .back-link {
+      position: absolute;
+      left: 0;
+      top: 0;
+      color: var(--text-sub);
+      text-decoration: none;
+      font-size: 0.9rem;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .back-link:hover { color: var(--accent); }
+
+    h1 {
+      font-size: 1.8rem;
+      font-weight: 800;
+      background: linear-gradient(135deg, #ffffff, var(--accent));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin-bottom: 4px;
+    }
+
+    p.subtitle {
+      color: var(--text-sub);
+      font-size: 0.85rem;
+    }
+
+    /* Buttons */
+    .btn {
+      background: var(--accent);
+      color: #0f172a;
+      border: none;
+      padding: 12px 18px;
+      border-radius: 10px;
+      font-weight: 700;
+      font-size: 1rem;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      width: 100%;
+    }
+
+    .btn:hover { opacity: 0.9; transform: translateY(-1px); }
+    .btn:active { transform: translateY(0); }
+    .btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+
+    .btn-secondary {
+      background: rgba(255, 255, 255, 0.1);
+      color: var(--text);
+      border: 1px solid var(--card-border);
+    }
+
+    .btn-secondary:hover { background: rgba(255, 255, 255, 0.15); }
+
+    .btn-outline {
+      background: transparent;
+      color: var(--text-sub);
+      border: 1px solid var(--card-border);
+    }
+
+    .btn-outline:hover {
+      border-color: var(--text-sub);
+      color: var(--text);
+    }
+
+    .btn-kamikaze {
+      background: linear-gradient(135deg, #f97316, #ef4444);
+      color: #fff;
+      padding: 8px 12px;
+      font-size: 0.85rem;
+      border-radius: 8px;
+      border: none;
+      font-weight: 700;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+
+    .card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 16px;
+      padding: 20px;
+      margin-bottom: 20px;
+    }
+
+    /* SETUP SCREEN */
+    .input-group {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+
+    input[type="text"], input[type="number"] {
+      flex: 1;
+      background: rgba(0, 0, 0, 0.2);
+      border: 1px solid var(--card-border);
+      border-radius: 10px;
+      padding: 12px 14px;
+      color: var(--text);
+      font-size: 1rem;
+      outline: none;
+    }
+
+    input[type="text"]:focus, input[type="number"]:focus {
+      border-color: var(--accent);
+    }
+
+    .player-setup-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin-bottom: 20px;
+    }
+
+    .player-setup-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: rgba(255, 255, 255, 0.04);
+      padding: 10px 14px;
+      border-radius: 8px;
+      border: 1px solid var(--card-border);
+    }
+
+    .btn-remove {
+      background: none;
+      border: none;
+      color: var(--accent-red);
+      font-size: 1.2rem;
+      cursor: pointer;
+      padding: 0 4px;
+    }
+
+    /* SCOREBOARD */
+    .scoreboard {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+
+    .player-card {
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid var(--card-border);
+      border-radius: 12px;
+      padding: 12px;
+      text-align: center;
+      position: relative;
+      transition: all 0.25s ease;
+    }
+
+    .player-card.lowest {
+      border-color: var(--accent-green);
+      background: rgba(34, 197, 94, 0.1);
+      box-shadow: 0 0 12px rgba(34, 197, 94, 0.2);
+    }
+
+    .crown-icon {
+      position: absolute;
+      top: -10px;
+      right: 8px;
+      font-size: 1.3rem;
+      filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5));
+    }
+
+    .player-name {
+      font-weight: 700;
+      font-size: 0.95rem;
+      margin-bottom: 4px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .player-score {
+      font-size: 1.6rem;
+      font-weight: 800;
+      color: #fff;
+    }
+
+    .player-badge {
+      font-size: 0.75rem;
+      color: var(--accent-green);
+      margin-top: 2px;
+      font-weight: 600;
+    }
+
+    /* ROUND INPUT FORM */
+    .round-input-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 12px;
+      background: rgba(0, 0, 0, 0.15);
+      padding: 8px 12px;
+      border-radius: 10px;
+      border: 1px solid var(--card-border);
+    }
+
+    .round-input-label {
+      flex: 1;
+      font-weight: 700;
+      font-size: 0.95rem;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .round-input-row input {
+      width: 90px;
+      flex: none;
+      text-align: center;
+      font-weight: bold;
+    }
+
+    /* HISTORY TABLE */
+    .table-wrapper {
+      overflow-x: auto;
+      margin-top: 10px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      text-align: center;
+      font-size: 0.88rem;
+    }
+
+    th, td {
+      padding: 10px 8px;
+      border-bottom: 1px solid var(--card-border);
+    }
+
+    th {
+      color: var(--text-sub);
+      font-weight: 600;
+      background: rgba(0,0,0,0.2);
+    }
+
+    .reset-note {
+      font-size: 0.7rem;
+      color: var(--accent-yellow);
+      display: block;
+    }
+
+    /* END SCREEN */
+    .winner-banner {
+      text-align: center;
+      padding: 20px 0;
+    }
+
+    .winner-banner .trophy {
+      font-size: 3.5rem;
+      margin-bottom: 10px;
+    }
+
+    .winner-banner h2 {
+      font-size: 1.8rem;
+      color: var(--accent-yellow);
+    }
+
+    .ranking-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin: 20px 0;
+    }
+
+    .ranking-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 14px 18px;
+      border-radius: 12px;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid var(--card-border);
+    }
+
+    .ranking-item.winner {
+      border-color: var(--accent-yellow);
+      background: rgba(234, 179, 8, 0.1);
+    }
+
+    .rank-num {
+      font-weight: 800;
+      font-size: 1.1rem;
+      width: 30px;
+    }
+
+    .rank-name {
+      flex: 1;
+      font-weight: 700;
+    }
+
+    .rank-score {
+      font-size: 1.3rem;
+      font-weight: 800;
+    }
+
+    .hidden { display: none !important; }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <header>
+    <a href="../index.html" class="back-link">← Übersicht</a>
+    <h1>🦄 Cabo</h1>
+    <p class="subtitle">Digitaler Punktehelfer</p>
+  </header>
+
+  <!-- STEP 1: SETUP SCREEN -->
+  <div id="setup-screen" class="card">
+    <h2 style="font-size: 1.2rem; margin-bottom: 12px;">Spieler hinzufügen</h2>
+    <div class="input-group">
+      <input type="text" id="player-name-input" placeholder="Name eingeben..." autocomplete="off">
+      <button class="btn" id="add-player-btn" style="width: auto;">+ Hinzufügen</button>
+    </div>
+
+    <div class="player-setup-list" id="player-setup-list">
+      <!-- Dynamisch hinzugefügte Spieler -->
+    </div>
+
+    <button class="btn btn-secondary" id="start-game-btn" disabled>Spiel starten</button>
+  </div>
+
+  <!-- STEP 2: GAME SCREEN -->
+  <div id="game-screen" class="hidden">
+    <!-- Punktestand Übersicht -->
+    <div class="scoreboard" id="scoreboard">
+      <!-- Dynamische Spielerkarten -->
+    </div>
+
+    <!-- Eingabe für neue Runde -->
+    <div class="card">
+      <h3 style="font-size: 1.1rem; margin-bottom: 14px;" id="round-title">Runde 1 eintragen</h3>
+      
+      <div id="round-inputs-container">
+        <!-- Dynamische Eingabefelder für jeden Spieler -->
+      </div>
+
+      <button class="btn" onclick="finishRound()" style="margin-top: 10px;">
+        ✅ Runde beendet
+      </button>
+    </div>
+
+    <!-- Rundenübersicht -->
+    <div class="card">
+      <h3 style="font-size: 1rem; color: var(--text-sub); margin-bottom: 8px;">Rundenübersicht</h3>
+      <div class="table-wrapper">
+        <table id="history-table">
+          <thead>
+            <tr id="history-head-row">
+              <th>Runde</th>
+              <!-- Spieler-Namen Spalten -->
+            </tr>
+          </thead>
+          <tbody id="history-body">
+            <!-- Runden-Ergebnisse -->
+          </tbody>
+        </table>
+      </div>
+      <button class="btn btn-outline" id="undo-btn" onclick="undoLastRound()" style="margin-top: 16px;" disabled>
+        ↩️ Letzte Runde korrigieren
+      </button>
+    </div>
+  </div>
+
+  <!-- STEP 3: END SCREEN -->
+  <div id="end-screen" class="card hidden">
+    <div class="winner-banner">
+      <div class="trophy">🏆</div>
+      <p style="color: var(--text-sub); text-transform: uppercase; font-size: 0.8rem; letter-spacing: 1px;" id="winner-label">Sieger</p>
+      <h2 id="winner-name">Spieler</h2>
+    </div>
+
+    <h3 style="font-size: 1rem; color: var(--text-sub); margin-bottom: 8px;">Endabrechnung</h3>
+    <div class="ranking-list" id="ranking-list">
+      <!-- Dynamische Rangliste -->
+    </div>
+
+    <div style="display: flex; gap: 10px; margin-top: 20px;">
+      <button class="btn" onclick="restartWithSamePlayers()">Neu starten</button>
+      <button class="btn btn-secondary" onclick="resetToSetup()">Neue Spieler</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  // Game State
+  let players = []; // Array von Strings ["Name 1", "Name 2"]
+  let rounds = [];  // Array von Objekten: { rawScores: [n1, n2], totalsAfter: [t1, t2], resets: [bool1, bool2] }
+
+  // DOM Elements
+  const setupScreen = document.getElementById('setup-screen');
+  const gameScreen = document.getElementById('game-screen');
+  const endScreen = document.getElementById('end-screen');
+
+  const playerNameInput = document.getElementById('player-name-input');
+  const addPlayerBtn = document.getElementById('add-player-btn');
+  const playerSetupList = document.getElementById('player-setup-list');
+  const startGameBtn = document.getElementById('start-game-btn');
+
+  const scoreboard = document.getElementById('scoreboard');
+  const roundTitle = document.getElementById('round-title');
+  const roundInputsContainer = document.getElementById('round-inputs-container');
+  
+  const historyHeadRow = document.getElementById('history-head-row');
+  const historyBody = document.getElementById('history-body');
+  const undoBtn = document.getElementById('undo-btn');
+
+  const winnerName = document.getElementById('winner-name');
+  const winnerLabel = document.getElementById('winner-label');
+  const rankingList = document.getElementById('ranking-list');
+
+  // Event Listeners for Setup
+  addPlayerBtn.addEventListener('click', addPlayer);
+  playerNameInput.addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') addPlayer();
+  });
+  startGameBtn.addEventListener('click', startGame);
+
+  function addPlayer() {
+    const name = playerNameInput.value.trim();
+    if (name === '') return;
+
+    players.push(name);
+    playerNameInput.value = '';
+    renderSetupList();
+  }
+
+  function removePlayer(index) {
+    players.splice(index, 1);
+    renderSetupList();
+  }
+
+  function renderSetupList() {
+    playerSetupList.innerHTML = '';
+    players.forEach((p, idx) => {
+      const item = document.createElement('div');
+      item.className = 'player-setup-item';
+      item.innerHTML = `
+        <span><strong>${idx + 1}.</strong> ${p}</span>
+        <button class="btn-remove" onclick="removePlayer(${idx})">✕</button>
+      `;
+      playerSetupList.appendChild(item);
+    });
+
+    startGameBtn.disabled = players.length === 0;
+  }
+
+  function startGame() {
+    if (players.length === 0) return;
+    rounds = [];
+
+    setupScreen.classList.add('hidden');
+    endScreen.classList.add('hidden');
+    gameScreen.classList.remove('hidden');
+
+    renderGame();
+  }
+
+  // Get current totals calculated round by round with exact 100-reset rule
+  function getCurrentTotals() {
+    let totals = players.map(() => 0);
+
+    rounds.forEach(r => {
+      totals = r.totalsAfter;
+    });
+
+    return totals;
+  }
+
+  function triggerKamikaze(targetIdx) {
+    players.forEach((_, idx) => {
+      const input = document.getElementById(`score-input-${idx}`);
+      if (input) {
+        input.value = (idx === targetIdx) ? 0 : 50;
+      }
+    });
+  }
+
+  function finishRound() {
+    const rawScores = [];
+    
+    for (let i = 0; i < players.length; i++) {
+      const input = document.getElementById(`score-input-${i}`);
+      const val = parseInt(input.value, 10);
+      if (isNaN(val)) {
+        alert(`Bitte gib eine gültige Punktzahl für ${players[i]} ein.`);
+        return;
+      }
+      rawScores.push(val);
+    }
+
+    // Previous totals
+    const prevTotals = getCurrentTotals();
+    const newTotals = [];
+    const resets = [];
+
+    // Calculate new totals and apply 100-point reset rule
+    for (let i = 0; i < players.length; i++) {
+      let scoreSum = prevTotals[i] + rawScores[i];
+      if (scoreSum === 100) {
+        scoreSum = 50; // Exact 100 points reduced to 50
+        resets.push(true);
+      } else {
+        resets.push(false);
+      }
+      newTotals.push(scoreSum);
+    }
+
+    rounds.push({
+      rawScores: rawScores,
+      totalsAfter: newTotals,
+      resets: resets
+    });
+
+    // Check if game ends (if any player has 101 or more points)
+    const hasGameEnded = newTotals.some(score => score >= 101);
+
+    if (hasGameEnded) {
+      showEndScreen();
+    } else {
+      renderGame();
+    }
+  }
+
+  function undoLastRound() {
+    if (rounds.length > 0) {
+      rounds.pop();
+      renderGame();
+    }
+  }
+
+  function renderGame() {
+    const currentTotals = getCurrentTotals();
+    const minScore = Math.min(...currentTotals);
+
+    // 1. Render Scoreboard
+    scoreboard.innerHTML = '';
+    players.forEach((p, idx) => {
+      const isLowest = currentTotals[idx] === minScore;
+      const card = document.createElement('div');
+      card.className = `player-card ${isLowest ? 'lowest' : ''}`;
+      
+      card.innerHTML = `
+        ${isLowest ? '<div class="crown-icon">👑</div>' : ''}
+        <div class="player-name">${p}</div>
+        <div class="player-score">${currentTotals[idx]}</div>
+        <div class="player-badge">${isLowest ? 'Niedrigste Pkt' : ''}</div>
+      `;
+      scoreboard.appendChild(card);
+    });
+
+    // 2. Render Round Inputs
+    roundTitle.textContent = `Runde ${rounds.length + 1} eintragen`;
+    roundInputsContainer.innerHTML = '';
+
+    players.forEach((p, idx) => {
+      const row = document.createElement('div');
+      row.className = 'round-input-row';
+      row.innerHTML = `
+        <span class="round-input-label">${p}</span>
+        <input type="number" id="score-input-${idx}" placeholder="Punkte" inputmode="numeric" pattern="[0-9]*">
+        <button type="button" class="btn-kamikaze" onclick="triggerKamikaze(${idx})">🚀 Kamikaze</button>
+      `;
+      roundInputsContainer.appendChild(row);
+    });
+
+    // 3. Render History Table
+    historyHeadRow.innerHTML = '<th>Runde</th>';
+    players.forEach(p => {
+      const th = document.createElement('th');
+      th.textContent = p;
+      historyHeadRow.appendChild(th);
+    });
+
+    historyBody.innerHTML = '';
+    rounds.forEach((r, rIdx) => {
+      const tr = document.createElement('tr');
+      let html = `<td><strong>R${rIdx + 1}</strong></td>`;
+      
+      r.rawScores.forEach((s, pIdx) => {
+        const isReset = r.resets[pIdx];
+        html += `
+          <td>
+            +${s} 
+            <small style="color: var(--text-sub);">(${r.totalsAfter[pIdx]})</small>
+            ${isReset ? '<span class="reset-note">🎯 100➔50!</span>' : ''}
+          </td>
+        `;
+      });
+      tr.innerHTML = html;
+      historyBody.appendChild(tr);
+    });
+
+    undoBtn.disabled = rounds.length === 0;
+  }
+
+  function showEndScreen() {
+    gameScreen.classList.add('hidden');
+    endScreen.classList.remove('hidden');
+
+    const finalTotals = getCurrentTotals();
+    const minScore = Math.min(...finalTotals);
+
+    // Player Object List for Ranking
+    const playerObjects = players.map((name, idx) => ({
+      name: name,
+      score: finalTotals[idx]
+    }));
+
+    // Sort ascending by score (lowest score wins)
+    playerObjects.sort((a, b) => a.score - b.score);
+
+    // Find winners (supports ties)
+    const winners = playerObjects.filter(p => p.score === minScore);
+    
+    if (winners.length > 1) {
+      winnerLabel.textContent = "Unentschieden! Sieger";
+      winnerName.textContent = winners.map(w => w.name).join(' & ');
+    } else {
+      winnerLabel.textContent = "Sieger";
+      winnerName.textContent = winners[0].name;
+    }
+
+    rankingList.innerHTML = '';
+    playerObjects.forEach((p, idx) => {
+      const isWinner = p.score === minScore;
+      const item = document.createElement('div');
+      item.className = `ranking-item ${isWinner ? 'winner' : ''}`;
+      item.innerHTML = `
+        <div class="rank-num">${isWinner ? '👑' : (idx + 1) + '.'}</div>
+        <div class="rank-name">${p.name}</div>
+        <div class="rank-score">${p.score} Pkt</div>
+      `;
+      rankingList.appendChild(item);
+    });
+  }
+
+  function restartWithSamePlayers() {
+    startGame();
+  }
+
+  function resetToSetup() {
+    players = [];
+    rounds = [];
+    renderSetupList();
+    endScreen.classList.add('hidden');
+    setupScreen.classList.remove('hidden');
+  }
+</script>
+
+</body>
+</html>

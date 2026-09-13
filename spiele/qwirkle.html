@@ -1,0 +1,624 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Qwirkle Punktehelfer</title>
+  <style>
+    :root {
+      --bg: #0f172a;
+      --card-bg: rgba(255, 255, 255, 0.06);
+      --card-border: rgba(255, 255, 255, 0.12);
+      --text: #f8fafc;
+      --text-sub: #94a3b8;
+      --accent: #38bdf8;
+      --accent-green: #22c55e;
+      --accent-yellow: #eab308;
+      --accent-purple: #a855f7;
+      --accent-red: #ef4444;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      padding: 20px 15px;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 600px;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 24px;
+      position: relative;
+    }
+
+    .back-link {
+      position: absolute;
+      left: 0;
+      top: 0;
+      color: var(--text-sub);
+      text-decoration: none;
+      font-size: 0.9rem;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .back-link:hover { color: var(--accent); }
+
+    h1 {
+      font-size: 1.8rem;
+      font-weight: 800;
+      background: linear-gradient(135deg, #ffffff, var(--accent));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin-bottom: 4px;
+    }
+
+    p.subtitle {
+      color: var(--text-sub);
+      font-size: 0.85rem;
+    }
+
+    /* Standard Button Styles */
+    .btn {
+      background: var(--accent);
+      color: #0f172a;
+      border: none;
+      padding: 12px 18px;
+      border-radius: 10px;
+      font-weight: 700;
+      font-size: 1rem;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      width: 100%;
+    }
+
+    .btn:hover { opacity: 0.9; transform: translateY(-1px); }
+    .btn:active { transform: translateY(0); }
+    .btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+
+    .btn-secondary {
+      background: rgba(255, 255, 255, 0.1);
+      color: var(--text);
+      border: 1px solid var(--card-border);
+    }
+
+    .btn-secondary:hover {
+      background: rgba(255, 255, 255, 0.15);
+    }
+
+    .btn-outline {
+      background: transparent;
+      color: var(--text-sub);
+      border: 1px solid var(--card-border);
+    }
+
+    .btn-outline:hover {
+      border-color: var(--text-sub);
+      color: var(--text);
+    }
+
+    .card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 16px;
+      padding: 20px;
+      margin-bottom: 20px;
+    }
+
+    /* SETUP SCREEN */
+    .input-group {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+
+    input[type="text"], input[type="number"] {
+      flex: 1;
+      background: rgba(0, 0, 0, 0.2);
+      border: 1px solid var(--card-border);
+      border-radius: 10px;
+      padding: 12px 14px;
+      color: var(--text);
+      font-size: 1rem;
+      outline: none;
+    }
+
+    input[type="text"]:focus, input[type="number"]:focus {
+      border-color: var(--accent);
+    }
+
+    .player-setup-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin-bottom: 20px;
+    }
+
+    .player-setup-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: rgba(255, 255, 255, 0.04);
+      padding: 10px 14px;
+      border-radius: 8px;
+      border: 1px solid var(--card-border);
+    }
+
+    .btn-remove {
+      background: none;
+      border: none;
+      color: var(--accent-red);
+      font-size: 1.2rem;
+      cursor: pointer;
+      padding: 0 4px;
+    }
+
+    /* GAME SCREEN */
+    /* Players Scoreboard Bar */
+    .scoreboard {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+
+    .player-card {
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid var(--card-border);
+      border-radius: 12px;
+      padding: 12px;
+      text-align: center;
+      position: relative;
+      transition: all 0.25s ease;
+    }
+
+    .player-card.active {
+      border-color: var(--accent);
+      background: rgba(56, 189, 248, 0.12);
+      box-shadow: 0 0 12px rgba(56, 189, 248, 0.2);
+    }
+
+    .crown-icon {
+      position: absolute;
+      top: -10px;
+      right: 8px;
+      font-size: 1.3rem;
+      filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5));
+    }
+
+    .player-name {
+      font-weight: 700;
+      font-size: 0.95rem;
+      margin-bottom: 4px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .player-score {
+      font-size: 1.6rem;
+      font-weight: 800;
+      color: #fff;
+    }
+
+    .player-diff {
+      font-size: 0.75rem;
+      color: var(--text-sub);
+      margin-top: 2px;
+    }
+
+    /* Active Player Controls */
+    .active-player-header {
+      text-align: center;
+      font-size: 1.1rem;
+      margin-bottom: 16px;
+    }
+
+    .active-player-header span {
+      color: var(--accent);
+      font-weight: 800;
+    }
+
+    .points-input-box {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+
+    .points-input-box input {
+      font-size: 1.2rem;
+      text-align: center;
+      font-weight: bold;
+    }
+
+    .action-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 10px;
+      margin-bottom: 16px;
+    }
+
+    .btn-qwirkle {
+      background: linear-gradient(135deg, #a855f7, #6366f1);
+      color: white;
+    }
+
+    .btn-swap {
+      background: rgba(255, 255, 255, 0.08);
+      color: var(--text);
+      border: 1px solid var(--card-border);
+    }
+
+    .btn-end-game {
+      background: linear-gradient(135deg, #eab308, #f97316);
+      color: #0f172a;
+    }
+
+    .correction-box {
+      margin-top: 10px;
+      border-top: 1px solid var(--card-border);
+      padding-top: 16px;
+    }
+
+    /* END SCREEN */
+    .winner-banner {
+      text-align: center;
+      padding: 20px 0;
+    }
+
+    .winner-banner .trophy {
+      font-size: 3.5rem;
+      margin-bottom: 10px;
+    }
+
+    .winner-banner h2 {
+      font-size: 1.8rem;
+      color: var(--accent-yellow);
+    }
+
+    .ranking-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin: 20px 0;
+    }
+
+    .ranking-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 14px 18px;
+      border-radius: 12px;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid var(--card-border);
+    }
+
+    .ranking-item.winner {
+      border-color: var(--accent-yellow);
+      background: rgba(234, 179, 8, 0.1);
+    }
+
+    .rank-num {
+      font-weight: 800;
+      font-size: 1.1rem;
+      width: 30px;
+    }
+
+    .rank-name {
+      flex: 1;
+      font-weight: 700;
+    }
+
+    .rank-score {
+      font-size: 1.3rem;
+      font-weight: 800;
+    }
+
+    .hidden { display: none !important; }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <header>
+    <a href="../index.html" class="back-link">← Übersicht</a>
+    <h1>✨ Qwirkle</h1>
+    <p class="subtitle">Digitaler Punktehelfer</p>
+  </header>
+
+  <!-- STEP 1: SETUP SCREEN -->
+  <div id="setup-screen" class="card">
+    <h2 style="font-size: 1.2rem; margin-bottom: 12px;">Spieler hinzufügen</h2>
+    <div class="input-group">
+      <input type="text" id="player-name-input" placeholder="Name eingeben..." autocomplete="off">
+      <button class="btn" id="add-player-btn" style="width: auto;">+ Hinzufügen</button>
+    </div>
+
+    <div class="player-setup-list" id="player-setup-list">
+      <!-- Dynamisch hinzugefügte Spieler -->
+    </div>
+
+    <button class="btn btn-secondary" id="start-game-btn" disabled>Spiel starten</button>
+  </div>
+
+  <!-- STEP 2: GAME SCREEN -->
+  <div id="game-screen" class="hidden">
+    <!-- Punktestand Übersicht -->
+    <div class="scoreboard" id="scoreboard">
+      <!-- Dynamische Spielerkarten -->
+    </div>
+
+    <!-- Eingabe-Bereich für aktiven Spieler -->
+    <div class="card">
+      <div class="active-player-header">
+        Am Zug: <span id="active-player-name">-</span>
+      </div>
+
+      <!-- 1. Manuelle Punkteingabe -->
+      <form id="score-form" onsubmit="event.preventDefault(); addManualPoints();">
+        <div class="points-input-box">
+          <input type="number" id="points-input" min="0" placeholder="Punkte" inputmode="numeric" pattern="[0-9]*">
+          <button type="submit" class="btn" style="width: 120px;">Eintragen</button>
+        </div>
+      </form>
+
+      <!-- Schnellaktionen -->
+      <div class="action-grid">
+        <!-- 2. Qwirkle -->
+        <button class="btn btn-qwirkle" onclick="addQwirkle()">
+          ⚡ Qwirkle! (+12 Pkt)
+        </button>
+
+        <!-- 3. Steine tauschen -->
+        <button class="btn btn-swap" onclick="swapStones()">
+          🔄 Steine tauschen (0 Pkt)
+        </button>
+
+        <!-- 4. Spielende -->
+        <button class="btn btn-end-game" onclick="endGame()">
+          🏁 Spielende (+6 Pkt & Auswertung)
+        </button>
+      </div>
+
+      <!-- Korrektur Button -->
+      <div class="correction-box">
+        <button class="btn btn-outline" id="undo-btn" onclick="undo()" disabled>
+          ↩️ Letzte Eingabe korrigieren
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- STEP 3: END SCREEN -->
+  <div id="end-screen" class="card hidden">
+    <div class="winner-banner">
+      <div class="trophy">🏆</div>
+      <p style="color: var(--text-sub); text-transform: uppercase; font-size: 0.8rem; letter-spacing: 1px;">Sieger</p>
+      <h2 id="winner-name">Spieler</h2>
+    </div>
+
+    <h3 style="font-size: 1rem; color: var(--text-sub); margin-bottom: 8px;">Endabrechnung</h3>
+    <div class="ranking-list" id="ranking-list">
+      <!-- Dynamische Rangliste -->
+    </div>
+
+    <div style="display: flex; gap: 10px; margin-top: 20px;">
+      <button class="btn" onclick="restartWithSamePlayers()">Neu starten</button>
+      <button class="btn btn-secondary" onclick="resetToSetup()">Neue Spieler</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  // Game State
+  let players = []; // { name: string, score: number }
+  let activePlayerIndex = 0;
+  let history = []; // Für Undo-Funktionalität
+
+  // DOM Elements
+  const setupScreen = document.getElementById('setup-screen');
+  const gameScreen = document.getElementById('game-screen');
+  const endScreen = document.getElementById('end-screen');
+
+  const playerNameInput = document.getElementById('player-name-input');
+  const addPlayerBtn = document.getElementById('add-player-btn');
+  const playerSetupList = document.getElementById('player-setup-list');
+  const startGameBtn = document.getElementById('start-game-btn');
+
+  const scoreboard = document.getElementById('scoreboard');
+  const activePlayerName = document.getElementById('active-player-name');
+  const pointsInput = document.getElementById('points-input');
+  const undoBtn = document.getElementById('undo-btn');
+
+  const winnerName = document.getElementById('winner-name');
+  const rankingList = document.getElementById('ranking-list');
+
+  // Event Listeners for Setup
+  addPlayerBtn.addEventListener('click', addPlayer);
+  playerNameInput.addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') addPlayer();
+  });
+  startGameBtn.addEventListener('click', startGame);
+
+  function addPlayer() {
+    const name = playerNameInput.value.trim();
+    if (name === '') return;
+
+    players.push({ name: name, score: 0 });
+    playerNameInput.value = '';
+    renderSetupList();
+  }
+
+  function removePlayer(index) {
+    players.splice(index, 1);
+    renderSetupList();
+  }
+
+  function renderSetupList() {
+    playerSetupList.innerHTML = '';
+    players.forEach((p, idx) => {
+      const item = document.createElement('div');
+      item.className = 'player-setup-item';
+      item.innerHTML = `
+        <span><strong>${idx + 1}.</strong> ${p.name}</span>
+        <button class="btn-remove" onclick="removePlayer(${idx})">✕</button>
+      `;
+      playerSetupList.appendChild(item);
+    });
+
+    startGameBtn.disabled = players.length === 0;
+  }
+
+  function startGame() {
+    if (players.length === 0) return;
+    history = [];
+    activePlayerIndex = 0;
+
+    setupScreen.classList.add('hidden');
+    endScreen.classList.add('hidden');
+    gameScreen.classList.remove('hidden');
+
+    renderGame();
+  }
+
+  // Save State for Undo
+  function saveState() {
+    history.push({
+      players: JSON.parse(JSON.stringify(players)),
+      activePlayerIndex: activePlayerIndex
+    });
+    undoBtn.disabled = false;
+  }
+
+  function undo() {
+    if (history.length === 0) return;
+    const prevState = history.pop();
+    players = prevState.players;
+    activePlayerIndex = prevState.activePlayerIndex;
+
+    if (history.length === 0) {
+      undoBtn.disabled = true;
+    }
+
+    renderGame();
+  }
+
+  // Turn Actions
+  function addManualPoints() {
+    const val = parseInt(pointsInput.value, 10);
+    if (isNaN(val) || val < 0) return;
+
+    saveState();
+    players[activePlayerIndex].score += val;
+    pointsInput.value = '';
+    nextTurn();
+  }
+
+  function addQwirkle() {
+    saveState();
+    players[activePlayerIndex].score += 12; // 6 Steine + 6 Bonus
+    nextTurn();
+  }
+
+  function swapStones() {
+    saveState();
+    // 0 Punkte
+    nextTurn();
+  }
+
+  function endGame() {
+    saveState();
+    // Der Spieler, der das Spiel beendet, erhält 6 Zusatzpunkte
+    players[activePlayerIndex].score += 6;
+
+    showEndScreen();
+  }
+
+  function nextTurn() {
+    activePlayerIndex = (activePlayerIndex + 1) % players.length;
+    renderGame();
+  }
+
+  // Render Engine
+  function renderGame() {
+    activePlayerName.textContent = players[activePlayerIndex].name;
+
+    // Höchsten Punktestand ermitteln
+    const maxScore = Math.max(...players.map(p => p.score));
+
+    scoreboard.innerHTML = '';
+    players.forEach((p, idx) => {
+      const isLeader = p.score === maxScore && maxScore > 0;
+      const diff = p.score - maxScore;
+
+      const card = document.createElement('div');
+      card.className = `player-card ${idx === activePlayerIndex ? 'active' : ''}`;
+      
+      card.innerHTML = `
+        ${isLeader ? '<div class="crown-icon">👑</div>' : ''}
+        <div class="player-name">${p.name}</div>
+        <div class="player-score">${p.score}</div>
+        <div class="player-diff">${isLeader ? 'Führung' : (diff + ' Pkt')}</div>
+      `;
+      scoreboard.appendChild(card);
+    });
+
+    pointsInput.focus();
+  }
+
+  function showEndScreen() {
+    gameScreen.classList.add('hidden');
+    endScreen.classList.remove('hidden');
+
+    // Sortieren nach Punkten absteigend
+    const rankedPlayers = [...players].sort((a, b) => b.score - a.score);
+    const topScore = rankedPlayers[0].score;
+
+    // Gewinner ermitteln (auch mehrere bei Gleichstand)
+    const winners = rankedPlayers.filter(p => p.score === topScore);
+    winnerName.textContent = winners.map(w => w.name).join(' & ');
+
+    rankingList.innerHTML = '';
+    rankedPlayers.forEach((p, idx) => {
+      const isWinner = p.score === topScore;
+      const item = document.createElement('div');
+      item.className = `ranking-item ${isWinner ? 'winner' : ''}`;
+      item.innerHTML = `
+        <div class="rank-num">${isWinner ? '👑' : (idx + 1) + '.'}</div>
+        <div class="rank-name">${p.name}</div>
+        <div class="rank-score">${p.score} Pkt</div>
+      `;
+      rankingList.appendChild(item);
+    });
+  }
+
+  function restartWithSamePlayers() {
+    players.forEach(p => p.score = 0);
+    startGame();
+  }
+
+  function resetToSetup() {
+    players = [];
+    renderSetupList();
+    endScreen.classList.add('hidden');
+    setupScreen.classList.remove('hidden');
+  }
+</script>
+
+</body>
+</html>
