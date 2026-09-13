@@ -2,75 +2,240 @@
 <html lang="de">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Spiele-Dashboard</title>
-  <link rel="stylesheet" href="styles.css">
-  <link rel="manifest" href="manifest.json">
-  <meta name="theme-color" content="#1e293b">
-  <!-- PWA iOS Support -->
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Spiele-Sammlung</title>
+  <style>
+    :root {
+      --bg: #0f172a;
+      --card-bg: rgba(255, 255, 255, 0.06);
+      --card-border: rgba(255, 255, 255, 0.12);
+      --text: #f8fafc;
+      --text-sub: #94a3b8;
+      --accent: #38bdf8;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      padding: 30px 20px;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 800px;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 35px;
+    }
+
+    h1 {
+      font-size: 2.2rem;
+      font-weight: 800;
+      background: linear-gradient(135deg, #ffffff, var(--accent));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin-bottom: 8px;
+    }
+
+    p.subtitle {
+      color: var(--text-sub);
+      font-size: 0.95rem;
+    }
+
+    /* Kategorie / Collapsible Details */
+    details.category {
+      margin-bottom: 20px;
+      border: 1px solid var(--card-border);
+      border-radius: 16px;
+      background: var(--card-bg);
+      overflow: hidden;
+      transition: border-color 0.2s ease;
+    }
+
+    details.category[open] {
+      border-color: rgba(56, 189, 248, 0.4);
+    }
+
+    /* Dropdown Header */
+    summary.category-header {
+      padding: 16px 20px;
+      font-size: 1.15rem;
+      font-weight: 700;
+      cursor: pointer;
+      list-style: none;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      user-select: none;
+      transition: background 0.2s ease;
+    }
+
+    summary.category-header::-webkit-details-marker {
+      display: none;
+    }
+
+    summary.category-header:hover {
+      background: rgba(255, 255, 255, 0.04);
+      color: var(--accent);
+    }
+
+    .chevron {
+      font-size: 0.8rem;
+      transition: transform 0.25s ease;
+      color: var(--text-sub);
+    }
+
+    details[open] .chevron {
+      transform: rotate(180deg);
+      color: var(--accent);
+    }
+
+    /* Spiele-Grid innerhalb einer Kategorie */
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 16px;
+      padding: 0 16px 16px 16px;
+    }
+
+    .game-card {
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid var(--card-border);
+      border-radius: 12px;
+      padding: 18px;
+      text-decoration: none;
+      color: inherit;
+      transition: all 0.2s ease;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+
+    .game-card:hover {
+      transform: translateY(-2px);
+      border-color: var(--accent);
+      background: rgba(255, 255, 255, 0.08);
+    }
+
+    .icon {
+      font-size: 2rem;
+      margin-bottom: 10px;
+    }
+
+    .title {
+      font-size: 1.1rem;
+      font-weight: 700;
+      margin-bottom: 6px;
+    }
+
+    .desc {
+      font-size: 0.85rem;
+      color: var(--text-sub);
+      line-height: 1.4;
+    }
+  </style>
 </head>
 <body>
 
-  <header class="header">
-    <h1>🎲 Spiele-Helfer</h1>
-    <p class="subtitle">Wähle dein Spiel und halte die Punkte fest</p>
+<div class="container">
+  <header>
+    <h1>🎮 Spiele-Sammlung</h1>
+    <p class="subtitle">Wähle eine Kategorie, um die Spiele anzuzeigen</p>
   </header>
 
-  <main class="grid-container">
-    
-    <a href="spiele/wizard.html" class="card card-wizard">
-      <div class="card-icon">🧙‍♂️</div>
-      <div class="card-content">
-        <h2>Wizard</h2>
-        <p>Stiche vorhersagen & Punkte berechnen</p>
-      </div>
-    </a>
+  <!-- 1. Kategorie: Gesellschaftsspiele -->
+  <details class="category" open>
+    <summary class="category-header">
+      <span>🎲 Gesellschaftsspiele</span>
+      <span class="chevron">▼</span>
+    </summary>
+    <div class="grid">
+      
+      <a href="spiele/flip7.html" class="game-card">
+        <div>
+          <div class="icon">🃏</div>
+          <div class="title">Flip7</div>
+          <div class="desc">Scorekeeper für Flip7 mit Rekord-Tracking (Ziel: 200 Pkt).</div>
+        </div>
+      </a>
 
-    <a href="spiele/flip7.html" class="card card-flip7">
-      <div class="card-icon">🃏</div>
-      <div class="card-content">
-        <h2>Flip7</h2>
-        <p>Rundenpunkte bis 200 verwalten</p>
-      </div>
-    </a>
+      <a href="spiele/wizard.html" class="game-card">
+        <div>
+          <div class="icon">🧙‍♂️</div>
+          <div class="title">Wizard</div>
+          <div class="desc">Rechner für Vorhersagen, Stiche und Punktestände.</div>
+        </div>
+      </a>
+      
+      <a href="spiele/qwirkle.html" class="game-card">
+        <div>
+          <div class="icon">✨</div>
+          <div class="title">Qwirkle</div>
+          <div class="desc">Digitaler Punkterechner mit Qwirkle- und Spielende-Bonus.</div>
+        </div>
+      </a>
 
-    <a href="spiele/moelkky.html" class="card card-moelkky">
-      <div class="card-icon">🪵</div>
-      <div class="card-content">
-        <h2>Mölkky</h2>
-        <p>Wurf-Punkte & Fehlwurf-Penalties bis 50</p>
-      </div>
-    </a>
+      <a href="spiele/cabo.html" class="game-card">
+        <div>
+          <div class="icon">🦄</div>
+          <div class="title">Cabo</div>
+          <div class="desc">Punktehelfer mit Kamikaze-Aktion, 100er-Reset und automatischer Auswertung.</div>
+        </div>
+      </a>
+    </div>
+  </details>
 
-    <a href="spiele/minigolf.html" class="card card-minigolf">
-      <div class="card-icon">⛳</div>
-      <div class="card-content">
-        <h2>Minigolf</h2>
-        <p>18 Bahnen Trackkarte für alle Spieler</p>
-      </div>
-    </a>
+  <!-- 2. Kategorie: Outdoor Spiele -->
+  <details class="category" open>
+    <summary class="category-header">
+      <span>🌳 Outdoor-Spiele</span>
+      <span class="chevron">▼</span>
+    </summary>
+    <div class="grid">
+      <a href="spiele/minigolf.html" class="game-card">
+        <div>
+          <div class="icon">⛳</div>
+          <div class="title">Minigolf</div>
+          <div class="desc">Digitaler Minigolf-Zettel mit Keypad-Eingabe.</div>
+        </div>
+      </a>
 
-    <a href="spiele/flappy_henri.html" class="card card-henri">
-      <div class="card-icon">🕹️</div>
-      <div class="card-content">
-        <h2>Flappy-Henri</h2>
-        <p>Mini-Arcade-Game für Spielpausen</p>
-      </div>
-    </a>
+      <a href="spiele/moelkky.html" class="game-card">
+        <div>
+          <div class="icon">🪵</div>
+          <div class="title">Mölkky</div>
+          <div class="desc">Punktetracker mit Fehlwurf-Logik (Ziel: 50 Pkt).</div>
+        </div>
+      </a>
+    </div>
+  </details>
 
-  </main>
+  <!-- 3. Kategorie: Arcade -->
+  <details class="category" open>
+    <summary class="category-header">
+      <span>🕹️ Arcade</span>
+      <span class="chevron">▼</span>
+    </summary>
+    <div class="grid">
+      <a href="spiele/flappy_henri.html" class="game-card">
+        <div>
+          <div class="icon">🐎</div>
+          <div class="title">Flappy-Henri</div>
+          <div class="desc">Retro Arcade-Spiel mit Henri auf dem Steckenpferd.</div>
+        </div>
+      </a>
+    </div>
+  </details>
 
-  <script>
-    // Registrierung des Service Workers für Offline-Funktionalität (PWA)
-    if ('serviceWorker' in navigator) {
-      window.addEventListener('load', () => {
-        navigator.serviceWorker.register('./sw.js')
-          .then(reg => console.log('Service Worker registriert:', reg.scope))
-          .catch(err => console.log('Service Worker Fehler:', err));
-      });
-    }
-  </script>
+</div>
+
 </body>
 </html>
