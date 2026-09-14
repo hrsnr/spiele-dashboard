@@ -64,19 +64,14 @@
   let bgXMid = 0;   // Büsche
   let bgXFore = 0;  // Boden
 
-  // FPS-Begrenzung (60 FPS konstant auf allen Geräten) - vorher nicht vorhanden
-  let lastTime = 0;
-  const targetFPS = 60;
-  const frameInterval = 1000 / targetFPS;
-
   // --- HENRI (SPIELFIGUR) ---
   const henri = {
     x: 100,
     y: 300,
     width: 52,
     height: 52,
-    gravity: 0.26, //Reduziert für sanfteres Fallen (vorher 0.38)
-    jump: -6.4, //Angepasst an die geringere Gravitation (vorher -7.5)
+    gravity: 0.38,
+    jump: -7.5,
     velocity: 0,
     rotation: 0,
 
@@ -96,7 +91,7 @@
         this.y += this.velocity;
 
         // Dynamic Rotation
-        this.rotation = Math.min(Math.PI / 4, Math.max(-Math.PI / 5, this.velocity * 0.07));
+        this.rotation = Math.min(Math.PI / 4, Math.max(-Math.PI / 5, this.velocity * 0.08));
 
         // Boden-Kollision (Bodenhöhe = 75px)
         if (this.y + this.height / 2 >= canvas.height - 75) {
@@ -121,33 +116,27 @@
       ctx.rotate(this.rotation);
 
       // --- 1. STECKENPFERD ---
-      // Holzstange
       ctx.fillStyle = '#5c3310';
       ctx.fillRect(-28, 14, 46, 6);
       ctx.fillStyle = '#8b5a2b';
       ctx.fillRect(-28, 15, 46, 2);
 
-      // Endknauf
       ctx.fillStyle = '#3a1e08';
       ctx.fillRect(-32, 12, 6, 10);
 
-      // Pferdekopf
       ctx.fillStyle = '#8b4513';
       ctx.beginPath();
       ctx.ellipse(22, -2, 16, 13, 0.15, 0, Math.PI * 2);
       ctx.fill();
 
-      // Schnauze
       ctx.fillStyle = '#a0522d';
       ctx.beginPath();
       ctx.ellipse(32, 4, 9, 8, 0, 0, Math.PI * 2);
       ctx.fill();
 
-      // Nüstern
       ctx.fillStyle = '#3a1e08';
       ctx.fillRect(36, 3, 3, 4);
 
-      // Ohren
       ctx.fillStyle = '#8b4513';
       ctx.beginPath();
       ctx.moveTo(14, -14);
@@ -157,7 +146,6 @@
       ctx.fillStyle = '#d2b48c';
       ctx.fillRect(18, -19, 4, 6);
 
-      // Mähne
       ctx.fillStyle = '#3a1e08';
       ctx.fillRect(8, -22, 6, 12);
       ctx.fillRect(14, -18, 6, 10);
@@ -165,7 +153,6 @@
       ctx.fillStyle = '#d4af37';
       ctx.fillRect(11, -20, 3, 8);
 
-      // Auge
       ctx.fillStyle = '#ffffff';
       ctx.fillRect(20, -7, 6, 6);
       ctx.fillStyle = '#000000';
@@ -173,7 +160,6 @@
       ctx.fillStyle = '#ffffff';
       ctx.fillRect(24, -6, 2, 2);
 
-      // Zaumzeug
       ctx.strokeStyle = '#c0392b';
       ctx.lineWidth = 2.5;
       ctx.beginPath();
@@ -185,7 +171,6 @@
       ctx.fillStyle = '#f1c40f';
       ctx.fillRect(30, 2, 4, 4);
 
-      // Zügel
       ctx.strokeStyle = '#f39c12';
       ctx.lineWidth = 2;
       ctx.beginPath();
@@ -194,45 +179,38 @@
       ctx.stroke();
 
       // --- 2. HENRI ---
-      // Beine & Jeans
       ctx.fillStyle = '#1a388a';
       ctx.fillRect(-14, 8, 16, 14);
       ctx.fillRect(-8, 10, 14, 12);
       ctx.fillStyle = '#f39c12';
       ctx.fillRect(-14, 20, 16, 2);
 
-      // Sneaker
       ctx.fillStyle = '#e74c3c';
       ctx.fillRect(-18, 20, 14, 6);
       ctx.fillStyle = '#ffffff';
       ctx.fillRect(-18, 24, 15, 3);
       ctx.fillRect(-6, 20, 3, 5);
 
-      // Roter Pullover
       ctx.fillStyle = '#d63031';
       ctx.fillRect(-18, -12, 22, 20);
       ctx.fillStyle = '#b2bec3';
       ctx.fillRect(-14, -14, 14, 3);
 
-      // Gelber Stern
       ctx.fillStyle = '#f1c40f';
       ctx.fillRect(-11, -6, 7, 7);
       ctx.fillStyle = '#ffffff';
       ctx.fillRect(-9, -4, 3, 3);
 
-      // Arm & Hand
       ctx.fillStyle = '#d63031';
       ctx.fillRect(-6, -5, 12, 7);
       ctx.fillStyle = '#ffdbac';
       ctx.fillRect(3, -3, 6, 6);
 
-      // Kopf & Gesicht
       ctx.fillStyle = '#ffdbac';
       ctx.fillRect(-13, -28, 18, 16);
       ctx.fillStyle = '#ff7675';
       ctx.fillRect(-2, -18, 5, 4);
 
-      // Auge
       ctx.fillStyle = '#ffffff';
       ctx.fillRect(-4, -24, 7, 7);
       ctx.fillStyle = '#0984e3';
@@ -242,11 +220,9 @@
       ctx.fillStyle = '#ffffff';
       ctx.fillRect(-2, -24, 2, 2);
 
-      // Mund
       ctx.fillStyle = '#c0392b';
       ctx.fillRect(-2, -14, 5, 2);
 
-      // Blondes Haar
       ctx.fillStyle = '#f1c40f';
       ctx.fillRect(-17, -33, 23, 8);
       ctx.fillRect(-17, -28, 6, 12);
@@ -353,22 +329,27 @@
   }
 
   // --- ORIGINAL FLAPPY BIRD HINTERGRUND ---
+  function updateBackgroundLogic() {
+    if (currentState === STATE.PLAYING) {
+      bgXFar += 0.4;
+      bgXMid += 0.8;
+      bgXFore += 2.2;
+    } else if (currentState === STATE.START) {
+      bgXFar += 0.15;
+      bgXMid += 0.3;
+      bgXFore += 0.8;
+    }
+  }
+
   function drawParallaxBackground() {
-    // 1. HIMMEL (Blaues Retro-Fundament)
     ctx.fillStyle = '#70c5ce';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-    // 2. WOLKEN (Langsame Schicht - 0.4 px/frame)
-    if (currentState === STATE.PLAYING) bgXFar += 0.4;
-    if (currentState === STATE.START) bgXFar += 0.15;
-
+    // Wolken
     const cloudLoop = 320;
     const cloudOffset = bgXFar % cloudLoop;
-
     for (let i = -1; i <= 2; i++) {
       const cx = (i * cloudLoop) - cloudOffset;
-      
-      // Wolke 1
       ctx.fillStyle = 'rgba(255, 255, 255, 0.85)';
       ctx.beginPath();
       ctx.arc(cx + 40, 110, 18, 0, Math.PI * 2);
@@ -376,7 +357,6 @@
       ctx.arc(cx + 82, 110, 20, 0, Math.PI * 2);
       ctx.fill();
 
-      // Wolke 2
       ctx.beginPath();
       ctx.arc(cx + 210, 160, 22, 0, Math.PI * 2);
       ctx.arc(cx + 232, 145, 28, 0, Math.PI * 2);
@@ -384,18 +364,13 @@
       ctx.fill();
     }
 
-    // 3. STADT-SKYLINE (Mittlere Schicht - 0.8 px/frame)
-    if (currentState === STATE.PLAYING) bgXMid += 0.8;
-    if (currentState === STATE.START) bgXMid += 0.3;
-
-    const cityY = canvas.height - 75 - 110; // Steht direkt über den Büschen
+    // Stadt
+    const cityY = canvas.height - 75 - 110;
     const cityLoop = 360;
     const cityOffset = bgXMid % cityLoop;
 
     for (let i = -1; i <= 2; i++) {
       const bx = (i * cityLoop) - cityOffset;
-
-      // Gebäude Silhouetten (Pastellgrün)
       ctx.fillStyle = '#83d39c';
       ctx.fillRect(bx + 0, cityY + 25, 38, 85);
       ctx.fillRect(bx + 35, cityY + 10, 32, 100);
@@ -408,7 +383,6 @@
       ctx.fillRect(bx + 280, cityY + 30, 38, 80);
       ctx.fillRect(bx + 312, cityY + 8, 36, 102);
 
-      // Gebäude Schatten/Kanten
       ctx.fillStyle = '#5fb87b';
       ctx.fillRect(bx + 33, cityY + 25, 5, 85);
       ctx.fillRect(bx + 62, cityY + 10, 5, 100);
@@ -418,7 +392,6 @@
       ctx.fillRect(bx + 200, cityY + 15, 5, 95);
       ctx.fillRect(bx + 238, cityY + 35, 5, 75);
 
-      // Retro Fensterchen
       ctx.fillStyle = '#eef79b';
       for (let wy = cityY + 35; wy < cityY + 100; wy += 16) {
         ctx.fillRect(bx + 10, wy, 4, 6);
@@ -432,15 +405,13 @@
       }
     }
 
-    // 4. BÜSCHE (Vor der Stadt - 1.4 px/frame)
+    // Büsche
     const bushY = canvas.height - 75 - 38;
     const bushLoop = 280;
     const bushOffset = (bgXMid * 1.5) % bushLoop;
 
     for (let i = -1; i <= 2; i++) {
       const bx = (i * bushLoop) - bushOffset;
-
-      // Büsche Form
       ctx.fillStyle = '#53be1a';
       ctx.beginPath();
       ctx.arc(bx + 25, bushY + 22, 22, 0, Math.PI * 2);
@@ -452,7 +423,6 @@
       ctx.arc(bx + 240, bushY + 22, 20, 0, Math.PI * 2);
       ctx.fill();
 
-      // Busch Highlights (Hellgrün)
       ctx.fillStyle = '#83e648';
       ctx.beginPath();
       ctx.arc(bx + 53, bushY + 10, 14, 0, Math.PI * 2);
@@ -460,36 +430,26 @@
       ctx.arc(bx + 203, bushY + 12, 12, 0, Math.PI * 2);
       ctx.fill();
 
-      // Busch Dunkelkante unten
       ctx.fillStyle = '#3a8711';
       ctx.fillRect(bx, bushY + 34, 280, 6);
     }
 
-    // 5. BODEN (Vordergrund - Synchron zu Hindernissen: 2.2 px/frame)
-    if (currentState === STATE.PLAYING) bgXFore += 2.2;
-    if (currentState === STATE.START) bgXFore += 0.8;
-
+    // Boden
     const floorY = canvas.height - 75;
-
-    // Sand/Erde Basis
     ctx.fillStyle = '#ddd894';
     ctx.fillRect(0, floorY, canvas.width, 75);
 
-    // Grüne Grasnarbe
     ctx.fillStyle = '#73bf2e';
     ctx.fillRect(0, floorY, canvas.width, 16);
 
-    // Gras-Schatten & Glanz
     ctx.fillStyle = '#9ce659';
     ctx.fillRect(0, floorY, canvas.width, 3);
     ctx.fillStyle = '#529e1c';
     ctx.fillRect(0, floorY + 13, canvas.width, 3);
 
-    // Schwarze Trennlinie zum Sand
     ctx.fillStyle = '#575229';
     ctx.fillRect(0, floorY + 16, canvas.width, 2);
 
-    // Diagonales Streifenmuster auf dem Sand (Flappy Bird Stil)
     ctx.fillStyle = '#c8c279';
     const stripeW = 18;
     const offsetFore = bgXFore % stripeW;
@@ -607,14 +567,11 @@
     ctx.restore();
   }
 
-  // --- HAUPTSPIEL-SCHLEIFE (GAME LOOP) ---
-  function loop() {
+  // --- LOGIK-UPDATE (Exakt 60-mal pro Sekunde) ---
+  function updateGameLogic() {
     frames++;
+    updateBackgroundLogic();
 
-    // 1. Hintergrund
-    drawParallaxBackground();
-
-    // 2. Hindernisse
     if (currentState === STATE.PLAYING) {
       if (frames % spawnRate === 0) {
         obstacles.push(new Obstacle());
@@ -622,7 +579,6 @@
 
       for (let i = obstacles.length - 1; i >= 0; i--) {
         obstacles[i].update();
-        obstacles[i].draw();
 
         if (checkCollision(henri, obstacles[i])) {
           gameOver();
@@ -637,17 +593,21 @@
           obstacles.splice(i, 1);
         }
       }
-    } else {
-      for (let obs of obstacles) {
-        obs.draw();
-      }
     }
 
-    // 3. Henri
     henri.update();
+  }
+
+  // --- RENDER-FUNKTION (Grafik zeichnen) ---
+  function renderGame() {
+    drawParallaxBackground();
+
+    for (let obs of obstacles) {
+      obs.draw();
+    }
+
     henri.draw();
 
-    // 4. UI / Text-Overlays
     ctx.textAlign = 'center';
 
     if (currentState === STATE.START) {
@@ -718,8 +678,33 @@
         ctx.fillText('KLICK ZUM NEUSTART', canvas.width / 2, boxY + 200);
       }
     }
+  }
 
+  // --- HAUPTSPIEL-SCHLEIFE (FIXED TIMESTEP ENGINE) ---
+  let lastTime = performance.now();
+  let accumulator = 0;
+  const step = 1000 / 60; // Genau 16.66ms pro Physik-Schritt
+
+  function loop(timestamp) {
     requestAnimationFrame(loop);
+
+    if (!timestamp) timestamp = performance.now();
+    let delta = timestamp - lastTime;
+    lastTime = timestamp;
+
+    // Schutz vor Rucklern / Tab-Wechsel (max. 250ms akkumulieren)
+    if (delta > 250) delta = 250;
+
+    accumulator += delta;
+
+    // Führe Spiellogik exakt so oft aus, wie 60Hz-Schritte verstrichen sind
+    while (accumulator >= step) {
+      updateGameLogic();
+      accumulator -= step;
+    }
+
+    // Zeichne das Bild
+    renderGame();
   }
 
   // Spiel starten
