@@ -64,14 +64,19 @@
   let bgXMid = 0;   // Büsche
   let bgXFore = 0;  // Boden
 
+  // FPS-Begrenzung (60 FPS konstant auf allen Geräten) - vorher nicht vorhanden
+  let lastTime = 0;
+  const targetFPS = 60;
+  const frameInterval = 1000 / targetFPS;
+
   // --- HENRI (SPIELFIGUR) ---
   const henri = {
     x: 100,
     y: 300,
     width: 52,
     height: 52,
-    gravity: 0.38,
-    jump: -7.5,
+    gravity: 0.26, //Reduziert für sanfteres Fallen (vorher 0.38)
+    jump: -6.4, //Angepasst an die geringere Gravitation (vorher -7.5)
     velocity: 0,
     rotation: 0,
 
