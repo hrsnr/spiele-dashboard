@@ -1,0 +1,806 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Charlie Runner</title>
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+  <style>
+    * {
+      box-sizing: border-box;
+      user-select: none;
+      -webkit-user-select: none;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background: #0f0c20;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      font-family: 'Press Start 2P', monospace;
+      overflow: hidden;
+      color: #f8fafc;
+    }
+
+    #game-container {
+      position: relative;
+      border: 6px solid #ffcc00;
+      border-radius: 14px;
+      box-shadow: 0 0 30px rgba(255, 204, 0, 0.4), 0 15px 40px rgba(0,0,0,0.9);
+      overflow: hidden;
+      background: #70c5ce;
+      width: 100%;
+      max-width: 800px;
+    }
+
+    canvas {
+      display: block;
+      width: 100%;
+      height: auto;
+      image-rendering: pixelated;
+      image-rendering: crisp-edges;
+    }
+  </style>
+</head>
+<body>
+
+<div id="game-container">
+  <canvas id="gameCanvas" width="800" height="320"></canvas>
+</div>
+
+<script>
+  const canvas = document.getElementById('gameCanvas');
+  const ctx = canvas.getContext('2d');
+
+  // Spielzustände
+  const STATE = { START: 0, PLAYING: 1, GAMEOVER: 2 };
+  let currentState = STATE.START;
+
+  // Punkte & Rekord
+  let score = 0;
+  let highScore = localStorage.getItem('charlieRunnerHighScore') || 0;
+  let frames = 0;
+  let gameSpeed = 5.2;
+
+  // Bodenhöhe
+  const groundY = 248;
+
+  // Parallax-Offsets
+  let bgXFar = 0;
+  let bgXMid = 0;
+  let bgXFore = 0;
+
+  // --- CHARLIE (SPIELFIGUR) ---
+  const charlie = {
+    x: 100,
+    y: groundY,
+    width: 36,
+    height: 52,
+    velocityY: 0,
+    gravity: 0.58,
+    jumpForce: -11.8,
+    isGrounded: true,
+
+    reset() {
+      this.y = groundY;
+      this.velocityY = 0;
+      this.isGrounded = true;
+    },
+
+    jump() {
+      if (this.isGrounded) {
+        this.velocityY = this.jumpForce;
+        this.isGrounded = false;
+      }
+    },
+
+    update() {
+      if (currentState === STATE.PLAYING) {
+        this.velocityY += this.gravity;
+        this.y += this.velocityY;
+
+        if (this.y >= groundY) {
+          this.y = groundY;
+          this.velocityY = 0;
+          this.isGrounded = true;
+        }
+      }
+    },
+
+    draw() {
+      ctx.save();
+      ctx.translate(this.x, this.y);
+
+      const animCycle = Math.floor(frames / 5) % 4;
+      const bounceY = (this.isGrounded && currentState === STATE.PLAYING) ? (animCycle % 2 === 0 ? -2 : 0) : 0;
+
+      ctx.translate(0, bounceY);
+
+      // Zopf links
+      ctx.fillStyle = '#d4af37';
+      ctx.fillRect(-20, -44, 7, 16);
+      ctx.fillStyle = '#f1c40f';
+      ctx.fillRect(-18, -46, 7, 16);
+      ctx.fillStyle = '#ffeaa7';
+      ctx.fillRect(-17, -44, 3, 12);
+
+      // Zopf rechts
+      ctx.fillStyle = '#d4af37';
+      ctx.fillRect(13, -44, 7, 16);
+      ctx.fillStyle = '#f1c40f';
+      ctx.fillRect(11, -46, 7, 16);
+      ctx.fillStyle = '#ffeaa7';
+      ctx.fillRect(12, -44, 3, 12);
+
+      // Haarschleifen
+      ctx.fillStyle = '#ef4444';
+      ctx.fillRect(-16, -48, 6, 4);
+      ctx.fillRect(10, -48, 6, 4);
+
+      // Haare Hauptvolumen
+      ctx.fillStyle = '#f1c40f';
+      ctx.fillRect(-14, -52, 28, 20);
+
+      // Kopf
+      ctx.fillStyle = '#ffdbac';
+      ctx.fillRect(-10, -48, 22, 18);
+
+      // Pony
+      ctx.fillStyle = '#f1c40f';
+      ctx.fillRect(-12, -52, 24, 7);
+      ctx.fillRect(-12, -46, 6, 5);
+      ctx.fillRect(4, -46, 8, 4);
+      ctx.fillStyle = '#ffeaa7';
+      ctx.fillRect(-6, -51, 10, 3);
+
+      // Augen
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(2, -42, 8, 8);
+      ctx.fillStyle = '#0984e3';
+      ctx.fillRect(4, -41, 5, 7);
+      ctx.fillStyle = '#000000';
+      ctx.fillRect(5, -40, 3, 5);
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(4, -42, 2, 2);
+
+      // Wange & Mund
+      ctx.fillStyle = '#ff7675';
+      ctx.fillRect(4, -33, 5, 3);
+      ctx.fillStyle = '#c0392b';
+      ctx.fillRect(3, -30, 4, 2);
+
+      // Kleid (Rot)
+      ctx.fillStyle = '#991b1b'; // Dunkelrot (Schatten)
+      ctx.fillRect(-12, -30, 24, 18);
+      ctx.fillStyle = '#ef4444'; // Kräftiges Rot (Hauptfarbe)
+      ctx.fillRect(-10, -30, 22, 18);
+      ctx.fillStyle = '#f87171'; // Hellrot (Glanzkante)
+      ctx.fillRect(-10, -30, 4, 18);
+
+      // Schürze
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(-4, -30, 10, 5);
+      ctx.fillRect(-2, -25, 8, 12);
+      ctx.fillStyle = '#cbd5e1';
+      ctx.fillRect(4, -25, 2, 12);
+
+      // Beine
+      if (!this.isGrounded) {
+        ctx.fillStyle = '#cbd5e1';
+        ctx.fillRect(-10, -12, 6, 8);
+        ctx.fillRect(-14, -6, 8, 4);
+        ctx.fillStyle = '#0f172a';
+        ctx.fillRect(-16, -2, 10, 4);
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(-16, 2, 10, 1);
+
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(2, -12, 6, 10);
+        ctx.fillRect(6, -4, 8, 4);
+        ctx.fillStyle = '#0f172a';
+        ctx.fillRect(6, 0, 10, 4);
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(6, 4, 10, 1);
+      } else {
+        let leg1X = 0, leg2X = 0;
+        if (animCycle === 0) { leg1X = -8; leg2X = 4; }
+        else if (animCycle === 1) { leg1X = -4; leg2X = 0; }
+        else if (animCycle === 2) { leg1X = 2; leg2X = -6; }
+        else { leg1X = -2; leg2X = -2; }
+
+        ctx.fillStyle = '#cbd5e1';
+        ctx.fillRect(leg1X, -12, 6, 10);
+        ctx.fillStyle = '#1e293b';
+        ctx.fillRect(leg1X - 2, -2, 9, 4);
+
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(leg2X, -12, 6, 10);
+        ctx.fillStyle = '#0f172a';
+        ctx.fillRect(leg2X - 2, -2, 9, 4);
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(leg2X - 2, 2, 9, 1);
+      }
+
+      // Ärmel
+      let armX = (!this.isGrounded) ? -4 : ((animCycle % 2 === 0) ? 4 : -4);
+      ctx.fillStyle = '#ef4444'; // Auf Rot angepasst
+      ctx.fillRect(armX - 2, -28, 6, 6);
+      ctx.fillStyle = '#ffdbac';
+      ctx.fillRect(armX - 1, -22, 5, 5);
+
+      ctx.restore();
+    }
+  };
+
+  // --- HINDERNISSE ---
+  const obstacles = [];
+  let obstacleTimer = 0;
+  const minObstacleGap = 80;
+
+  class Obstacle {
+    constructor() {
+      this.x = canvas.width + 30;
+      this.type = Math.random() > 0.45 ? 'cactus' : 'bird';
+      this.hasArm = Math.random() > 0.35;
+
+      if (this.type === 'cactus') {
+        this.width = this.hasArm ? 44 : 26;
+        this.height = 56;
+        this.y = groundY;
+      } else {
+        this.width = 38;
+        this.height = 30;
+        this.y = groundY - 38;
+      }
+    }
+
+    update() {
+      this.x -= gameSpeed;
+    }
+
+    draw() {
+      if (this.type === 'cactus') {
+        this.drawCactus();
+      } else {
+        this.drawBird();
+      }
+    }
+
+    // PIXEL-ART KAKTUS NACH BILDVORLAGE
+    drawCactus() {
+      ctx.save();
+      ctx.translate(Math.floor(this.x), Math.floor(this.y));
+
+      // Farben exakt an Vorlage angepasst
+      const C_OUT = '#17310e';        // Dunkle Außenkontur
+      const C_SHADOW_D = '#1c4213';   // Tiefschatten
+      const C_SHADOW_M = '#2a631c';   // Mittlerer Schatten
+      const C_MID = '#46932e';        // Kaktus Grün
+      const C_LIGHT = '#72c443';      // Hellgrün Glanz
+      const C_BRIGHT = '#9ce867';     // Licht-Highlight
+      const C_THORN_D = '#53361c';    // Stacheln Dunkelbraun
+      const C_THORN_L = '#82562f';    // Stacheln Hellbraun
+
+      const h = this.height; // 56px
+      const sw = 22;          // Stamm-Breite
+      const sx = -sw / 2;
+
+      // --- 1. AUSSENKONTUR / SILHOUETTE (Hauptstamm) ---
+      ctx.fillStyle = C_OUT;
+      ctx.fillRect(sx - 2, -h + 4, sw + 4, h - 4);
+      ctx.fillRect(sx, -h + 2, sw, 2);
+      ctx.fillRect(sx + 2, -h, sw - 4, 2);
+
+      // --- 2. VERTIKALE RIPPEN-SCHATTIERUNG (Hauptstamm) ---
+      // Rippe 1 (Links - Hellster Glanz)
+      ctx.fillStyle = C_BRIGHT;
+      ctx.fillRect(sx, -h + 6, 3, h - 8);
+      ctx.fillStyle = C_LIGHT;
+      ctx.fillRect(sx + 3, -h + 4, 3, h - 6);
+
+      // Rippe 2 (Mitte-Links - Hauptgrün)
+      ctx.fillStyle = C_MID;
+      ctx.fillRect(sx + 6, -h + 4, 5, h - 6);
+
+      // Rippe 3 (Mitte-Rechts - Mittelschatten)
+      ctx.fillStyle = C_SHADOW_M;
+      ctx.fillRect(sx + 11, -h + 4, 5, h - 6);
+
+      // Rippe 4 (Rechts - Tiefschatten)
+      ctx.fillStyle = C_SHADOW_D;
+      ctx.fillRect(sx + 16, -h + 6, 4, h - 8);
+
+      // Abgerundete Kappe oben auf Stamm
+      ctx.fillStyle = C_BRIGHT;
+      ctx.fillRect(sx + 3, -h + 2, 4, 2);
+      ctx.fillStyle = C_LIGHT;
+      ctx.fillRect(sx + 7, -h + 2, 5, 2);
+      ctx.fillStyle = C_SHADOW_M;
+      ctx.fillRect(sx + 12, -h + 2, 4, 2);
+
+      // Abgerundetes Fundament unten
+      ctx.fillStyle = C_SHADOW_D;
+      ctx.fillRect(sx + 2, -2, sw - 4, 2);
+
+      // --- 3. RECHTER SEITENARM (Vorlagengetreu) ---
+      if (this.hasArm) {
+        const ax = sx + sw - 2; // Arm-Ansatz
+        const ay = -32;
+
+        // Arm Kontur
+        ctx.fillStyle = C_OUT;
+        ctx.fillRect(ax, ay + 4, 16, 12);
+        ctx.fillRect(ax + 10, ay - 20, 10, 26);
+        ctx.fillRect(ax + 12, ay - 22, 6, 2);
+
+        // Arm Verbindung horizontal
+        ctx.fillStyle = C_SHADOW_M;
+        ctx.fillRect(ax, ay + 6, 10, 8);
+        ctx.fillStyle = C_SHADOW_D;
+        ctx.fillRect(ax, ay + 10, 10, 4);
+
+        // Arm Vertikaler Ast
+        ctx.fillStyle = C_LIGHT;
+        ctx.fillRect(ax + 10, ay - 18, 2, 20);
+        ctx.fillStyle = C_MID;
+        ctx.fillRect(ax + 12, ay - 20, 3, 23);
+        ctx.fillStyle = C_SHADOW_M;
+        ctx.fillRect(ax + 15, ay - 20, 3, 23);
+        ctx.fillStyle = C_SHADOW_D;
+        ctx.fillRect(ax + 18, ay - 18, 2, 20);
+
+        // Arm Spitze oben rund
+        ctx.fillStyle = C_LIGHT;
+        ctx.fillRect(ax + 12, ay - 22, 4, 2);
+
+        // Stacheln am Arm
+        this.drawThornCluster(ax + 19, ay - 10, C_THORN_D, C_THORN_L);
+        this.drawThornCluster(ax + 19, ay + 4, C_THORN_D, C_THORN_L);
+        this.drawThornCluster(ax + 11, ay - 24, C_THORN_D, C_THORN_L);
+        this.drawThornCluster(ax + 17, ay - 24, C_THORN_D, C_THORN_L);
+        this.drawThornCluster(ax + 15, ay - 6, C_THORN_D, C_THORN_L);
+      }
+
+      // --- 4. BRAUNE STACHELN / THORNS (Cluster auf Stamm) ---
+      // Spitze Hauptstamm
+      this.drawThornCluster(sx + 3, -h - 2, C_THORN_D, C_THORN_L);
+      this.drawThornCluster(sx + 9, -h - 3, C_THORN_D, C_THORN_L);
+      this.drawThornCluster(sx + 15, -h - 1, C_THORN_D, C_THORN_L);
+
+      // Außenkante Links
+      this.drawThornCluster(sx - 4, -h + 12, C_THORN_D, C_THORN_L);
+      this.drawThornCluster(sx - 4, -h + 28, C_THORN_D, C_THORN_L);
+      this.drawThornCluster(sx - 4, -h + 44, C_THORN_D, C_THORN_L);
+
+      // Außenkante Rechts
+      this.drawThornCluster(sx + sw, -h + 16, C_THORN_D, C_THORN_L);
+      this.drawThornCluster(sx + sw, -h + 38, C_THORN_D, C_THORN_L);
+
+      // Oberflächen-Stacheln auf den Rippen (Vorderseite)
+      this.drawThornCluster(sx + 4, -h + 18, C_THORN_D, C_THORN_L);
+      this.drawThornCluster(sx + 14, -h + 22, C_THORN_D, C_THORN_L);
+      this.drawThornCluster(sx + 8, -h + 34, C_THORN_D, C_THORN_L);
+      this.drawThornCluster(sx + 15, -h + 42, C_THORN_D, C_THORN_L);
+      this.drawThornCluster(sx + 5, -h + 48, C_THORN_D, C_THORN_L);
+
+      ctx.restore();
+    }
+
+    // Hilfsfunktion für kleine braune Pixel-Stachel
+    drawThornCluster(x, y, colorDark, colorLight) {
+      ctx.fillStyle = colorDark;
+      ctx.fillRect(x, y, 3, 3);
+      ctx.fillStyle = colorLight;
+      ctx.fillRect(x + 1, y - 1, 2, 2);
+    }
+
+    drawBird() {
+      ctx.save();
+      ctx.translate(this.x, this.y);
+
+      const wingUp = Math.floor(frames / 8) % 2 === 0;
+
+      ctx.fillStyle = '#0f172a';
+      ctx.fillRect(-18, -20, 32, 20);
+
+      ctx.fillStyle = '#e11d48';
+      ctx.fillRect(-16, -18, 28, 16);
+
+      ctx.fillStyle = '#fda4af';
+      ctx.fillRect(-6, -8, 12, 6);
+
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(4, -16, 7, 7);
+      ctx.fillStyle = '#000000';
+      ctx.fillRect(6, -15, 4, 4);
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(8, -15, 2, 2);
+
+      ctx.fillStyle = '#f59e0b';
+      ctx.fillRect(10, -12, 10, 6);
+      ctx.fillStyle = '#d97706';
+      ctx.fillRect(10, -9, 10, 3);
+
+      ctx.fillStyle = '#9f1239';
+      ctx.fillRect(-22, -14, 8, 4);
+      ctx.fillRect(-20, -10, 6, 4);
+
+      ctx.fillStyle = '#be123c';
+      if (wingUp) {
+        ctx.fillRect(-8, -30, 10, 14);
+        ctx.fillStyle = '#fda4af';
+        ctx.fillRect(-6, -28, 4, 10);
+      } else {
+        ctx.fillRect(-8, -4, 10, 14);
+        ctx.fillStyle = '#fda4af';
+        ctx.fillRect(-6, -2, 4, 10);
+      }
+
+      ctx.restore();
+    }
+  }
+
+  // --- PARALLAX HINTERGRUND ---
+  function drawParallaxBackground() {
+    ctx.fillStyle = '#70c5ce';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    if (currentState === STATE.PLAYING) bgXFar += 0.4;
+    if (currentState === STATE.START) bgXFar += 0.15;
+
+    const cloudLoop = 400;
+    const cloudOffset = bgXFar % cloudLoop;
+
+    for (let i = -1; i <= 2; i++) {
+      const cx = (i * cloudLoop) - cloudOffset;
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.85)';
+      ctx.beginPath();
+      ctx.arc(cx + 60, 60, 20, 0, Math.PI * 2);
+      ctx.arc(cx + 82, 48, 28, 0, Math.PI * 2);
+      ctx.arc(cx + 110, 60, 22, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.beginPath();
+      ctx.arc(cx + 260, 90, 24, 0, Math.PI * 2);
+      ctx.arc(cx + 285, 75, 30, 0, Math.PI * 2);
+      ctx.arc(cx + 315, 90, 24, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    if (currentState === STATE.PLAYING) bgXMid += 0.8;
+    if (currentState === STATE.START) bgXMid += 0.3;
+
+    const cityY = groundY - 100;
+    const cityLoop = 400;
+    const cityOffset = bgXMid % cityLoop;
+
+    for (let i = -1; i <= 2; i++) {
+      const bx = (i * cityLoop) - cityOffset;
+
+      ctx.fillStyle = '#83d39c';
+      ctx.fillRect(bx + 0, cityY + 25, 42, 75);
+      ctx.fillRect(bx + 38, cityY + 10, 36, 90);
+      ctx.fillRect(bx + 70, cityY + 45, 50, 55);
+      ctx.fillRect(bx + 115, cityY + 20, 38, 80);
+      ctx.fillRect(bx + 148, cityY + 50, 52, 50);
+      ctx.fillRect(bx + 195, cityY + 15, 34, 85);
+      ctx.fillRect(bx + 225, cityY + 35, 46, 65);
+      ctx.fillRect(bx + 268, cityY + 55, 52, 45);
+      ctx.fillRect(bx + 315, cityY + 30, 42, 70);
+      ctx.fillRect(bx + 352, cityY + 8, 40, 92);
+
+      ctx.fillStyle = '#5fb87b';
+      ctx.fillRect(bx + 36, cityY + 25, 6, 75);
+      ctx.fillRect(bx + 70, cityY + 10, 4, 90);
+      ctx.fillRect(bx + 115, cityY + 45, 5, 55);
+      ctx.fillRect(bx + 148, cityY + 20, 5, 80);
+      ctx.fillRect(bx + 195, cityY + 50, 5, 50);
+
+      ctx.fillStyle = '#eef79b';
+      for (let wy = cityY + 30; wy < cityY + 90; wy += 14) {
+        ctx.fillRect(bx + 10, wy, 5, 5);
+        ctx.fillRect(bx + 24, wy, 5, 5);
+        ctx.fillRect(bx + 48, wy, 5, 5);
+        ctx.fillRect(bx + 125, wy, 5, 5);
+        ctx.fillRect(bx + 205, wy, 5, 5);
+        ctx.fillRect(bx + 325, wy, 5, 5);
+      }
+    }
+
+    const bushY = groundY - 32;
+    const bushLoop = 300;
+    const bushOffset = (bgXMid * 1.5) % bushLoop;
+
+    for (let i = -1; i <= 3; i++) {
+      const bx = (i * bushLoop) - bushOffset;
+      ctx.fillStyle = '#53be1a';
+      ctx.beginPath();
+      ctx.arc(bx + 30, bushY + 18, 18, 0, Math.PI * 2);
+      ctx.arc(bx + 58, bushY + 10, 24, 0, Math.PI * 2);
+      ctx.arc(bx + 92, bushY + 16, 20, 0, Math.PI * 2);
+      ctx.arc(bx + 130, bushY + 10, 26, 0, Math.PI * 2);
+      ctx.arc(bx + 168, bushY + 18, 18, 0, Math.PI * 2);
+      ctx.arc(bx + 200, bushY + 12, 22, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.fillStyle = '#83e648';
+      ctx.beginPath();
+      ctx.arc(bx + 56, bushY + 6, 12, 0, Math.PI * 2);
+      ctx.arc(bx + 128, bushY + 6, 14, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.fillStyle = '#3a8711';
+      ctx.fillRect(bx, bushY + 26, 300, 6);
+    }
+
+    if (currentState === STATE.PLAYING) bgXFore += gameSpeed;
+    if (currentState === STATE.START) bgXFore += 1.0;
+
+    const floorY = groundY;
+
+    ctx.fillStyle = '#ddd894';
+    ctx.fillRect(0, floorY, canvas.width, canvas.height - floorY);
+
+    ctx.fillStyle = '#73bf2e';
+    ctx.fillRect(0, floorY, canvas.width, 14);
+
+    ctx.fillStyle = '#9ce659';
+    ctx.fillRect(0, floorY, canvas.width, 3);
+    ctx.fillStyle = '#529e1c';
+    ctx.fillRect(0, floorY + 11, canvas.width, 3);
+
+    ctx.fillStyle = '#575229';
+    ctx.fillRect(0, floorY + 14, canvas.width, 2);
+
+    ctx.fillStyle = '#c8c279';
+    const stripeW = 20;
+    const offsetFore = bgXFore % stripeW;
+
+    for (let x = -stripeW * 2; x < canvas.width + stripeW * 2; x += stripeW) {
+      ctx.beginPath();
+      ctx.moveTo(x - offsetFore, floorY + 16);
+      ctx.lineTo(x - offsetFore + 10, floorY + 16);
+      ctx.lineTo(x - offsetFore - 4, canvas.height);
+      ctx.lineTo(x - offsetFore - 14, canvas.height);
+      ctx.closePath();
+      ctx.fill();
+    }
+  }
+
+  // --- KOLLISIONSPRÜFUNG ---
+  function checkCollision(player, obs) {
+    const pBox = {
+      left: player.x - 12,
+      right: player.x + 12,
+      top: player.y - player.height + 8,
+      bottom: player.y - 2
+    };
+
+    const oBox = {
+      left: obs.x - obs.width / 2 + 4,
+      right: obs.x + obs.width / 2 - 4,
+      top: obs.y - obs.height + 4,
+      bottom: obs.y - 2
+    };
+
+    return !(pBox.right < oBox.left ||
+             pBox.left > oBox.right ||
+             pBox.bottom < oBox.top ||
+             pBox.top > oBox.bottom);
+  }
+
+  // --- EINGABE-HANDLING ---
+  function handleInput(e) {
+    if (e.type === 'keydown' && e.code !== 'Space' && e.code !== 'ArrowUp') return;
+    if (e.type === 'touchstart') e.preventDefault();
+
+    if (currentState === STATE.START) {
+      currentState = STATE.PLAYING;
+      charlie.jump();
+    } else if (currentState === STATE.PLAYING) {
+      charlie.jump();
+    } else if (currentState === STATE.GAMEOVER) {
+      resetGame();
+      currentState = STATE.PLAYING;
+      charlie.jump();
+    }
+  }
+
+  window.addEventListener('keydown', handleInput);
+  canvas.addEventListener('touchstart', handleInput, { passive: false });
+  canvas.addEventListener('mousedown', handleInput);
+
+  function gameOver() {
+    currentState = STATE.GAMEOVER;
+    if (score > highScore) {
+      highScore = score;
+      localStorage.setItem('charlieRunnerHighScore', highScore);
+    }
+  }
+
+  function resetGame() {
+    score = 0;
+    frames = 0;
+    gameSpeed = 5.2;
+    obstacleTimer = 0;
+    obstacles.length = 0;
+    charlie.reset();
+  }
+
+  // --- TITELBANNER ---
+  function drawTitleBanner() {
+    ctx.save();
+    ctx.translate(canvas.width / 2, 75 + Math.sin(frames * 0.06) * 4);
+
+    ctx.fillStyle = '#000000';
+    ctx.fillRect(-204, -34, 408, 68);
+    ctx.fillStyle = '#ffcc00';
+    ctx.fillRect(-200, -30, 400, 60);
+    ctx.fillStyle = '#d63031';
+    ctx.fillRect(-194, -24, 388, 48);
+
+    ctx.textAlign = 'center';
+    ctx.font = '20px "Press Start 2P"';
+
+    ctx.fillStyle = '#000000';
+    for (let o = 1; o <= 4; o++) {
+      ctx.fillText('CHARLIE RUNNER', o, 6 + o);
+    }
+
+    ctx.fillStyle = '#f1c40f';
+    ctx.fillText('CHARLIE RUNNER', -2, 4);
+    ctx.fillStyle = '#ffffff';
+    ctx.fillText('CHARLIE RUNNER', 0, 2);
+
+    ctx.restore();
+  }
+
+  // --- LOGIK UPDATE ---
+  function updateGameLogic() {
+    frames++;
+
+    if (currentState === STATE.PLAYING) {
+      score += 0.15;
+      
+      gameSpeed = 5.2 + Math.floor(score / 120) * 0.3;
+
+      obstacleTimer++;
+      if (obstacleTimer > minObstacleGap + Math.random() * 60) {
+        obstacles.push(new Obstacle());
+        obstacleTimer = 0;
+      }
+
+      for (let i = obstacles.length - 1; i >= 0; i--) {
+        obstacles[i].update();
+
+        if (checkCollision(charlie, obstacles[i])) {
+          gameOver();
+        }
+
+        if (obstacles[i].x < -60) {
+          obstacles.splice(i, 1);
+        }
+      }
+    }
+
+    charlie.update();
+  }
+
+  // --- GRAFIK RENDERN ---
+  function renderGame() {
+    drawParallaxBackground();
+
+    for (let obs of obstacles) {
+      obs.draw();
+    }
+
+    charlie.draw();
+
+    ctx.textAlign = 'center';
+
+    if (currentState === STATE.START) {
+      drawTitleBanner();
+
+      if (Math.floor(frames / 25) % 2 === 0) {
+        ctx.font = '11px "Press Start 2P"';
+        ctx.fillStyle = '#000000';
+        ctx.fillText('PRESS START / TOUCH', canvas.width / 2 + 2, 162);
+        ctx.fillStyle = '#ffffff';
+        ctx.fillText('PRESS START / TOUCH', canvas.width / 2, 160);
+      }
+
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.75)';
+      ctx.fillRect(200, 185, 400, 85);
+      ctx.strokeStyle = '#ffcc00';
+      ctx.lineWidth = 2;
+      ctx.strokeRect(200, 185, 400, 85);
+
+      ctx.font = '9px "Press Start 2P"';
+      ctx.fillStyle = '#ffffff';
+      ctx.fillText('STEUERUNG:', canvas.width / 2, 208);
+      ctx.fillStyle = '#ffeaa7';
+      ctx.fillText('⌨️ Leertaste / Pfeil-Oben', canvas.width / 2, 230);
+      ctx.fillText('📱 Touchscreen Tip', canvas.width / 2, 250);
+
+    } else if (currentState === STATE.PLAYING) {
+      ctx.textAlign = 'right';
+      ctx.font = '12px "Press Start 2P"';
+      ctx.fillStyle = '#000000';
+      ctx.fillText(`HI ${Math.floor(highScore).toString().padStart(5, '0')}`, canvas.width - 18, 32);
+      ctx.fillText(`${Math.floor(score).toString().padStart(5, '0')}`, canvas.width - 18, 52);
+
+      ctx.fillStyle = '#f1c40f';
+      ctx.fillText(`HI ${Math.floor(highScore).toString().padStart(5, '0')}`, canvas.width - 20, 30);
+      ctx.fillStyle = '#ffffff';
+      ctx.fillText(`${Math.floor(score).toString().padStart(5, '0')}`, canvas.width - 20, 50);
+
+    } else if (currentState === STATE.GAMEOVER) {
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.65)';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      const boxX = 220;
+      const boxY = 55;
+      const boxW = 360;
+      const boxH = 200;
+
+      ctx.fillStyle = '#2c3e50';
+      ctx.fillRect(boxX, boxY, boxW, boxH);
+      ctx.strokeStyle = '#f1c40f';
+      ctx.lineWidth = 4;
+      ctx.strokeRect(boxX, boxY, boxW, boxH);
+
+      ctx.font = '16px "Press Start 2P"';
+      ctx.fillStyle = '#e74c3c';
+      ctx.fillText('GAME OVER', canvas.width / 2, boxY + 45);
+
+      ctx.font = '10px "Press Start 2P"';
+      ctx.fillStyle = '#ffffff';
+      ctx.fillText(`PUNKTE:   ${Math.floor(score)}`, canvas.width / 2, boxY + 95);
+      ctx.fillStyle = '#f1c40f';
+      ctx.fillText(`REKORD:   ${Math.floor(highScore)}`, canvas.width / 2, boxY + 125);
+
+      if (score > 0 && score >= highScore) {
+        ctx.fillStyle = '#f1c40f';
+        ctx.fillText('NEUER REKORD! 🏆', canvas.width / 2, boxY + 152);
+      }
+
+      if (Math.floor(frames / 20) % 2 === 0) {
+        ctx.font = '9px "Press Start 2P"';
+        ctx.fillStyle = '#2ecc71';
+        ctx.fillText('KLICK ZUM NEUSTART', canvas.width / 2, boxY + 180);
+      }
+    }
+  }
+
+  // --- HAUPTSPIEL-SCHLEIFE (60 FPS ENGINE) ---
+  let lastTime = performance.now();
+  let accumulator = 0;
+  const step = 1000 / 60;
+
+  function loop(timestamp) {
+    requestAnimationFrame(loop);
+
+    if (!timestamp) timestamp = performance.now();
+    let delta = timestamp - lastTime;
+    lastTime = timestamp;
+
+    if (delta > 250) delta = 250;
+
+    accumulator += delta;
+
+    while (accumulator >= step) {
+      updateGameLogic();
+      accumulator -= step;
+    }
+
+    renderGame();
+  }
+
+  // Spiel starten
+  loop();
+</script>
+</body>
+</html>
