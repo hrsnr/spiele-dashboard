@@ -29,6 +29,7 @@ Eine mobile-optimierte Progressive Web App (PWA) für digitale Spielehelfer, Pun
 ### 🕹️ Arcade & Mini-Games
 * **🏇 Flappy-Henri:** Retro Flappy-Bird-Klon. Enthält Parallax-Hintergründe, Lego- & Röhren-Hindernisse und Highscore-Speicherung.
 * **🏃‍♀️ Charlie Runner:** Endless-Runner im Stil des Chrome-Dino-Spiels mit detailreicher Pixel-Art-Grafik.
+* **🍺 Theken Tim:** Beer-Rush-Klon: Zapfe Bier, bediene die Gäste an 4 Theken und fange leere Krüge auf.
 
 ---
 
@@ -49,3 +50,4 @@ Eine mobile-optimierte Progressive Web App (PWA) für digitale Spielehelfer, Pun
     ├── moelkky.html
     ├── qwirkle.html
     └── wizard.html
+    └── theken_tim.html
