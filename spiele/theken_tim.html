@@ -1,0 +1,953 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Theken Tim</title>
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+  <style>
+    * {
+      box-sizing: border-box;
+      user-select: none;
+      -webkit-user-select: none;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background: #09050d;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      font-family: 'Press Start 2P', monospace;
+      color: #f8fafc;
+      padding: 10px;
+      overflow: hidden;
+    }
+
+    #game-container {
+      position: relative;
+      border: 6px solid #d97706;
+      border-radius: 16px;
+      box-shadow: 0 0 35px rgba(217, 119, 6, 0.4), 0 20px 50px rgba(0,0,0,0.95);
+      overflow: hidden;
+      background: #110702;
+      width: 100%;
+      max-width: 800px;
+    }
+
+    canvas {
+      display: block;
+      width: 100%;
+      height: auto;
+      image-rendering: pixelated;
+      image-rendering: crisp-edges;
+    }
+
+    /* Touch-Steuerung für Mobilgeräte */
+    #touch-controls {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      width: 100%;
+      max-width: 800px;
+      margin-top: 12px;
+      gap: 12px;
+    }
+
+    .d-pad {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .btn {
+      background: linear-gradient(180deg, #3b1d0c 0%, #1f0e05 100%);
+      border: 3px solid #f59e0b;
+      color: #f59e0b;
+      font-family: 'Press Start 2P', monospace;
+      border-radius: 12px;
+      padding: 16px 24px;
+      font-size: 16px;
+      box-shadow: 0 5px 0 #92400e, inset 0 2px 0 rgba(255,255,255,0.25);
+      cursor: pointer;
+      touch-action: manipulation;
+      transition: background 0.1s;
+    }
+
+    .btn:active {
+      transform: translateY(4px);
+      box-shadow: 0 1px 0 #92400e;
+      background: #4a2410;
+    }
+
+    .btn-serve {
+      flex: 1;
+      height: 94px;
+      font-size: 18px;
+      background: linear-gradient(180deg, #16a34a 0%, #14532d 100%);
+      border-color: #4ade80;
+      color: #ffffff;
+      box-shadow: 0 5px 0 #092e16, inset 0 2px 0 rgba(255,255,255,0.3);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 10px;
+      text-shadow: 0 2px 4px rgba(0,0,0,0.8);
+    }
+
+    .btn-serve:active {
+      transform: translateY(4px);
+      box-shadow: 0 1px 0 #092e16;
+      background: #15803d;
+    }
+  </style>
+</head>
+<body>
+
+<div id="game-container">
+  <canvas id="gameCanvas" width="800" height="450"></canvas>
+</div>
+
+<!-- Touch-Buttons für Mobilgeräte -->
+<div id="touch-controls">
+  <div class="d-pad">
+    <button class="btn" id="btn-up">⬆️ HOCH</button>
+    <button class="btn" id="btn-down">⬇️ RUNTER</button>
+  </div>
+  <button class="btn btn-serve" id="btn-serve">🍺 ZAPFEN & SCHIEBEN</button>
+</div>
+
+<script>
+  const canvas = document.getElementById('gameCanvas');
+  const ctx = canvas.getContext('2d');
+
+  // Spielzustände
+  const STATE = { START: 0, PLAYING: 1, GAMEOVER: 2 };
+  let currentState = STATE.START;
+
+  // Punkte, Leben & Highscore
+  let score = 0;
+  let highScore = localStorage.getItem('thekenTimHighScore') || 0;
+  let lives = 3;
+  let frames = 0;
+
+  // 4 Theken-Spuren
+  const LANES = [120, 200, 280, 360];
+  const BAR_LEFT = 110;
+  const BAR_RIGHT = 685;
+
+  // --- PARTIKEL & POPUPS ---
+  const particles = [];
+  const floatingTexts = [];
+
+  class Particle {
+    constructor(x, y, vx, vy, color, size, life) {
+      this.x = x;
+      this.y = y;
+      this.vx = vx;
+      this.vy = vy;
+      this.color = color;
+      this.size = size;
+      this.life = life;
+      this.maxLife = life;
+    }
+    update() {
+      this.x += this.vx;
+      this.y += this.vy;
+      this.vy += 0.25; // Schwerkraft
+      this.life--;
+    }
+    draw() {
+      if (this.life <= 0) return;
+      ctx.fillStyle = this.color;
+      ctx.fillRect(Math.floor(this.x), Math.floor(this.y), this.size, this.size);
+    }
+  }
+
+  class FloatingText {
+    constructor(text, x, y, color) {
+      this.text = text;
+      this.x = x;
+      this.y = y;
+      this.color = color;
+      this.life = 45;
+    }
+    update() {
+      this.y -= 0.8;
+      this.life--;
+    }
+    draw() {
+      if (this.life <= 0) return;
+      ctx.save();
+      ctx.globalAlpha = Math.max(0, this.life / 45);
+      ctx.font = '11px "Press Start 2P"';
+      ctx.fillStyle = '#000000';
+      ctx.fillText(this.text, this.x + 2, this.y + 2);
+      ctx.fillStyle = this.color;
+      ctx.fillText(this.text, this.x, this.y);
+      ctx.restore();
+    }
+  }
+
+  function spawnSplash(x, y, color) {
+    for (let i = 0; i < 10; i++) {
+      particles.push(new Particle(
+        x, y,
+        (Math.random() - 0.5) * 4,
+        (Math.random() - 0.8) * 4,
+        color,
+        Math.random() > 0.5 ? 3 : 2,
+        20 + Math.random() * 15
+      ));
+    }
+  }
+
+  function spawnGlassShatter(x, y) {
+    const colors = ['#ffffff', '#cbd5e1', '#94a3b8', '#64748b'];
+    for (let i = 0; i < 16; i++) {
+      particles.push(new Particle(
+        x, y,
+        (Math.random() - 0.5) * 6,
+        (Math.random() - 0.9) * 5,
+        colors[Math.floor(Math.random() * colors.length)],
+        Math.floor(Math.random() * 3) + 2,
+        25 + Math.random() * 20
+      ));
+    }
+  }
+
+  // --- THEKEN TIM (SPIELFIGUR) ---
+  const tim = {
+    lane: 0,
+    x: 710,
+    isPouring: 0,
+
+    moveUp() {
+      if (this.lane > 0) this.lane--;
+    },
+
+    moveDown() {
+      if (this.lane < LANES.length - 1) this.lane++;
+    },
+
+    serve() {
+      if (currentState === STATE.PLAYING && this.isPouring === 0) {
+        this.isPouring = 12;
+        beers.push(new Beer(this.lane));
+      }
+    },
+
+    update() {
+      if (this.isPouring > 0) this.isPouring--;
+    },
+
+    draw() {
+      const y = LANES[this.lane] - 42;
+      ctx.save();
+      ctx.translate(this.x, y);
+
+      // --- FISUR (Braun mit Tolle & Highlights) ---
+      ctx.fillStyle = '#261306';
+      ctx.fillRect(-14, -28, 26, 12);
+      ctx.fillRect(-16, -24, 30, 8);
+      ctx.fillStyle = '#52290f'; // Lichtreflex im Haar
+      ctx.fillRect(-10, -28, 12, 4);
+
+      // --- KOPF / GESICHT ---
+      ctx.fillStyle = '#fbcfe8'; // Hautton
+      ctx.fillRect(-10, -18, 20, 16);
+
+      // Augenbrauen & Augen
+      ctx.fillStyle = '#261306';
+      ctx.fillRect(-8, -16, 5, 2);
+      ctx.fillRect(-1, -16, 5, 2);
+      ctx.fillStyle = '#0f172a';
+      ctx.fillRect(-7, -13, 3, 4);
+      ctx.fillRect(0, -13, 3, 4);
+
+      // Nase & Lächeln
+      ctx.fillStyle = '#f472b6';
+      ctx.fillRect(-5, -8, 5, 2);
+      ctx.fillStyle = '#991b1b';
+      ctx.fillRect(-5, -4, 8, 2);
+
+      // Koteletten
+      ctx.fillStyle = '#261306';
+      ctx.fillRect(-12, -16, 3, 8);
+
+      // --- GRÜN-SCHWARZ KARIERTES HEMD ---
+      ctx.fillStyle = '#15803d'; // Grün Basisfarbe
+      ctx.fillRect(-12, -2, 24, 22);
+
+      // Schwarz-weiße Karo-Gitterstreifen
+      ctx.fillStyle = '#09090b'; // Schwarz
+      ctx.fillRect(-12, 2, 24, 3);
+      ctx.fillRect(-12, 10, 24, 3);
+      ctx.fillRect(-12, 17, 24, 3);
+      ctx.fillRect(-6, -2, 3, 22);
+      ctx.fillRect(1, -2, 3, 22);
+      ctx.fillRect(8, -2, 3, 22);
+
+      // Weiße Karolinien (Akzente)
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(-12, 5, 24, 1);
+      ctx.fillRect(-12, 13, 24, 1);
+      ctx.fillRect(-3, -2, 1, 22);
+      ctx.fillRect(4, -2, 1, 22);
+
+      // Kragen & Knöpfe
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(-6, -2, 11, 3);
+      ctx.fillStyle = '#f59e0b'; // Goldene Knöpfe
+      ctx.fillRect(-1, 2, 2, 2);
+      ctx.fillRect(-1, 8, 2, 2);
+
+      // Gürtel mit Messingschnalle
+      ctx.fillStyle = '#1c1917';
+      ctx.fillRect(-12, 20, 24, 4);
+      ctx.fillStyle = '#f59e0b';
+      ctx.fillRect(-3, 19, 6, 6);
+      ctx.fillStyle = '#78350f';
+      ctx.fillRect(-1, 20, 2, 4);
+
+      // --- HELLE HOSE ---
+      ctx.fillStyle = '#f1f5f9'; // Helle Creme-Hose
+      ctx.fillRect(-10, 24, 9, 18);
+      ctx.fillRect(0, 24, 9, 18);
+      ctx.fillStyle = '#cbd5e1'; // Falten / Schatten
+      ctx.fillRect(-3, 24, 2, 18);
+      ctx.fillRect(7, 24, 2, 18);
+
+      // --- SCHWARZE SCHUHE ---
+      ctx.fillStyle = '#0f172a';
+      ctx.fillRect(-13, 42, 11, 6);
+      ctx.fillRect(-1, 42, 11, 6);
+      ctx.fillStyle = '#475569'; // Sohle
+      ctx.fillRect(-13, 46, 11, 2);
+      ctx.fillRect(-1, 46, 11, 2);
+
+      // --- ARME / ZAPF-ANIMATION ---
+      if (this.isPouring > 0) {
+        // Arm gestreckt am Zapfhahn
+        ctx.fillStyle = '#15803d';
+        ctx.fillRect(-20, 0, 10, 6);
+        ctx.fillStyle = '#fbcfe8';
+        ctx.fillRect(-24, -4, 7, 8);
+      } else {
+        // Arme gelassen an der Hüfte
+        ctx.fillStyle = '#15803d';
+        ctx.fillRect(-16, 2, 6, 12);
+        ctx.fillStyle = '#fbcfe8';
+        ctx.fillRect(-16, 12, 6, 5);
+      }
+
+      ctx.restore();
+    }
+  };
+
+  // --- ENTITÄTEN ---
+  const beers = [];
+  const emptyMugs = [];
+  const customers = [];
+  let customerSpawnTimer = 0;
+
+  // --- BIERKRUG (VOLL) ---
+  class Beer {
+    constructor(lane) {
+      this.lane = lane;
+      this.x = BAR_RIGHT - 20;
+      this.speed = 5.2;
+    }
+
+    update() {
+      this.x -= this.speed;
+      // Schaum-Partikel erzeugen beim Schieben
+      if (frames % 4 === 0) {
+        particles.push(new Particle(this.x + 10, LANES[this.lane] - 14, 1, -0.5, '#ffffff', 2, 12));
+      }
+    }
+
+    draw() {
+      const y = LANES[this.lane] - 22;
+      ctx.save();
+      ctx.translate(Math.floor(this.x), y);
+
+      // Krug-Henkel
+      ctx.fillStyle = '#e2e8f0';
+      ctx.fillRect(14, 4, 5, 12);
+      ctx.fillStyle = '#1c0d02';
+      ctx.fillRect(16, 6, 2, 8);
+
+      // Krug Glaskörper
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, 15, 20);
+
+      // Goldgelbes Bier
+      ctx.fillStyle = '#f59e0b';
+      ctx.fillRect(2, 4, 11, 14);
+      ctx.fillStyle = '#fbbf24'; // Lichtreflex im Bier
+      ctx.fillRect(3, 4, 3, 14);
+
+      // Üppige Schaumkrone
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(-1, -2, 17, 7);
+      ctx.fillRect(1, -4, 13, 3);
+
+      ctx.restore();
+    }
+  }
+
+  // --- LEERER KRUG ---
+  class EmptyMug {
+    constructor(lane, x) {
+      this.lane = lane;
+      this.x = x;
+      this.speed = 3.5;
+    }
+
+    update() {
+      this.x += this.speed;
+    }
+
+    draw() {
+      const y = LANES[this.lane] - 18;
+      ctx.save();
+      ctx.translate(Math.floor(this.x), y);
+
+      // Glas Konturen & Glanz
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
+      ctx.fillRect(0, 0, 13, 16);
+      ctx.fillStyle = '#1c0d02';
+      ctx.fillRect(2, 2, 9, 12);
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.4)';
+      ctx.fillRect(3, 2, 3, 12);
+
+      // Henkel
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
+      ctx.fillRect(-4, 3, 4, 10);
+      ctx.fillStyle = '#1c0d02';
+      ctx.fillRect(-3, 5, 2, 6);
+
+      ctx.restore();
+    }
+  }
+
+  // --- GÄSTE (CUSTOMERS) ---
+  class Customer {
+    constructor(lane) {
+      this.lane = lane;
+      this.x = BAR_LEFT;
+      this.speed = 0.75 + Math.random() * 0.45 + (score / 3500);
+      this.type = Math.floor(Math.random() * 4); // 4 detaillierte Gast-Typen
+    }
+
+    update() {
+      this.x += this.speed;
+    }
+
+    draw() {
+      const y = LANES[this.lane] - 42;
+      ctx.save();
+      ctx.translate(Math.floor(this.x), y);
+
+      const anim = Math.floor(frames / 8) % 2 === 0 ? 0 : 3;
+
+      if (this.type === 0) {
+        // GAST 1: Der Stammgast (Cappy, Latzhose, Vollbart)
+        ctx.fillStyle = '#dc2626'; // Rot Cappy
+        ctx.fillRect(-10, -22, 20, 6);
+        ctx.fillRect(-4, -25, 10, 4);
+        ctx.fillStyle = '#fbcfe8';
+        ctx.fillRect(-8, -16, 16, 12);
+        ctx.fillStyle = '#78350f'; // Vollbart
+        ctx.fillRect(-8, -8, 16, 8);
+        ctx.fillStyle = '#2563eb'; // Blau Latzhose
+        ctx.fillRect(-10, 0, 20, 22);
+        ctx.fillStyle = '#dc2626'; // Rotes Hemd drunter
+        ctx.fillRect(-8, 2, 16, 8);
+        ctx.fillStyle = '#1e3a8a';
+        ctx.fillRect(-8, 22 + anim, 7, 16);
+        ctx.fillRect(1, 22 - anim, 7, 16);
+
+      } else if (this.type === 1) {
+        // GAST 2: Der Biker (Lederjacke, Kopftuch, Sonnenbrille)
+        ctx.fillStyle = '#991b1b'; // Rotes Bandana
+        ctx.fillRect(-10, -22, 20, 6);
+        ctx.fillStyle = '#fbcfe8';
+        ctx.fillRect(-8, -16, 16, 12);
+        ctx.fillStyle = '#0f172a'; // Sonnenbrille
+        ctx.fillRect(-8, -13, 16, 4);
+        ctx.fillStyle = '#18181b'; // Schwarze Lederjacke
+        ctx.fillRect(-11, -4, 22, 24);
+        ctx.fillStyle = '#f59e0b'; // Nieten
+        ctx.fillRect(-9, -2, 2, 2);
+        ctx.fillRect(7, -2, 2, 2);
+        ctx.fillStyle = '#3f3f46';
+        ctx.fillRect(-8, 20 + anim, 7, 18);
+        ctx.fillRect(1, 20 - anim, 7, 18);
+
+      } else if (this.type === 2) {
+        // GAST 3: Der Anzugträger (Krawatte, Brille, Seitenscheitel)
+        ctx.fillStyle = '#451a03'; // Braun Haare
+        ctx.fillRect(-10, -23, 20, 7);
+        ctx.fillStyle = '#fbcfe8';
+        ctx.fillRect(-8, -16, 16, 12);
+        ctx.fillStyle = '#000000'; // Brille
+        ctx.fillRect(-7, -12, 6, 4);
+        ctx.fillRect(1, -12, 6, 4);
+        ctx.fillStyle = '#334155'; // Anzug
+        ctx.fillRect(-10, -4, 20, 24);
+        ctx.fillStyle = '#ffffff'; // Hemd
+        ctx.fillRect(-3, -4, 6, 12);
+        ctx.fillStyle = '#dc2626'; // Krawatte
+        ctx.fillRect(-2, -2, 4, 14);
+        ctx.fillStyle = '#1e293b';
+        ctx.fillRect(-8, 20 + anim, 7, 18);
+        ctx.fillRect(1, 20 - anim, 7, 18);
+
+      } else {
+        // GAST 4: Der Bauarbeiter (Gelber Schutzhelm, Blaumann)
+        ctx.fillStyle = '#facc15'; // Helm
+        ctx.fillRect(-11, -25, 22, 8);
+        ctx.fillRect(-13, -19, 26, 3);
+        ctx.fillStyle = '#fbcfe8';
+        ctx.fillRect(-8, -16, 16, 12);
+        ctx.fillStyle = '#ea580c'; // Sicherheitsweste / Orange
+        ctx.fillRect(-10, -4, 20, 22);
+        ctx.fillStyle = '#fef08a'; // Reflektorstreifen
+        ctx.fillRect(-10, 4, 20, 3);
+        ctx.fillRect(-10, 12, 20, 3);
+        ctx.fillStyle = '#1d4ed8';
+        ctx.fillRect(-8, 18 + anim, 7, 18);
+        ctx.fillRect(1, 18 - anim, 7, 18);
+      }
+
+      ctx.restore();
+    }
+  }
+
+  // --- DETAILLIERTER TAVERNEN-HINTERGRUND ---
+  function drawTavernBackground() {
+    // 1. Detaillierte Backsteinwand
+    ctx.fillStyle = '#180802';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    const brickW = 32;
+    const brickH = 12;
+    for (let r = 0; r < 9; r++) {
+      const offsetX = (r % 2 === 0) ? 0 : 16;
+      for (let c = -1; c < canvas.width / brickW + 1; c++) {
+        // Farbvariationen für Klinker-Look
+        const colorVar = (r * 7 + c * 13) % 3;
+        ctx.fillStyle = colorVar === 0 ? '#3b1808' : (colorVar === 1 ? '#2d1205' : '#481e0a');
+        ctx.fillRect(c * brickW + offsetX, r * (brickH + 2), brickW - 2, brickH);
+      }
+    }
+
+    // 2. Stimmungsvolles Laternen-Licht (Radial Gradients)
+    const lanternPositions = [120, 400, 680];
+    for (let lx of lanternPositions) {
+      const grad = ctx.createRadialGradient(lx, 40, 5, lx, 40, 110);
+      grad.addColorStop(0, 'rgba(251, 191, 36, 0.35)');
+      grad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+      ctx.fillStyle = grad;
+      ctx.beginPath();
+      ctx.arc(lx, 40, 110, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Wandlampe Pixelart
+      ctx.fillStyle = '#78350f';
+      ctx.fillRect(lx - 2, 10, 4, 15);
+      ctx.fillStyle = '#fbbf24';
+      ctx.fillRect(lx - 6, 25, 12, 14);
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(lx - 3, 28, 6, 8);
+    }
+
+    // 3. Regale & Holzfässer im Hintergrund
+    ctx.fillStyle = '#271003';
+    ctx.fillRect(0, 55, canvas.width, 8);
+    ctx.fillRect(0, 95, canvas.width, 8);
+
+    // Eichen-Fässer
+    for (let fx of [40, 280, 520]) {
+      ctx.fillStyle = '#78350f';
+      ctx.fillRect(fx, 25, 36, 30);
+      ctx.fillStyle = '#b45309'; // Holzmaserung
+      ctx.fillRect(fx + 4, 25, 28, 30);
+      ctx.fillStyle = '#1c1917'; // Eisenbänder
+      ctx.fillRect(fx, 30, 36, 4);
+      ctx.fillRect(fx, 45, 36, 4);
+      ctx.fillStyle = '#f59e0b'; // Zapfhahn am Fass
+      ctx.fillRect(fx + 14, 48, 8, 4);
+    }
+
+    // Flaschen auf Regalen
+    const bottleColors = ['#dc2626', '#16a34a', '#2563eb', '#eab308', '#a855f7'];
+    for (let bx = 120; bx < canvas.width - 100; bx += 22) {
+      if (bx > 260 && bx < 340) continue;
+      if (bx > 500 && bx < 580) continue;
+      ctx.fillStyle = bottleColors[(bx / 22) % bottleColors.length];
+      ctx.fillRect(bx, 73, 7, 22);
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(bx + 2, 68, 3, 5);
+    }
+
+    // 4. Die 4 Bar-Theken
+    for (let i = 0; i < LANES.length; i++) {
+      const ly = LANES[i];
+
+      // Bar Holzplatte
+      ctx.fillStyle = '#582607';
+      ctx.fillRect(BAR_LEFT, ly, BAR_RIGHT - BAR_LEFT, 20);
+
+      // Gold/Messing Kante
+      ctx.fillStyle = '#d97706';
+      ctx.fillRect(BAR_LEFT, ly, BAR_RIGHT - BAR_LEFT, 4);
+
+      // Holz-Schatten
+      ctx.fillStyle = '#2e1303';
+      ctx.fillRect(BAR_LEFT, ly + 16, BAR_RIGHT - BAR_LEFT, 4);
+
+      // Messing-Zapfsäule am Ende der Theke
+      ctx.fillStyle = '#b45309';
+      ctx.fillRect(BAR_RIGHT + 2, ly - 32, 10, 32);
+      ctx.fillStyle = '#fef08a'; // Messing Glanz
+      ctx.fillRect(BAR_RIGHT + 4, ly - 32, 3, 32);
+      ctx.fillStyle = '#172554'; // Tropfschale
+      ctx.fillRect(BAR_RIGHT - 10, ly - 2, 16, 4);
+
+      // Zapfhahn-Hebel
+      ctx.fillStyle = '#dc2626';
+      ctx.fillRect(BAR_RIGHT + 4, ly - 42, 6, 12);
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(BAR_RIGHT + 5, ly - 44, 4, 3);
+    }
+
+    // 5. Holzfußboden
+    ctx.fillStyle = '#1c0d02';
+    ctx.fillRect(0, 400, canvas.width, 50);
+    ctx.fillStyle = '#0f0601';
+    for (let x = 0; x < canvas.width; x += 80) {
+      ctx.fillRect(x, 400, 2, 50);
+    }
+  }
+
+  // --- LEBEN VERLIEREN ---
+  function loseLife(reason) {
+    lives--;
+    floatingTexts.push(new FloatingText(reason, canvas.width / 2 - 80, 220, '#ef4444'));
+    if (lives <= 0) {
+      gameOver();
+    } else {
+      beers.length = 0;
+      emptyMugs.length = 0;
+      customers.length = 0;
+    }
+  }
+
+  // --- GAME OVER ---
+  function gameOver() {
+    currentState = STATE.GAMEOVER;
+    if (score > highScore) {
+      highScore = score;
+      localStorage.setItem('thekenTimHighScore', highScore);
+    }
+  }
+
+  // --- RESET ---
+  function resetGame() {
+    score = 0;
+    lives = 3;
+    frames = 0;
+    beers.length = 0;
+    emptyMugs.length = 0;
+    customers.length = 0;
+    particles.length = 0;
+    floatingTexts.length = 0;
+    customerSpawnTimer = 0;
+    tim.lane = 0;
+  }
+
+  // --- HANDLER ---
+  function handleInput(type) {
+    if (currentState === STATE.START) {
+      currentState = STATE.PLAYING;
+    } else if (currentState === STATE.PLAYING) {
+      if (type === 'UP') tim.moveUp();
+      if (type === 'DOWN') tim.moveDown();
+      if (type === 'SERVE') tim.serve();
+    } else if (currentState === STATE.GAMEOVER) {
+      resetGame();
+      currentState = STATE.PLAYING;
+    }
+  }
+
+  // Event Listener
+  window.addEventListener('keydown', (e) => {
+    if (e.code === 'ArrowUp' || e.code === 'KeyW') handleInput('UP');
+    if (e.code === 'ArrowDown' || e.code === 'KeyS') handleInput('DOWN');
+    if (e.code === 'Space' || e.code === 'ArrowLeft' || e.code === 'KeyA') handleInput('SERVE');
+  });
+
+  document.getElementById('btn-up').addEventListener('touchstart', (e) => { e.preventDefault(); handleInput('UP'); });
+  document.getElementById('btn-down').addEventListener('touchstart', (e) => { e.preventDefault(); handleInput('DOWN'); });
+  document.getElementById('btn-serve').addEventListener('touchstart', (e) => { e.preventDefault(); handleInput('SERVE'); });
+
+  document.getElementById('btn-up').addEventListener('click', () => handleInput('UP'));
+  document.getElementById('btn-down').addEventListener('click', () => handleInput('DOWN'));
+  document.getElementById('btn-serve').addEventListener('click', () => handleInput('SERVE'));
+
+  canvas.addEventListener('touchstart', (e) => {
+    if (currentState !== STATE.PLAYING) {
+      e.preventDefault();
+      handleInput('START');
+    }
+  });
+  canvas.addEventListener('mousedown', () => {
+    if (currentState !== STATE.PLAYING) handleInput('START');
+  });
+
+  // --- GAME LOGIK UPDATE ---
+  function updateGameLogic() {
+    frames++;
+
+    // Partikel & Popups updaten
+    for (let i = particles.length - 1; i >= 0; i--) {
+      particles[i].update();
+      if (particles[i].life <= 0) particles.splice(i, 1);
+    }
+    for (let i = floatingTexts.length - 1; i >= 0; i--) {
+      floatingTexts[i].update();
+      if (floatingTexts[i].life <= 0) floatingTexts.splice(i, 1);
+    }
+
+    if (currentState === STATE.PLAYING) {
+      tim.update();
+
+      // Gäste spawnen
+      customerSpawnTimer++;
+      const spawnInterval = Math.max(65, 175 - Math.floor(score / 250) * 12);
+      if (customerSpawnTimer > spawnInterval) {
+        const randomLane = Math.floor(Math.random() * LANES.length);
+        customers.push(new Customer(randomLane));
+        customerSpawnTimer = 0;
+      }
+
+      // Volle Bieren bewegen & Kollision
+      for (let i = beers.length - 1; i >= 0; i--) {
+        const b = beers[i];
+        b.update();
+
+        let hit = false;
+        for (let j = customers.length - 1; j >= 0; j--) {
+          const c = customers[j];
+          if (c.lane === b.lane && Math.abs(b.x - c.x) < 22) {
+            score += 100;
+            spawnSplash(b.x, LANES[b.lane] - 15, '#f59e0b');
+            floatingTexts.push(new FloatingText('+100', b.x, LANES[b.lane] - 30, '#4ade80'));
+            emptyMugs.push(new EmptyMug(c.lane, c.x));
+            customers.splice(j, 1);
+            beers.splice(i, 1);
+            hit = true;
+            break;
+          }
+        }
+
+        if (!hit && b.x <= BAR_LEFT) {
+          spawnSplash(b.x, LANES[b.lane], '#f59e0b');
+          beers.splice(i, 1);
+          loseLife('BIER VERSCHÜTTET!');
+        }
+      }
+
+      // Leere Krüge bewegen & Auffangen
+      for (let i = emptyMugs.length - 1; i >= 0; i--) {
+        const m = emptyMugs[i];
+        m.update();
+
+        if (m.x >= BAR_RIGHT - 15) {
+          if (tim.lane === m.lane) {
+            score += 50;
+            floatingTexts.push(new FloatingText('+50', BAR_RIGHT - 20, LANES[m.lane] - 30, '#fef08a'));
+            emptyMugs.splice(i, 1);
+          } else if (m.x >= BAR_RIGHT + 12) {
+            spawnGlassShatter(m.x, LANES[m.lane]);
+            emptyMugs.splice(i, 1);
+            loseLife('KRUG ZERBROCHEN!');
+          }
+        }
+      }
+
+      // Gäste am Ende der Bar
+      for (let i = customers.length - 1; i >= 0; i--) {
+        const c = customers[i];
+        c.update();
+
+        if (c.x >= BAR_RIGHT - 25) {
+          customers.splice(i, 1);
+          loseLife('GAST AN DER BAR!');
+        }
+      }
+    }
+  }
+
+  // --- RENDER GAME ---
+  function renderGame() {
+    drawTavernBackground();
+
+    // Objekte zeichnen
+    for (let c of customers) c.draw();
+    for (let b of beers) b.draw();
+    for (let m of emptyMugs) m.draw();
+    for (let p of particles) p.draw();
+
+    tim.draw();
+
+    for (let ft of floatingTexts) ft.draw();
+
+    // HUD / Punkteanzeige
+    if (currentState === STATE.PLAYING || currentState === STATE.GAMEOVER) {
+      // Punkte Holzschild
+      ctx.fillStyle = '#271003';
+      ctx.fillRect(15, 12, 180, 32);
+      ctx.strokeStyle = '#d97706';
+      ctx.lineWidth = 2;
+      ctx.strokeRect(15, 12, 180, 32);
+
+      ctx.fillStyle = '#ffffff';
+      ctx.font = '11px "Press Start 2P"';
+      ctx.textAlign = 'left';
+      ctx.fillText(`PUNKTE: ${score}`, 25, 33);
+
+      // Leben Krüge oben rechts
+      ctx.textAlign = 'right';
+      ctx.fillText(`LEBEN:`, canvas.width - 110, 33);
+      for (let l = 0; l < lives; l++) {
+        ctx.fillStyle = '#f59e0b';
+        ctx.fillRect(canvas.width - 90 + (l * 24), 18, 14, 16);
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(canvas.width - 90 + (l * 24), 15, 14, 4);
+      }
+    }
+
+    // STARTBILDSCHIRM
+    if (currentState === STATE.START) {
+      // Retro Banner
+      ctx.save();
+      ctx.translate(canvas.width / 2, 75 + Math.sin(frames * 0.05) * 4);
+
+      ctx.fillStyle = '#000000';
+      ctx.fillRect(-194, -34, 388, 68);
+      ctx.fillStyle = '#b45309';
+      ctx.fillRect(-190, -30, 380, 60);
+      ctx.fillStyle = '#f59e0b';
+      ctx.fillRect(-184, -24, 368, 48);
+
+      ctx.textAlign = 'center';
+      ctx.font = '24px "Press Start 2P"';
+
+      ctx.fillStyle = '#000000';
+      ctx.fillText('THEKEN TIM', 3, 8);
+      ctx.fillStyle = '#ffffff';
+      ctx.fillText('THEKEN TIM', 0, 5);
+      ctx.restore();
+
+      if (Math.floor(frames / 25) % 2 === 0) {
+        ctx.textAlign = 'center';
+        ctx.font = '11px "Press Start 2P"';
+        ctx.fillStyle = '#000000';
+        ctx.fillText('PRESS START / TOUCH TO PLAY', canvas.width / 2 + 2, 162);
+        ctx.fillStyle = '#4ade80';
+        ctx.fillText('PRESS START / TOUCH TO PLAY', canvas.width / 2, 160);
+      }
+
+      // Tafel mit Anleitung
+      ctx.fillStyle = 'rgba(15, 7, 2, 0.92)';
+      ctx.fillRect(130, 190, 540, 195);
+      ctx.strokeStyle = '#d97706';
+      ctx.lineWidth = 4;
+      ctx.strokeRect(130, 190, 540, 195);
+
+      ctx.textAlign = 'center';
+      ctx.font = '11px "Press Start 2P"';
+      ctx.fillStyle = '#f59e0b';
+      ctx.fillText('ANLEITUNG & STEUERUNG:', canvas.width / 2, 220);
+
+      ctx.font = '8px "Press Start 2P"';
+      ctx.fillStyle = '#f8fafc';
+      ctx.fillText('🍺 Schenke Bier ein, bevor Gäste die Bar erreichen', canvas.width / 2, 250);
+      ctx.fillText('🔄 Fange leere Krüge auf, die zurückgleiten', canvas.width / 2, 275);
+      ctx.fillText('⌨️ W/S oder Pfeile = Theke wechseln', canvas.width / 2, 300);
+      ctx.fillText('⌨️ Leertaste = Bier zapfen & schieben', canvas.width / 2, 325);
+      ctx.fillText('📱 Nutzen Sie die Touch-Buttons auf Mobilgeräten', canvas.width / 2, 350);
+
+    } else if (currentState === STATE.GAMEOVER) {
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.8)';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      const boxX = 180;
+      const boxY = 90;
+      const boxW = 440;
+      const boxH = 240;
+
+      ctx.fillStyle = '#2e1303';
+      ctx.fillRect(boxX, boxY, boxW, boxH);
+      ctx.strokeStyle = '#f59e0b';
+      ctx.lineWidth = 4;
+      ctx.strokeRect(boxX, boxY, boxW, boxH);
+
+      ctx.textAlign = 'center';
+      ctx.font = '18px "Press Start 2P"';
+      ctx.fillStyle = '#ef4444';
+      ctx.fillText('FEIERABEND!', canvas.width / 2, boxY + 50);
+
+      ctx.font = '11px "Press Start 2P"';
+      ctx.fillStyle = '#ffffff';
+      ctx.fillText(`PUNKTE:   ${score}`, canvas.width / 2, boxY + 105);
+      ctx.fillStyle = '#f59e0b';
+      ctx.fillText(`REKORD:   ${highScore}`, canvas.width / 2, boxY + 135);
+
+      if (score > 0 && score >= highScore) {
+        ctx.fillStyle = '#4ade80';
+        ctx.fillText('NEUER HIGH SCORE! 🏆', canvas.width / 2, boxY + 168);
+      }
+
+      if (Math.floor(frames / 20) % 2 === 0) {
+        ctx.font = '9px "Press Start 2P"';
+        ctx.fillStyle = '#38bdf8';
+        ctx.fillText('KLICK / TOUCH FÜR NEUSTART', canvas.width / 2, boxY + 208);
+      }
+    }
+  }
+
+  // --- FIXED TIMESTEP GAME LOOP (60 FPS) ---
+  let lastTime = performance.now();
+  let accumulator = 0;
+  const step = 1000 / 60;
+
+  function loop(timestamp) {
+    requestAnimationFrame(loop);
+
+    if (!timestamp) timestamp = performance.now();
+    let delta = timestamp - lastTime;
+    lastTime = timestamp;
+
+    if (delta > 250) delta = 250;
+    accumulator += delta;
+
+    while (accumulator >= step) {
+      updateGameLogic();
+      accumulator -= step;
+    }
+
+    renderGame();
+  }
+
+  loop();
+</script>
+</body>
+</html>
