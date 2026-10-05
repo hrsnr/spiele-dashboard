@@ -50,6 +50,6 @@ Eine mobile-optimierte Progressive Web App (PWA) für digitale Spielehelfer, Pun
     ├── minigolf.html
     ├── moelkky.html
     ├── qwirkle.html
-    └── wizard.html
-    └── theken_tim.html
+    ├── wizard.html
+    ├── theken_tim.html
     └── tutto.html
