@@ -52,3 +52,4 @@ Eine mobile-optimierte Progressive Web App (PWA) für digitale Spielehelfer, Pun
     ├── qwirkle.html
     └── wizard.html
     └── theken_tim.html
+    └── tutto.html
