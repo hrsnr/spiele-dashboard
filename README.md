@@ -23,6 +23,7 @@ Eine mobile-optimierte Progressive Web App (PWA) für digitale Spielehelfer, Pun
 * **🦄 Cabo:** Rundenbasierter Punkte-Tracker mit automatischer Kamikaze-Aktion (0 Pkt für Auslöser, 50 Pkt für andere), 100er-Reset-Regel (genau 100 Pkt. sinken auf 50) und Verlierer-Auswertung ab 101 Punkten.
 * **🧙‍♂️ Wizard:** Rundenberechnung inklusive Ansagen, Stich-Erfassung und automatischer Punkteauswertung für alle Spieler.
 * **🃏 Flip7:** Schnelles Punktezählen für Kartenrunden und Highscoreboard nach Spielabschluss.
+* **🎲 Tutto:** Rundenbasierter Punkte-Tracker mit automatischer Verrechnung von Sonderkarten und Highscoreboard nach Spielabschluss.
 * **🪵 Mölkky:** Punkte-Tracker mit Erkennung von Fehleingaben und automatischer Rücksetzung bei Überstreiten der 50-Punkte-Grenze.
 * **⛳ Minigolf:** Digitaler Zettel für Minigolf-Runden mit Bahn-Navigation und automatischer Endauswertung.
 
