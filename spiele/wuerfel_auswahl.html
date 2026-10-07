@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Würfelspiele Auswahl</title>
+    <style>
+        :root {
+            --bg-gradient: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+            --card-bg: rgba(255, 255, 255, 0.08);
+            --card-hover: rgba(255, 255, 255, 0.15);
+            --accent: #38bdf8;
+            --gold: #fbbf24;
+            --text-main: #f8fafc;
+            --text-dim: #94a3b8;
+        }
+
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--bg-gradient);
+            background-attachment: fixed;
+            color: var(--text-main);
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 450px;
+            animation: fadeIn 0.5s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        h1 { 
+            text-align: center; 
+            font-size: 2.2rem; 
+            font-weight: 800; 
+            margin-bottom: 5px;
+            background: linear-gradient(to right, #fff, var(--accent));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .subtitle { 
+            text-align: center; 
+            color: var(--text-dim); 
+            margin-bottom: 30px; 
+            font-weight: 500;
+            text-transform: uppercase;
+            font-size: 0.8rem;
+            letter-spacing: 2px;
+        }
+
+        .selection-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .game-option {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            background: var(--card-bg);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 20px;
+            padding: 20px;
+            text-decoration: none;
+            color: var(--text-main);
+            transition: all 0.25s ease;
+        }
+
+        .game-option:hover, .game-option:active {
+            background: var(--card-hover);
+            border-color: var(--accent);
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(56, 189, 248, 0.15);
+        }
+
+        .game-icon {
+            font-size: 2.5rem;
+            background: rgba(255,255,255,0.05);
+            width: 60px;
+            height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 16px;
+            border: 1px solid rgba(255,255,255,0.08);
+            flex-shrink: 0;
+        }
+
+        .game-info h2 {
+            margin: 0 0 4px 0;
+            font-size: 1.3rem;
+            font-weight: 700;
+        }
+
+        .game-info p {
+            margin: 0;
+            font-size: 0.85rem;
+            color: var(--text-dim);
+            line-height: 1.3;
+        }
+
+        .back-link {
+            display: block;
+            text-align: center;
+            margin-top: 30px;
+            color: var(--text-dim);
+            text-decoration: none;
+            font-size: 0.9rem;
+            transition: color 0.2s;
+        }
+
+        .back-link:hover {
+            color: var(--accent);
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>Würfel-Klassiker</h1>
+    <p class="subtitle">Wähle deine Variante</p>
+
+    <div class="selection-grid">
+        <!-- Yatzy Option -->
+        <a href="yatzy.html" class="game-option">
+            <div class="game-icon">🎲</div>
+            <div class="game-info">
+                <h2>Yatzy</h2>
+                <p>Skandinavische Variante (5 Würfel, 50-Punkte-Bonus im oberen Teil & es zählt die Augenzahl im unteren Teil).</p>
+            </div>
+        </a>
+
+        <!-- Kniffel Option -->
+        <a href="kniffel.html" class="game-option">
+            <div class="game-icon">🎯</div>
+            <div class="game-info">
+                <h2>Kniffel</h2>
+                <p>Der deutsche Klassiker (5 Würfel, 35-Punkte-Bonus im oberen Teil & festen Punkten im unteren Teil).</p>
+            </div>
+        </a>
+    </div>
+
+    <a href="../index.html" class="back-link">← Zurück zum Hauptmenü</a>
+</div>
+
+</body>
+</html>

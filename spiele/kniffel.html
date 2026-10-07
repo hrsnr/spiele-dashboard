@@ -1,0 +1,711 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Kniffel Digitalblock</title>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <style>
+        :root {
+            --bg-gradient: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+            --card-bg: rgba(255, 255, 255, 0.08);
+            --card-hover: rgba(255, 255, 255, 0.12);
+            --accent: #38bdf8;
+            --success: #4ade80;
+            --gold: #fbbf24;
+            --danger: #f87171;
+            --purple: #c084fc;
+            --text-main: #f8fafc;
+            --text-dim: #94a3b8;
+        }
+
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--bg-gradient);
+            background-attachment: fixed;
+            color: var(--text-main);
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            min-height: 100vh;
+            padding: 15px;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 480px;
+            animation: fadeIn 0.4s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(8px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        h1 { 
+            text-align: center; 
+            font-size: 2.2rem; 
+            font-weight: 800; 
+            margin: 5px 0;
+            background: linear-gradient(to right, #fff, var(--accent));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .subtitle { 
+            text-align: center; 
+            color: var(--text-dim); 
+            margin-bottom: 20px; 
+            font-weight: 500;
+            text-transform: uppercase;
+            font-size: 0.75rem;
+            letter-spacing: 2px;
+        }
+
+        .card {
+            background: var(--card-bg);
+            backdrop-filter: blur(10px);
+            padding: 18px;
+            border-radius: 20px;
+            border: 1px solid rgba(255,255,255,0.1);
+            margin-bottom: 15px;
+        }
+
+        /* Top Leaderboard Summary */
+        .leaderboard-bar {
+            display: flex;
+            gap: 8px;
+            overflow-x: auto;
+            padding-bottom: 5px;
+            margin-bottom: 15px;
+        }
+
+        .leader-chip {
+            background: rgba(0, 0, 0, 0.25);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 12px;
+            padding: 8px 12px;
+            min-width: 100px;
+            flex-shrink: 0;
+            text-align: center;
+        }
+
+        .leader-chip.is-active {
+            border-color: var(--accent);
+            background: rgba(56, 189, 248, 0.15);
+        }
+
+        .chip-name { font-size: 0.8rem; font-weight: 700; color: var(--text-dim); }
+        .chip-score { font-size: 1.1rem; font-weight: 800; color: var(--gold); }
+
+        /* Setup Elements */
+        .input-group { display: flex; gap: 10px; }
+
+        input[type="text"], input[type="number"] {
+            background: rgba(0,0,0,0.25);
+            border: 1px solid rgba(255,255,255,0.15);
+            color: white;
+            padding: 12px;
+            border-radius: 12px;
+            font-size: 1rem;
+            width: 100%;
+        }
+
+        input:focus { outline: none; border-color: var(--accent); }
+
+        button {
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            font-weight: 700;
+            transition: all 0.2s;
+        }
+
+        button:active { transform: scale(0.97); }
+
+        .btn-add { background: var(--accent); color: #0f172a; padding: 0 20px; }
+        .btn-primary { 
+            background: var(--success); 
+            color: #064e3b; 
+            width: 100%; 
+            padding: 15px;
+            font-size: 1.05rem;
+            margin-top: 15px;
+        }
+
+        .btn-undo {
+            background: transparent;
+            color: var(--text-dim);
+            width: 100%;
+            margin-top: 10px;
+            font-size: 0.85rem;
+            border: 1px solid rgba(255,255,255,0.1);
+            padding: 8px;
+        }
+
+        /* Block Categories Header */
+        .section-header {
+            font-size: 0.85rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--accent);
+            margin: 15px 0 10px 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        /* Category Row */
+        .category-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: rgba(0,0,0,0.2);
+            border: 1px solid rgba(255,255,255,0.05);
+            border-radius: 14px;
+            padding: 10px 14px;
+            margin-bottom: 8px;
+        }
+
+        .category-row.filled {
+            background: rgba(255,255,255,0.03);
+            opacity: 0.75;
+        }
+
+        .cat-label {
+            font-weight: 600;
+            font-size: 0.95rem;
+            flex-grow: 1;
+        }
+
+        .cat-subtext {
+            font-size: 0.75rem;
+            color: var(--text-dim);
+            display: block;
+        }
+
+        /* Inputs & Buttons in Row */
+        .cat-actions {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .cat-input {
+            width: 60px !important;
+            padding: 8px !important;
+            text-align: center;
+            font-weight: 700;
+        }
+
+        .btn-save {
+            background: var(--accent);
+            color: #0f172a;
+            padding: 8px 12px;
+            font-size: 0.85rem;
+        }
+
+        .btn-zero {
+            background: rgba(248, 113, 113, 0.2);
+            color: var(--danger);
+            border: 1px solid var(--danger);
+            padding: 8px 10px;
+            font-size: 0.85rem;
+        }
+
+        .btn-check {
+            background: var(--success);
+            color: #064e3b;
+            padding: 8px 14px;
+            font-size: 1rem;
+        }
+
+        .btn-cross {
+            background: rgba(248, 113, 113, 0.2);
+            color: var(--danger);
+            border: 1px solid var(--danger);
+            padding: 8px 14px;
+            font-size: 1rem;
+        }
+
+        .val-badge {
+            font-size: 1.1rem;
+            font-weight: 800;
+            color: var(--gold);
+            padding: 4px 8px;
+        }
+
+        /* Summary Boxes */
+        .sum-box {
+            background: rgba(56, 189, 248, 0.1);
+            border: 1px solid var(--accent);
+            border-radius: 12px;
+            padding: 12px;
+            margin: 12px 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .bonus-status {
+            font-size: 0.8rem;
+            color: var(--text-dim);
+        }
+
+        .bonus-active { color: var(--success) !important; font-weight: bold; }
+
+        /* Modal Overlay */
+        .modal-overlay {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(15, 23, 42, 0.85);
+            backdrop-filter: blur(8px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            z-index: 100;
+        }
+
+        .modal-content {
+            background: rgba(30, 41, 59, 0.95);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 24px;
+            padding: 25px;
+            text-align: center;
+            max-width: 400px;
+            width: 100%;
+        }
+
+        .setup-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: rgba(0,0,0,0.2);
+            padding: 10px 14px;
+            border-radius: 10px;
+            margin-bottom: 8px;
+        }
+
+        .error-msg {
+            color: var(--danger);
+            font-size: 0.8rem;
+            margin-top: 4px;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>Kniffel</h1>
+    <p class="subtitle">Digitaler Spielblock</p>
+
+    <!-- SETUP SCREEN -->
+    <div id="setupScreen" class="card">
+        <h3 style="margin-top:0;">Spieler hinzufügen</h3>
+        <div class="input-group">
+            <input type="text" id="playerNameInput" placeholder="Name eingeben..." onkeypress="if(event.key==='Enter') addPlayer()">
+            <button class="btn-add" onclick="addPlayer()">+</button>
+        </div>
+        <div id="setupPlayerList" style="margin-top: 15px;"></div>
+        <button id="startGameBtn" class="btn-primary" style="display:none;" onclick="startGame()">SPIEL STARTEN</button>
+    </div>
+
+    <!-- GAME SCREEN -->
+    <div id="gameScreen" style="display:none;">
+        
+        <!-- Top Leaderboard Summary -->
+        <div class="leaderboard-bar" id="topLeaderboard"></div>
+
+        <!-- Active Player Scorecard Card -->
+        <div class="card">
+            <div style="text-align: center; margin-bottom: 15px;">
+                <span style="color: var(--text-dim); font-size: 0.8rem; text-transform: uppercase;">Am Zug</span>
+                <h2 id="activePlayerName" style="margin: 2px 0 0 0; font-size: 1.8rem; color: #fff;">-</h2>
+            </div>
+
+            <!-- OBERER TEIL -->
+            <div class="section-header">
+                <span>Oberer Teil</span>
+                <span id="upperTotalBadge" style="color: var(--gold);">0 / 63 Pkt</span>
+            </div>
+
+            <div id="upperSectionFields"></div>
+
+            <div class="sum-box">
+                <div>
+                    <strong>Zwischensumme Oben:</strong>
+                    <div id="bonusProgressText" class="bonus-status">Noch 63 Pkt bis Bonus (35 Pkt)</div>
+                </div>
+                <div id="upperSumValue" style="font-size: 1.3rem; font-weight: 800; color: var(--accent);">0</div>
+            </div>
+
+            <!-- UNTERER TEIL -->
+            <div class="section-header">
+                <span>Unterer Teil</span>
+            </div>
+
+            <div id="lowerSectionFields"></div>
+
+            <button id="undoBtn" class="btn-undo" onclick="undoLastAction()" style="display:none;">↩ Letzte Eingabe korrigieren</button>
+        </div>
+    </div>
+
+    <!-- GAME OVER MODAL -->
+    <div id="gameOverModal" class="modal-overlay" style="display:none;">
+        <div class="modal-content">
+            <h2>🎉 Spiel beendet!</h2>
+            <div id="winnerRankingList" style="margin: 20px 0;"></div>
+            <button class="btn-primary" onclick="resetGameSamePlayers()">🔄 Neue Runde (Gleiche Spieler)</button>
+            <button class="btn-undo" onclick="resetEntireGame()" style="margin-top: 10px;">NEUES SPIEL (Neue Spieler)</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    const CATEGORIES = {
+        // Oberer Teil
+        einer: { name: 'Einser', type: 'upper', factor: 1, max: 5 },
+        zweier: { name: 'Zweier', type: 'upper', factor: 2, max: 10 },
+        dreier: { name: 'Dreier', type: 'upper', factor: 3, max: 15 },
+        vierer: { name: 'Vierer', type: 'upper', factor: 4, max: 20 },
+        fuenfer: { name: 'Fünfer', type: 'upper', factor: 5, max: 25 },
+        sechser: { name: 'Sechser', type: 'upper', factor: 6, max: 30 },
+        // Unterer Teil (Variabel)
+        dreierpasch: { name: '3er Pasch', type: 'pasch', subtext: 'Summe aller Würfel' },
+        viererpasch: { name: '4er Pasch', type: 'pasch', subtext: 'Summe aller Würfel' },
+        chance: { name: 'Chance', type: 'pasch', subtext: 'Summe aller Würfel' },
+        // Unterer Teil (Fixe Punkte)
+        fullhouse: { name: 'Full House', type: 'fixed', score: 25 },
+        kleinestrasse: { name: 'Kleine Straße', type: 'fixed', score: 30 },
+        grossestrasse: { name: 'Große Straße', type: 'fixed', score: 40 },
+        kniffel: { name: 'Kniffel', type: 'fixed', score: 50 }
+    };
+
+    let players = [];
+    let currentPlayerIndex = 0;
+    let history = [];
+
+    // --- SETUP FUNKTIONEN ---
+    function addPlayer() {
+        const input = document.getElementById('playerNameInput');
+        const name = input.value.trim();
+        if (name !== "") {
+            players.push({
+                name: name,
+                scores: {
+                    einer: null, zweier: null, dreier: null, vierer: null, fuenfer: null, sechser: null,
+                    dreierpasch: null, viererpasch: null, fullhouse: null, kleinestrasse: null,
+                    grossestrasse: null, kniffel: null, chance: null
+                }
+            });
+            input.value = "";
+            renderSetupList();
+        }
+    }
+
+    function removePlayer(idx) {
+        players.splice(idx, 1);
+        renderSetupList();
+    }
+
+    function renderSetupList() {
+        const list = document.getElementById('setupPlayerList');
+        const startBtn = document.getElementById('startGameBtn');
+        list.innerHTML = "";
+
+        players.forEach((p, idx) => {
+            const item = document.createElement('div');
+            item.className = 'setup-item';
+            item.innerHTML = `
+                <span>${p.name}</span>
+                <span style="color: var(--danger); cursor: pointer; font-weight: bold;" onclick="removePlayer(${idx})">✕</span>
+            `;
+            list.appendChild(item);
+        });
+
+        startBtn.style.display = players.length >= 1 ? 'block' : 'none';
+    }
+
+    function startGame() {
+        document.getElementById('setupScreen').style.display = 'none';
+        document.getElementById('gameScreen').style.display = 'block';
+        currentPlayerIndex = 0;
+        history = [];
+        renderGame();
+    }
+
+    // --- RECHNUNG & STATS ---
+    function calculatePlayerTotals(player) {
+        const s = player.scores;
+        let upperSum = 0;
+        const upperKeys = ['einer', 'zweier', 'dreier', 'vierer', 'fuenfer', 'sechser'];
+        
+        upperKeys.forEach(k => {
+            if (s[k] !== null) upperSum += s[k];
+        });
+
+        const bonus = upperSum >= 63 ? 35 : 0;
+
+        let lowerSum = 0;
+        const lowerKeys = ['dreierpasch', 'viererpasch', 'fullhouse', 'kleinestrasse', 'grossestrasse', 'kniffel', 'chance'];
+        lowerKeys.forEach(k => {
+            if (s[k] !== null) lowerSum += s[k];
+        });
+
+        return {
+            upperSum: upperSum,
+            bonus: bonus,
+            lowerSum: lowerSum,
+            total: upperSum + bonus + lowerSum
+        };
+    }
+
+    function isGameComplete() {
+        return players.every(p => Object.values(p.scores).every(val => val !== null));
+    }
+
+    // --- EINGABE-LOGIK & VALIDIERUNG ---
+    function saveHistory() {
+        history.push(JSON.stringify({
+            players: players,
+            currentPlayerIndex: currentPlayerIndex
+        }));
+    }
+
+    function undoLastAction() {
+        if (history.length > 0) {
+            const state = JSON.parse(history.pop());
+            players = state.players;
+            currentPlayerIndex = state.currentPlayerIndex;
+            document.getElementById('gameOverModal').style.display = 'none';
+            renderGame();
+        }
+    }
+
+    function submitScore(catKey, value) {
+        const cat = CATEGORIES[catKey];
+
+        // Plausibilitätsprüfungen
+        if (cat.type === 'upper') {
+            if (value !== 0) {
+                if (value < 0 || value > cat.max || value % cat.factor !== 0) {
+                    alert(`Ungültige Punkte für ${cat.name}! Muss durch ${cat.factor} teilbar und max. ${cat.max} sein.`);
+                    return;
+                }
+            }
+        } else if (cat.type === 'pasch') {
+            if (value !== 0) {
+                if (value < 5 || value > 30) {
+                    alert(`Ungültige Summe für ${cat.name}! Muss zwischen 5 und 30 liegen.`);
+                    return;
+                }
+            }
+        }
+
+        saveHistory();
+        players[currentPlayerIndex].scores[catKey] = value;
+
+        advanceTurn();
+    }
+
+    function clearScore(catKey) {
+        saveHistory();
+        players[currentPlayerIndex].scores[catKey] = null;
+        renderGame();
+    }
+
+    function advanceTurn() {
+        if (isGameComplete()) {
+            renderGame();
+            showGameOver();
+            return;
+        }
+
+        // Wechsle zum nächsten Spieler
+        currentPlayerIndex = (currentPlayerIndex + 1) % players.length;
+
+        // Wenn der nächste Spieler bereits in allen Feldern Einträge hat (z. B. am Ende), weiter schalten
+        let checkCount = 0;
+        while (Object.values(players[currentPlayerIndex].scores).every(v => v !== null) && checkCount < players.length) {
+            currentPlayerIndex = (currentPlayerIndex + 1) % players.length;
+            checkCount++;
+        }
+
+        renderGame();
+    }
+
+    // --- RENDERING ---
+    function renderGame() {
+        const activePlayer = players[currentPlayerIndex];
+        const totals = calculatePlayerTotals(activePlayer);
+
+        document.getElementById('activePlayerName').innerText = activePlayer.name;
+        document.getElementById('undoBtn').style.display = history.length > 0 ? 'block' : 'none';
+
+        // Top Leaderboard Bar
+        const topBar = document.getElementById('topLeaderboard');
+        topBar.innerHTML = "";
+        players.forEach((p, idx) => {
+            const pTotals = calculatePlayerTotals(p);
+            const chip = document.createElement('div');
+            chip.className = `leader-chip ${idx === currentPlayerIndex ? 'is-active' : ''}`;
+            chip.innerHTML = `
+                <div class="chip-name">${p.name}</div>
+                <div class="chip-score">${pTotals.total}</div>
+            `;
+            topBar.appendChild(chip);
+        });
+
+        // Oberer Teil Render
+        document.getElementById('upperSumValue').innerText = totals.upperSum;
+        const bonusStatusEl = document.getElementById('bonusProgressText');
+        if (totals.bonus > 0) {
+            bonusStatusEl.innerText = "✓ Bonus (+35 Pkt) erreicht!";
+            bonusStatusEl.className = "bonus-status bonus-active";
+        } else {
+            const diff = 63 - totals.upperSum;
+            bonusStatusEl.innerText = `Noch ${diff > 0 ? diff : 0} Pkt bis Bonus (35 Pkt)`;
+            bonusStatusEl.className = "bonus-status";
+        }
+
+        renderSectionFields('upperSectionFields', ['einer', 'zweier', 'dreier', 'vierer', 'fuenfer', 'sechser']);
+        renderSectionFields('lowerSectionFields', ['dreierpasch', 'viererpasch', 'fullhouse', 'kleinestrasse', 'grossestrasse', 'kniffel', 'chance']);
+    }
+
+    function renderSectionFields(containerId, categoryKeys) {
+        const container = document.getElementById(containerId);
+        container.innerHTML = "";
+
+        const activePlayer = players[currentPlayerIndex];
+
+        categoryKeys.forEach(key => {
+            const cat = CATEGORIES[key];
+            const currentVal = activePlayer.scores[key];
+            const row = document.createElement('div');
+            row.className = `category-row ${currentVal !== null ? 'filled' : ''}`;
+
+            let actionHtml = "";
+
+            if (currentVal !== null) {
+                // Bereits eingetragen -> Wert anzeigen & Korrektur Button
+                actionHtml = `
+                    <div class="cat-actions">
+                        <span class="val-badge">${currentVal}</span>
+                        <button class="btn-zero" title="Eintrag löschen / korrigieren" onclick="clearScore('${key}')">✏️</button>
+                    </div>
+                `;
+            } else {
+                // Noch offen -> Eingabemöglichkeit
+                if (cat.type === 'fixed') {
+                    actionHtml = `
+                        <div class="cat-actions">
+                            <button class="btn-check" onclick="submitScore('${key}', ${cat.score})">✓ ${cat.score}</button>
+                            <button class="btn-cross" onclick="submitScore('${key}', 0)">✕ 0</button>
+                        </div>
+                    `;
+                } else {
+                    actionHtml = `
+                        <div class="cat-actions">
+                            <input type="number" id="input_${key}" class="cat-input" placeholder="0" inputmode="numeric">
+                            <button class="btn-save" onclick="readAndSubmit('${key}')">OK</button>
+                            <button class="btn-zero" onclick="submitScore('${key}', 0)">0</button>
+                        </div>
+                    `;
+                }
+            }
+
+            row.innerHTML = `
+                <div>
+                    <span class="cat-label">${cat.name}</span>
+                    ${cat.subtext ? `<span class="cat-subtext">${cat.subtext}</span>` : ''}
+                </div>
+                ${actionHtml}
+            `;
+            container.appendChild(row);
+        });
+    }
+
+    function readAndSubmit(key) {
+        const input = document.getElementById(`input_${key}`);
+        const val = input.value === "" ? 0 : parseInt(input.value);
+        submitScore(key, val);
+    }
+
+    // --- GAME OVER & ENDERGEBNIS ---
+    function showGameOver() {
+        shootConfetti();
+        const modal = document.getElementById('gameOverModal');
+        const rankingList = document.getElementById('winnerRankingList');
+
+        // Spieler nach Gesamtpunktzahl sortieren
+        const ranked = players.map(p => {
+            return {
+                name: p.name,
+                totals: calculatePlayerTotals(p)
+            };
+        }).sort((a, b) => b.totals.total - a.totals.total);
+
+        rankingList.innerHTML = ranked.map((r, idx) => `
+            <div class="category-row" style="background: rgba(255,255,255,0.08); margin-bottom: 10px;">
+                <div style="text-align: left;">
+                    <strong>${idx === 0 ? '👑 ' : ''}${idx + 1}. ${r.name}</strong>
+                    <div style="font-size: 0.75rem; color: var(--text-dim);">Oben: ${r.totals.upperSum} (${r.totals.bonus ? '+35 Bonus' : 'kein Bonus'}) | Unten: ${r.totals.lowerSum}</div>
+                </div>
+                <div style="font-size: 1.3rem; font-weight: 800; color: var(--gold);">${r.totals.total} Pkt</div>
+            </div>
+        `).join('');
+
+        modal.style.display = 'flex';
+    }
+
+    function resetGameSamePlayers() {
+        players.forEach(p => {
+            Object.keys(p.scores).forEach(k => p.scores[k] = null);
+        });
+        document.getElementById('gameOverModal').style.display = 'none';
+        startGame();
+    }
+
+    function resetEntireGame() {
+        players = [];
+        history = [];
+        document.getElementById('gameOverModal').style.display = 'none';
+        document.getElementById('gameScreen').style.display = 'none';
+        document.getElementById('setupScreen').style.display = 'block';
+        renderSetupList();
+    }
+
+    function shootConfetti() {
+        const duration = 3 * 1000;
+        const end = Date.now() + duration;
+
+        (function frame() {
+            confetti({
+                particleCount: 3,
+                angle: 60,
+                spread: 55,
+                origin: { x: 0 },
+                colors: ['#38bdf8', '#fbbf24', '#4ade80']
+            });
+            confetti({
+                particleCount: 3,
+                angle: 120,
+                spread: 55,
+                origin: { x: 1 },
+                colors: ['#38bdf8', '#fbbf24', '#4ade80']
+            });
+
+            if (Date.now() < end) {
+                requestAnimationFrame(frame);
+            }
+        }());
+    }
+</script>
+
+</body>
+</html>
