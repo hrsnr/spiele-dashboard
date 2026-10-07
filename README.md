@@ -24,6 +24,7 @@ Eine mobile-optimierte Progressive Web App (PWA) für digitale Spielehelfer, Pun
 * **🧙‍♂️ Wizard:** Rundenberechnung inklusive Ansagen, Stich-Erfassung und automatischer Punkteauswertung für alle Spieler.
 * **🃏 Flip7:** Schnelles Punktezählen für Kartenrunden und Highscoreboard nach Spielabschluss.
 * **🎲 Tutto:** Rundenbasierter Punkte-Tracker mit automatischer Verrechnung von Sonderkarten und Highscoreboard nach Spielabschluss.
+* **🎯 Yatzy/Kniffel:** Digitaler Punkteblock für Kniffel und Yatzy mit automatischer Bonusverrechnung und Gesamtpunkte-Berechnung.
 * **🪵 Mölkky:** Punkte-Tracker mit Erkennung von Fehleingaben und automatischer Rücksetzung bei Überstreiten der 50-Punkte-Grenze.
 * **⛳ Minigolf:** Digitaler Zettel für Minigolf-Runden mit Bahn-Navigation und automatischer Endauswertung.
 
@@ -52,4 +53,7 @@ Eine mobile-optimierte Progressive Web App (PWA) für digitale Spielehelfer, Pun
     ├── qwirkle.html
     ├── wizard.html
     ├── theken_tim.html
-    └── tutto.html
+    ├── tutto.html
+    └── wuerfel_auswahl.html       # Auswahl zwischen Yatzy oder Kniffel
+        ├── yatzy.html
+        └── kniffel.html
