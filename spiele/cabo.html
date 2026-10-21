@@ -4,131 +4,87 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Cabo Punktehelfer</title>
+  <link rel="stylesheet" href="../styles.css">
+  <script>
+    (function() {
+      function updateLinks(theme) {
+        document.querySelectorAll('a[href]').forEach(function(link) {
+          const raw = link.getAttribute('href');
+          if (!raw || raw.startsWith('#') || raw.startsWith('javascript:')) return;
+          link.setAttribute('href', raw.split('#')[0] + '#theme=' + theme);
+        });
+      }
+      function applyTheme(theme) {
+        document.documentElement.setAttribute('data-theme', theme);
+        try { localStorage.setItem('spiele_theme', theme); } catch (e) {}
+        try { window.name = 'spiele_theme:' + theme; } catch (e) {}
+        try { history.replaceState(null, '', location.pathname + location.search + '#theme=' + theme); } catch (e) {}
+        updateLinks(theme);
+      }
+      function getInitialTheme() {
+        const hashMatch = (location.hash || '').match(/theme=(dark|light)/);
+        if (hashMatch) return hashMatch[1];
+        const nameMatch = (window.name || '').match(/spiele_theme:(dark|light)/);
+        if (nameMatch) return nameMatch[1];
+        try {
+          const saved = localStorage.getItem('spiele_theme');
+          if (saved === 'dark' || saved === 'light') return saved;
+        } catch (e) {}
+        return (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) ? 'dark' : 'light';
+      }
+      applyTheme(getInitialTheme());
+      window.addEventListener('DOMContentLoaded', function() {
+        applyTheme(document.documentElement.getAttribute('data-theme') || 'dark');
+      });
+      window.addEventListener('pageshow', function() {
+        const nameMatch = (window.name || '').match(/spiele_theme:(dark|light)/);
+        if (nameMatch) { applyTheme(nameMatch[1]); return; }
+        try {
+          const saved = localStorage.getItem('spiele_theme');
+          if (saved === 'dark' || saved === 'light') applyTheme(saved);
+        } catch (err) {}
+      });
+      window.addEventListener('storage', function(e) {
+        if (e.key === 'spiele_theme' && (e.newValue === 'dark' || e.newValue === 'light')) {
+          applyTheme(e.newValue);
+        }
+      });
+      document.addEventListener('click', function(e) {
+        const link = e.target && e.target.closest ? e.target.closest('a[href]') : null;
+        if (!link) return;
+        const raw = link.getAttribute('href');
+        if (!raw || raw.startsWith('#') || raw.startsWith('javascript:')) return;
+        const theme = document.documentElement.getAttribute('data-theme') || 'dark';
+        link.setAttribute('href', raw.split('#')[0] + '#theme=' + theme);
+      }, true);
+      window.toggleTheme = function() {
+        const current = document.documentElement.getAttribute('data-theme') || 'dark';
+        applyTheme(current === 'dark' ? 'light' : 'dark');
+      };
+    })();
+  </script>
   <style>
-    :root {
-      --bg: #0f172a;
-      --card-bg: rgba(255, 255, 255, 0.06);
-      --card-border: rgba(255, 255, 255, 0.12);
-      --text: #f8fafc;
-      --text-sub: #94a3b8;
-      --accent: #38bdf8;
-      --accent-green: #22c55e;
-      --accent-yellow: #eab308;
-      --accent-orange: #f97316;
-      --accent-red: #ef4444;
-      --accent-purple: #a855f7;
-    }
-
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-      background: var(--bg);
-      color: var(--text);
-      min-height: 100vh;
-      display: flex;
-      justify-content: center;
-      padding: 20px 15px;
-    }
-
     .container {
       width: 100%;
       max-width: 650px;
     }
 
-    header {
-      text-align: center;
-      margin-bottom: 24px;
-      position: relative;
-    }
-
-    .back-link {
-      position: absolute;
-      left: 0;
-      top: 0;
-      color: var(--text-sub);
-      text-decoration: none;
-      font-size: 0.9rem;
-      display: flex;
-      align-items: center;
-      gap: 4px;
-    }
-
-    .back-link:hover { color: var(--accent); }
-
-    h1 {
-      font-size: 1.8rem;
-      font-weight: 800;
-      background: linear-gradient(135deg, #ffffff, var(--accent));
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      margin-bottom: 4px;
-    }
-
-    p.subtitle {
-      color: var(--text-sub);
-      font-size: 0.85rem;
-    }
-
     /* Buttons */
     .btn {
-      background: var(--accent);
-      color: #0f172a;
-      border: none;
-      padding: 12px 18px;
-      border-radius: 10px;
-      font-weight: 700;
-      font-size: 1rem;
-      cursor: pointer;
-      transition: all 0.2s ease;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      gap: 8px;
       width: 100%;
     }
 
-    .btn:hover { opacity: 0.9; transform: translateY(-1px); }
-    .btn:active { transform: translateY(0); }
-    .btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
-
-    .btn-secondary {
-      background: rgba(255, 255, 255, 0.1);
-      color: var(--text);
-      border: 1px solid var(--card-border);
-    }
-
-    .btn-secondary:hover { background: rgba(255, 255, 255, 0.15); }
-
-    .btn-outline {
-      background: transparent;
-      color: var(--text-sub);
-      border: 1px solid var(--card-border);
-    }
-
-    .btn-outline:hover {
-      border-color: var(--text-sub);
-      color: var(--text);
-    }
-
     .btn-kamikaze {
-      background: linear-gradient(135deg, #f97316, #ef4444);
-      color: #fff;
-      padding: 8px 12px;
+      background-color: var(--md-sys-color-error-container);
+      color: var(--md-sys-color-on-error-container);
+      padding: 10px 14px;
       font-size: 0.85rem;
-      border-radius: 8px;
-      border: none;
+      border-radius: var(--md-sys-shape-corner-full);
+      border: 1px solid var(--md-sys-color-error);
       font-weight: 700;
       cursor: pointer;
       white-space: nowrap;
-    }
-
-    .card {
-      background: var(--card-bg);
-      border: 1px solid var(--card-border);
-      border-radius: 16px;
-      padding: 20px;
-      margin-bottom: 20px;
+      width: auto;
     }
 
     /* SETUP SCREEN */
@@ -138,19 +94,8 @@
       margin-bottom: 16px;
     }
 
-    input[type="text"], input[type="number"] {
+    .input-group input {
       flex: 1;
-      background: rgba(0, 0, 0, 0.2);
-      border: 1px solid var(--card-border);
-      border-radius: 10px;
-      padding: 12px 14px;
-      color: var(--text);
-      font-size: 1rem;
-      outline: none;
-    }
-
-    input[type="text"]:focus, input[type="number"]:focus {
-      border-color: var(--accent);
     }
 
     .player-setup-list {
@@ -164,19 +109,21 @@
       display: flex;
       justify-content: space-between;
       align-items: center;
-      background: rgba(255, 255, 255, 0.04);
-      padding: 10px 14px;
-      border-radius: 8px;
-      border: 1px solid var(--card-border);
+      background-color: var(--md-sys-color-surface-container);
+      padding: 10px 16px;
+      border-radius: var(--md-sys-shape-corner-md);
+      border: 1px solid var(--md-sys-color-outline-variant);
     }
 
     .btn-remove {
       background: none;
       border: none;
-      color: var(--accent-red);
-      font-size: 1.2rem;
+      color: var(--md-sys-color-error);
+      font-size: 1.1rem;
       cursor: pointer;
-      padding: 0 4px;
+      padding: 4px 8px;
+      width: auto;
+      box-shadow: none;
     }
 
     /* SCOREBOARD */
@@ -188,19 +135,20 @@
     }
 
     .player-card {
-      background: rgba(255, 255, 255, 0.04);
-      border: 1px solid var(--card-border);
-      border-radius: 12px;
-      padding: 12px;
+      background-color: var(--md-sys-color-surface-container-low);
+      border: 1px solid var(--md-sys-color-outline-variant);
+      border-radius: var(--md-sys-shape-corner-lg);
+      padding: 14px 12px;
       text-align: center;
       position: relative;
+      box-shadow: var(--md-sys-elevation-1);
       transition: all 0.25s ease;
     }
 
     .player-card.lowest {
-      border-color: var(--accent-green);
-      background: rgba(34, 197, 94, 0.1);
-      box-shadow: 0 0 12px rgba(34, 197, 94, 0.2);
+      border-color: var(--md-sys-color-tertiary);
+      background-color: var(--md-sys-color-tertiary-container);
+      color: var(--md-sys-color-on-tertiary-container);
     }
 
     .crown-icon {
@@ -208,7 +156,7 @@
       top: -10px;
       right: 8px;
       font-size: 1.3rem;
-      filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5));
+      filter: drop-shadow(0 2px 4px rgba(0,0,0,0.25));
     }
 
     .player-name {
@@ -221,16 +169,24 @@
     }
 
     .player-score {
-      font-size: 1.6rem;
+      font-size: 1.65rem;
       font-weight: 800;
-      color: #fff;
+      color: var(--md-sys-color-primary);
+    }
+
+    .player-card.lowest .player-score {
+      color: var(--md-sys-color-on-tertiary-container);
     }
 
     .player-badge {
       font-size: 0.75rem;
-      color: var(--accent-green);
+      color: var(--md-sys-color-tertiary);
       margin-top: 2px;
       font-weight: 600;
+    }
+
+    .player-card.lowest .player-badge {
+      color: var(--md-sys-color-on-tertiary-container);
     }
 
     /* ROUND INPUT FORM */
@@ -239,10 +195,10 @@
       align-items: center;
       gap: 10px;
       margin-bottom: 12px;
-      background: rgba(0, 0, 0, 0.15);
-      padding: 8px 12px;
-      border-radius: 10px;
-      border: 1px solid var(--card-border);
+      background-color: var(--md-sys-color-surface-container);
+      padding: 10px 14px;
+      border-radius: var(--md-sys-shape-corner-md);
+      border: 1px solid var(--md-sys-color-outline-variant);
     }
 
     .round-input-label {
@@ -265,6 +221,8 @@
     .table-wrapper {
       overflow-x: auto;
       margin-top: 10px;
+      border-radius: var(--md-sys-shape-corner-md);
+      border: 1px solid var(--md-sys-color-outline-variant);
     }
 
     table {
@@ -274,20 +232,10 @@
       font-size: 0.88rem;
     }
 
-    th, td {
-      padding: 10px 8px;
-      border-bottom: 1px solid var(--card-border);
-    }
-
-    th {
-      color: var(--text-sub);
-      font-weight: 600;
-      background: rgba(0,0,0,0.2);
-    }
-
     .reset-note {
       font-size: 0.7rem;
-      color: var(--accent-yellow);
+      color: var(--md-sys-color-warning);
+      font-weight: 700;
       display: block;
     }
 
@@ -304,7 +252,7 @@
 
     .winner-banner h2 {
       font-size: 1.8rem;
-      color: var(--accent-yellow);
+      color: var(--md-sys-color-primary);
     }
 
     .ranking-list {
@@ -319,14 +267,15 @@
       justify-content: space-between;
       align-items: center;
       padding: 14px 18px;
-      border-radius: 12px;
-      background: rgba(255, 255, 255, 0.04);
-      border: 1px solid var(--card-border);
+      border-radius: var(--md-sys-shape-corner-md);
+      background-color: var(--md-sys-color-surface-container);
+      border: 1px solid var(--md-sys-color-outline-variant);
     }
 
     .ranking-item.winner {
-      border-color: var(--accent-yellow);
-      background: rgba(234, 179, 8, 0.1);
+      border-color: var(--md-sys-color-warning);
+      background-color: var(--md-sys-color-warning-container);
+      color: var(--md-sys-color-on-warning-container);
     }
 
     .rank-num {
@@ -344,32 +293,38 @@
       font-size: 1.3rem;
       font-weight: 800;
     }
-
-    .hidden { display: none !important; }
   </style>
 </head>
 <body>
 
 <div class="container">
-  <header>
-    <a href="../index.html" class="back-link">← Übersicht</a>
-    <h1>🦄 Cabo</h1>
-    <p class="subtitle">Digitaler Punktehelfer</p>
+  <header class="m3-top-app-bar">
+    <a href="../index.html" class="m3-nav-btn" aria-label="Hauptmenü" title="Hauptmenü">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
+    </a>
+    <div class="m3-top-app-bar-title-group">
+      <h1 class="m3-top-app-bar-title">Cabo</h1>
+      <p class="m3-top-app-bar-subtitle">Digitaler Punktehelfer</p>
+    </div>
+    <button type="button" class="m3-icon-btn" onclick="toggleTheme()" aria-label="Darstellung umschalten" title="Light/Dark Mode umschalten">
+      <svg class="icon-sun" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 7c-2.76 0-5 2.24-5 5s2.24 5 5 5 5-2.24 5-5-2.24-5-5-5zM2 13h2c.55 0 1-.45 1-1s-.45-1-1-1H2c-.55 0-1 .45-1 1s.45 1 1 1zm18 0h2c.55 0 1-.45 1-1s-.45-1-1-1h-2c-.55 0-1 .45-1 1s.45 1 1 1zM11 2v2c0 .55.45 1 1 1s1-.45 1-1V2c0-.55-.45-1-1-1s-1 .45-1 1zm0 18v2c0 .55.45 1 1 1s1-.45 1-1v-2c0-.55-.45-1-1-1s-1 .45-1 1zM5.99 4.58a.996.996 0 0 0-1.41 0 .996.996 0 0 0 0 1.41l1.06 1.06c.39.39 1.03.39 1.41 0s.39-1.03 0-1.41L5.99 4.58zm12.37 12.37a.996.996 0 0 0-1.41 0 .996.996 0 0 0 0 1.41l1.06 1.06c.39.39 1.03.39 1.41 0a.996.996 0 0 0 0-1.41l-1.06-1.06zm1.06-10.96a.996.996 0 0 0 0-1.41.996.996 0 0 0-1.41 0l-1.06 1.06c-.39.39-.39 1.03 0 1.41s1.03.39 1.41 0l1.06-1.06zM7.05 18.36a.996.996 0 0 0 0-1.41.996.996 0 0 0-1.41 0l-1.06 1.06c-.39.39-.39 1.03 0 1.41s1.03.39 1.41 0l1.06-1.06z"/></svg>
+      <svg class="icon-moon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3a9 9 0 1 0 9 9c0-.46-.04-.92-.1-1.36a5.389 5.389 0 0 1-4.4 2.26 5.403 5.403 0 0 1-3.14-9.8c-.44-.06-.9-.1-1.36-.1z"/></svg>
+    </button>
   </header>
 
   <!-- STEP 1: SETUP SCREEN -->
   <div id="setup-screen" class="card">
-    <h2 style="font-size: 1.2rem; margin-bottom: 12px;">Spieler hinzufügen</h2>
+    <h2 class="card-title">Spieler hinzufügen</h2>
     <div class="input-group">
       <input type="text" id="player-name-input" placeholder="Name eingeben..." autocomplete="off">
-      <button class="btn" id="add-player-btn" style="width: auto;">+</button>
+      <button class="btn btn-tonal" id="add-player-btn" style="width: auto;">+</button>
     </div>
 
     <div class="player-setup-list" id="player-setup-list">
       <!-- Dynamisch hinzugefügte Spieler -->
     </div>
 
-    <button class="btn btn-secondary" id="start-game-btn" disabled>Spiel starten</button>
+    <button class="btn" id="start-game-btn" disabled>Spiel starten</button>
   </div>
 
   <!-- STEP 2: GAME SCREEN -->
@@ -381,7 +336,7 @@
 
     <!-- Eingabe für neue Runde -->
     <div class="card">
-      <h3 style="font-size: 1.1rem; margin-bottom: 14px;" id="round-title">Runde 1 eintragen</h3>
+      <h3 class="card-title" id="round-title">Runde 1 eintragen</h3>
       
       <div id="round-inputs-container">
         <!-- Dynamische Eingabefelder für jeden Spieler -->
@@ -394,7 +349,7 @@
 
     <!-- Rundenübersicht -->
     <div class="card">
-      <h3 style="font-size: 1rem; color: var(--text-sub); margin-bottom: 8px;">Rundenübersicht</h3>
+      <h3 class="card-title" style="font-size: 1rem; color: var(--md-sys-color-on-surface-variant); margin-bottom: 8px;">Rundenübersicht</h3>
       <div class="table-wrapper">
         <table id="history-table">
           <thead>
@@ -418,11 +373,11 @@
   <div id="end-screen" class="card hidden">
     <div class="winner-banner">
       <div class="trophy">🏆</div>
-      <p style="color: var(--text-sub); text-transform: uppercase; font-size: 0.8rem; letter-spacing: 1px;" id="winner-label">Sieger</p>
+      <p style="color: var(--md-sys-color-on-surface-variant); text-transform: uppercase; font-size: 0.8rem; letter-spacing: 1px;" id="winner-label">Sieger</p>
       <h2 id="winner-name">Spieler</h2>
     </div>
 
-    <h3 style="font-size: 1rem; color: var(--text-sub); margin-bottom: 8px;">Endabrechnung</h3>
+    <h3 class="card-title" style="font-size: 1rem; color: var(--md-sys-color-on-surface-variant); margin-bottom: 8px;">Endabrechnung</h3>
     <div class="ranking-list" id="ranking-list">
       <!-- Dynamische Rangliste -->
     </div>
@@ -634,7 +589,7 @@
         html += `
           <td>
             +${s} 
-            <small style="color: var(--text-sub);">(${r.totalsAfter[pIdx]})</small>
+            <small style="color: var(--md-sys-color-on-surface-variant);">(${r.totalsAfter[pIdx]})</small>
             ${isReset ? '<span class="reset-note">🎯 100➔50!</span>' : ''}
           </td>
         `;

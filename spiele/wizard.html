@@ -4,164 +4,174 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Wizard Deluxe Scoreboard</title>
+    <link rel="stylesheet" href="../styles.css">
+    <script>
+        (function() {
+            function updateLinks(theme) {
+                document.querySelectorAll('a[href]').forEach(function(link) {
+                    const raw = link.getAttribute('href');
+                    if (!raw || raw.startsWith('#') || raw.startsWith('javascript:')) return;
+                    link.setAttribute('href', raw.split('#')[0] + '#theme=' + theme);
+                });
+            }
+            function applyTheme(theme) {
+                document.documentElement.setAttribute('data-theme', theme);
+                try { localStorage.setItem('spiele_theme', theme); } catch (e) {}
+                try { window.name = 'spiele_theme:' + theme; } catch (e) {}
+                try { history.replaceState(null, '', location.pathname + location.search + '#theme=' + theme); } catch (e) {}
+                updateLinks(theme);
+            }
+            function getInitialTheme() {
+                const hashMatch = (location.hash || '').match(/theme=(dark|light)/);
+                if (hashMatch) return hashMatch[1];
+                const nameMatch = (window.name || '').match(/spiele_theme:(dark|light)/);
+                if (nameMatch) return nameMatch[1];
+                try {
+                    const saved = localStorage.getItem('spiele_theme');
+                    if (saved === 'dark' || saved === 'light') return saved;
+                } catch (e) {}
+                return (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) ? 'dark' : 'light';
+            }
+            applyTheme(getInitialTheme());
+            window.addEventListener('DOMContentLoaded', function() {
+                applyTheme(document.documentElement.getAttribute('data-theme') || 'dark');
+            });
+            window.addEventListener('pageshow', function() {
+                const nameMatch = (window.name || '').match(/spiele_theme:(dark|light)/);
+                if (nameMatch) { applyTheme(nameMatch[1]); return; }
+                try {
+                    const saved = localStorage.getItem('spiele_theme');
+                    if (saved === 'dark' || saved === 'light') applyTheme(saved);
+                } catch (err) {}
+            });
+            window.addEventListener('storage', function(e) {
+                if (e.key === 'spiele_theme' && (e.newValue === 'dark' || e.newValue === 'light')) {
+                    applyTheme(e.newValue);
+                }
+            });
+            document.addEventListener('click', function(e) {
+                const link = e.target && e.target.closest ? e.target.closest('a[href]') : null;
+                if (!link) return;
+                const raw = link.getAttribute('href');
+                if (!raw || raw.startsWith('#') || raw.startsWith('javascript:')) return;
+                const theme = document.documentElement.getAttribute('data-theme') || 'dark';
+                link.setAttribute('href', raw.split('#')[0] + '#theme=' + theme);
+            }, true);
+            window.toggleTheme = function() {
+                const current = document.documentElement.getAttribute('data-theme') || 'dark';
+                applyTheme(current === 'dark' ? 'light' : 'dark');
+            };
+        })();
+    </script>
     <style>
-        :root {
-            --table-green: #1a472a;
-            --card-white: #ffffff;
-            --wizard-purple: #4b0082;
-            --wizard-gold: #ffd700;
-            --text-dark: #2d3436;
-            --error-red: #d63031;
-            --success-green: #27ae60;
-        }
-
-        body {
-            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-            background: radial-gradient(circle, #2c3e50 0%, #000000 100%);
-            color: var(--card-white);
-            margin: 0;
-            padding: 20px;
-            min-height: 100vh;
-        }
-
         .container {
-            max-width: 1000px;
-            margin: 0 auto;
-        }
-
-        /* Karten-Stil */
-        .card {
-            background: var(--card-white);
-            color: var(--text-dark);
-            border-radius: 15px;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.5);
-            padding: 25px;
-            margin-bottom: 20px;
-            border: 1px solid rgba(255,255,255,0.1);
-        }
-
-        h1 {
-            text-align: center;
-            font-family: 'Georgia', serif;
-            color: var(--wizard-gold);
-            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
-            font-size: 2.5rem;
-            margin-bottom: 30px;
+            width: 100%;
+            max-width: 900px;
         }
 
         /* Setup-Phase */
         .setup-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 15px;
-        }
-
-        input[type="text"] {
-            padding: 12px;
-            border: 2px solid #dfe6e9;
-            border-radius: 8px;
-            font-size: 1rem;
-            transition: border-color 0.3s;
-        }
-
-        input[type="text"]:focus {
-            border-color: var(--wizard-purple);
-            outline: none;
+            gap: 12px;
+            margin-top: 12px;
         }
 
         /* Spieler-Karten im Spiel */
         .player-row {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-            gap: 15px;
-            margin-bottom: 30px;
+            grid-template-columns: repeat(auto-fit, minmax(135px, 1fr));
+            gap: 12px;
+            margin-bottom: 20px;
         }
 
         .player-status-card {
-            background: linear-gradient(145deg, #ffffff, #f0f0f0);
-            padding: 15px;
-            border-radius: 12px;
+            background-color: var(--md-sys-color-surface-container-low);
+            border: 1px solid var(--md-sys-color-outline-variant);
+            padding: 16px 12px;
+            border-radius: var(--md-sys-shape-corner-lg);
             text-align: center;
             position: relative;
-            transition: transform 0.3s;
-            border-top: 5px solid var(--wizard-purple);
+            box-shadow: var(--md-sys-elevation-1);
+            transition: transform 0.25s ease, background-color 0.25s ease, border-color 0.25s ease;
         }
 
         .player-status-card.leader {
-            border-top: 5px solid var(--wizard-gold);
-            box-shadow: 0 0 15px rgba(255, 215, 0, 0.4);
-            transform: translateY(-5px);
+            border: 2px solid var(--md-sys-color-primary);
+            background-color: var(--md-sys-color-primary-container);
+            color: var(--md-sys-color-on-primary-container);
+            box-shadow: var(--md-sys-elevation-2);
+            transform: translateY(-2px);
         }
 
         .leader-crown {
             position: absolute;
-            top: -20px;
+            top: -14px;
             left: 50%;
             transform: translateX(-50%);
-            font-size: 1.5rem;
+            font-size: 1.4rem;
+        }
+
+        .player-label {
+            font-size: 0.85rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            color: var(--md-sys-color-on-surface-variant);
+        }
+
+        .player-status-card.leader .player-label {
+            color: var(--md-sys-color-on-primary-container);
         }
 
         .score-val {
-            font-size: 2rem;
+            font-size: 1.85rem;
             font-weight: 800;
             display: block;
-            color: var(--wizard-purple);
+            margin-top: 4px;
+            color: var(--md-sys-color-primary);
+        }
+
+        .player-status-card.leader .score-val {
+            color: var(--md-sys-color-on-primary-container);
         }
 
         /* Eingabe-Bereich */
-        .input-card {
-            background: #f8f9fa;
-            border-left: 8px solid var(--wizard-purple);
-        }
-
         .round-info-badge {
-            background: var(--wizard-purple);
-            color: white;
-            padding: 5px 15px;
-            border-radius: 20px;
+            background-color: var(--md-sys-color-primary-container);
+            color: var(--md-sys-color-on-primary-container);
+            padding: 6px 16px;
+            border-radius: var(--md-sys-shape-corner-full);
+            font-weight: 700;
+            font-size: 0.85rem;
             display: inline-block;
-            margin-bottom: 15px;
+            margin-bottom: 16px;
         }
 
         .input-group-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-            gap: 10px;
+            grid-template-columns: repeat(auto-fit, minmax(135px, 1fr));
+            gap: 12px;
         }
 
         .mini-card-input {
-            background: white;
-            padding: 10px;
-            border-radius: 10px;
-            border: 1px solid #ddd;
+            background-color: var(--md-sys-color-surface-container);
+            padding: 12px;
+            border-radius: var(--md-sys-shape-corner-md);
+            border: 1px solid var(--md-sys-color-outline-variant);
             text-align: center;
         }
 
         .mini-card-input input {
-            width: 50px;
-            padding: 8px;
-            border: 1px solid #ccc;
-            border-radius: 5px;
+            width: 58px;
+            padding: 8px 6px;
             text-align: center;
-            font-size: 1.1rem;
+            font-size: 1.05rem;
             font-weight: bold;
         }
 
-        /* Buttons */
-        .btn {
-            padding: 15px 25px;
-            border: none;
-            border-radius: 8px;
-            font-weight: bold;
-            cursor: pointer;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            transition: all 0.2s;
+        .btn-gold {
+            width: 100%;
         }
-
-        .btn-gold { background: var(--wizard-gold); color: #000; width: 100%; }
-        .btn-next { background: var(--success-green); color: white; flex: 2; }
-        .btn-undo { background: #636e72; color: white; flex: 1; }
 
         /* Tabelle */
         .table-card {
@@ -169,67 +179,45 @@
             padding: 0;
         }
 
-        table {
-            width: 100%;
-            border-collapse: collapse;
-        }
-
-        th {
-            background: #f1f2f6;
-            padding: 15px;
-            text-transform: uppercase;
-            font-size: 0.8rem;
-        }
-
-        td {
-            padding: 12px;
-            text-align: center;
-            border-bottom: 1px solid #eee;
-        }
-
-        .pts-pos { color: var(--success-green); font-weight: bold; }
-        .pts-neg { color: var(--error-red); font-weight: bold; }
-        .sub-data { font-size: 0.7rem; color: #999; display: block; }
+        .pts-pos { color: var(--md-sys-color-tertiary); font-weight: 800; }
+        .pts-neg { color: var(--md-sys-color-error); font-weight: 800; }
+        .sub-data { font-size: 0.75rem; color: var(--md-sys-color-on-surface-variant); display: block; }
 
         /* Winner Overlay */
         #winner-overlay {
             display: none;
-            position: fixed;
-            top:0; left:0; width:100%; height:100%;
-            background: rgba(0,0,0,0.9);
-            z-index: 999;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            text-align: center;
-        }
-
-        .winner-card {
-            background: white;
-            padding: 40px;
-            border-radius: 20px;
-            color: var(--text-dark);
-            border: 5px solid var(--wizard-gold);
         }
     </style>
 </head>
 <body>
 
-<div id="winner-overlay">
+<div id="winner-overlay" class="modal-overlay">
     <div class="winner-card">
-        <div style="font-size: 4rem;">🧙‍♂️✨</div>
-        <h2 style="font-size: 2.5rem; margin: 10px 0;">Der Meister-Magier!</h2>
-        <h3 id="winner-name" style="font-size: 2rem; color: var(--wizard-purple);">Spieler</h3>
-        <p style="font-size: 1.2rem;">Sieg mit <span id="winner-score">0</span> Punkten</p>
-        <button class="btn btn-gold" onclick="location.reload()" style="margin-top: 20px;">Neues Turnier starten</button>
+        <div style="font-size: 3.5rem;">🧙‍♂️✨</div>
+        <h2 style="font-size: 2rem; margin: 10px 0;">Der Meister-Magier!</h2>
+        <h3 id="winner-name" style="font-size: 1.75rem; color: var(--md-sys-color-primary);">Spieler</h3>
+        <p style="font-size: 1.1rem; color: var(--md-sys-color-on-surface-variant); margin-top: 6px;">Sieg mit <strong id="winner-score" style="color: var(--md-sys-color-on-surface);">0</strong> Punkten</p>
+        <button class="btn btn-gold" onclick="location.reload()" style="margin-top: 24px;">Neues Turnier starten</button>
     </div>
 </div>
 
 <div class="container">
-    <h1>WIZARD</h1>
+    <header class="m3-top-app-bar">
+        <a href="../index.html" class="m3-nav-btn" aria-label="Hauptmenü" title="Hauptmenü">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
+        </a>
+        <div class="m3-top-app-bar-title-group">
+            <h1 class="m3-top-app-bar-title">Wizard</h1>
+            <p class="m3-top-app-bar-subtitle">Vorhersagen, Stiche & Punktestände</p>
+        </div>
+        <button type="button" class="m3-icon-btn" onclick="toggleTheme()" aria-label="Darstellung umschalten" title="Light/Dark Mode umschalten">
+            <svg class="icon-sun" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 7c-2.76 0-5 2.24-5 5s2.24 5 5 5 5-2.24 5-5-2.24-5-5-5zM2 13h2c.55 0 1-.45 1-1s-.45-1-1-1H2c-.55 0-1 .45-1 1s.45 1 1 1zm18 0h2c.55 0 1-.45 1-1s-.45-1-1-1h-2c-.55 0-1 .45-1 1s.45 1 1 1zM11 2v2c0 .55.45 1 1 1s1-.45 1-1V2c0-.55-.45-1-1-1s-1 .45-1 1zm0 18v2c0 .55.45 1 1 1s1-.45 1-1v-2c0-.55-.45-1-1-1s-1 .45-1 1zM5.99 4.58a.996.996 0 0 0-1.41 0 .996.996 0 0 0 0 1.41l1.06 1.06c.39.39 1.03.39 1.41 0s.39-1.03 0-1.41L5.99 4.58zm12.37 12.37a.996.996 0 0 0-1.41 0 .996.996 0 0 0 0 1.41l1.06 1.06c.39.39 1.03.39 1.41 0a.996.996 0 0 0 0-1.41l-1.06-1.06zm1.06-10.96a.996.996 0 0 0 0-1.41.996.996 0 0 0-1.41 0l-1.06 1.06c-.39.39-.39 1.03 0 1.41s1.03.39 1.41 0l1.06-1.06zM7.05 18.36a.996.996 0 0 0 0-1.41.996.996 0 0 0-1.41 0l-1.06 1.06c-.39.39-.39 1.03 0 1.41s1.03.39 1.41 0l1.06-1.06z"/></svg>
+            <svg class="icon-moon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3a9 9 0 1 0 9 9c0-.46-.04-.92-.1-1.36a5.389 5.389 0 0 1-4.4 2.26 5.403 5.403 0 0 1-3.14-9.8c-.44-.06-.9-.1-1.36-.1z"/></svg>
+        </button>
+    </header>
 
     <div id="setup-screen" class="card">
-        <h3 style="margin-top:0">Gefährten wählen</h3>
+        <h3 class="card-title">Gefährten wählen (3–6 Spieler)</h3>
         <div class="setup-grid">
             <input type="text" class="p-name" placeholder="Name Spieler 1">
             <input type="text" class="p-name" placeholder="Name Spieler 2">
@@ -238,8 +226,7 @@
             <input type="text" class="p-name" placeholder="Name Spieler 5 (opt)">
             <input type="text" class="p-name" placeholder="Name Spieler 6 (opt)">
         </div>
-        <br>
-        <button class="btn btn-gold" onclick="initGame()">Spiel beginnen</button>
+        <button class="btn btn-gold" onclick="initGame()" style="margin-top: 20px;">Spiel beginnen</button>
     </div>
 
     <div id="game-screen" style="display:none;">
@@ -247,18 +234,20 @@
         <div id="player-display" class="player-row"></div>
         
         <div class="card input-card" id="input-container">
-            <div class="round-info-badge" id="round-title">Runde 1 / 20</div>
+            <div style="text-align: center;">
+                <div class="round-info-badge" id="round-title">Runde 1 / 20</div>
+            </div>
             <div id="input-fields" class="input-group-grid"></div>
             
-            <div class="controls" style="display: flex; gap: 10px; margin-top: 25px;">
-                <button class="btn btn-undo" onclick="undoLastRound()">Korrektur</button>
-                <button class="btn btn-next" onclick="submitRound()">Runde abschließen</button>
+            <div class="controls" style="display: flex; gap: 10px; margin-top: 20px;">
+                <button class="btn btn-undo" onclick="undoLastRound()" style="flex: 1;">↩ Korrektur</button>
+                <button class="btn btn-next" onclick="submitRound()" style="flex: 2;">Runde abschließen</button>
             </div>
         </div>
 
         <div class="card table-card">
             <table>
-                <thead><tr id="history-head"><th style="width: 50px;">Rnd</th></tr></thead>
+                <thead><tr id="history-head"><th style="width: 60px;">Rnd</th></tr></thead>
                 <tbody id="history-body"></tbody>
             </table>
         </div>
@@ -266,6 +255,7 @@
 </div>
 
 <script>
+
     let players = [];
     let currentRound = 1;
     let maxRounds = 0;
@@ -307,9 +297,9 @@
             container.innerHTML += `
                 <div class="mini-card-input">
                     <div style="font-weight:bold; margin-bottom:8px; font-size: 0.9rem;">${p}</div>
-                    <div style="display:flex; justify-content: center; gap: 5px;">
-                        <input type="number" class="bid-in" placeholder="Soll" min="0" onchange="validateVal(this)">
-                        <input type="number" class="got-in" placeholder="Ist" min="0" onchange="autoFillIst(this)">
+                    <div style="display:flex; justify-content: center; gap: 6px;">
+                        <input type="number" class="bid-in" placeholder="Soll" min="0" inputmode="numeric" onchange="validateVal(this)">
+                        <input type="number" class="got-in" placeholder="Ist" min="0" inputmode="numeric" onchange="autoFillIst(this)">
                     </div>
                 </div>
             `;
@@ -416,7 +406,7 @@
             container.innerHTML += `
                 <div class="player-status-card ${isLeader ? 'leader' : ''}">
                     ${isLeader ? '<div class="leader-crown">🧙‍♂️</div>' : ''}
-                    <div style="font-size: 0.8rem; text-transform: uppercase; color: #666;">${t.name}</div>
+                    <div class="player-label">${t.name}</div>
                     <span class="score-val">${t.score}</span>
                 </div>
             `;

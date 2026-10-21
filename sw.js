@@ -1,5 +1,5 @@
 // ⚠️ WICHTIG: Erhöhe diese Versionsnummer (z. B. v1 -> v2) bei JEDER Änderung!
-const CACHE_NAME = 'spiele-dashboard-v3.1';
+const CACHE_NAME = 'spiele-dashboard-v4.3';
 
 const ASSETS_TO_CACHE = [
   './',
@@ -10,11 +10,15 @@ const ASSETS_TO_CACHE = [
   './spiele/charlie_run.html',
   './spiele/flappy_henri.html',
   './spiele/flip7.html',
+  './spiele/kniffel.html',
   './spiele/minigolf.html',
   './spiele/moelkky.html',
   './spiele/qwirkle.html',
   './spiele/theken_tim.html',
-  './spiele/wizard.html'
+  './spiele/tutto.html',
+  './spiele/wizard.html',
+  './spiele/wuerfel_auswahl.html',
+  './spiele/yatzy.html'
 ];
 
 // 1. Installation: Neue Dateien cachen und SOFORT aktivieren
