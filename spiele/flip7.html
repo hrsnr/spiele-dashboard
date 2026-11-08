@@ -67,11 +67,54 @@
     <style>
         .container {
             width: 100%;
-            max-width: 520px;
+            max-width: 540px;
         }
 
+        .input-group {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
         .input-group input[type="text"] { flex-grow: 1; }
         input[type="number"] { width: 88px; text-align: center; font-weight: bold; font-size: 1.2rem; }
+
+        /* Der "+" Button zum Hinzufügen von Spielern als exakter Kreis mit exakt zentriertem "+" */
+        button.btn-add,
+        .btn-add {
+            width: 48px !important;
+            height: 48px !important;
+            min-width: 48px !important;
+            min-height: 48px !important;
+            max-width: 48px !important;
+            max-height: 48px !important;
+            padding: 0 !important;
+            margin: 0 !important;
+            border-radius: 50% !important;
+            display: inline-flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            flex-shrink: 0 !important;
+            cursor: pointer !important;
+            box-sizing: border-box !important;
+            background-color: var(--md-sys-color-secondary-container) !important;
+            color: var(--md-sys-color-on-secondary-container) !important;
+            border: none !important;
+            box-shadow: var(--md-sys-elevation-1) !important;
+            transition: transform 0.15s ease, filter 0.2s ease, box-shadow 0.2s ease;
+        }
+        .btn-add:hover {
+            filter: brightness(0.94);
+            box-shadow: var(--md-sys-elevation-2) !important;
+        }
+        .btn-add:active {
+            transform: scale(0.92);
+        }
+        .btn-add svg {
+            display: block;
+            width: 22px;
+            height: 22px;
+            pointer-events: none;
+        }
 
         .btn-confirm { 
             width: 100%; 
@@ -85,6 +128,61 @@
             margin-top: 12px;
         }
 
+        /* Bereich Rundenanzahl & Zahnrad: Umrandung komplett entfernt */
+        .round-info-bar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 16px;
+            padding: 2px 4px;
+            background: transparent !important;
+            border: none !important;
+            box-shadow: none !important;
+        }
+
+        .round-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-weight: 700;
+            font-size: 1.05rem;
+            color: var(--md-sys-color-primary);
+        }
+
+        /* Zahnrad ohne Buttonkreis - nur das reine Zahnrad */
+        .btn-gear {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 32px;
+            height: 32px;
+            padding: 0;
+            margin: 0;
+            background: transparent !important;
+            border: none !important;
+            box-shadow: none !important;
+            color: var(--md-sys-color-on-surface-variant);
+            cursor: pointer;
+            transition: transform 0.25s ease, color 0.2s ease;
+        }
+        .btn-gear:hover {
+            color: var(--md-sys-color-primary);
+            transform: rotate(45deg);
+            background: transparent !important;
+            border: none !important;
+            box-shadow: none !important;
+        }
+        .btn-gear:active {
+            transform: scale(0.9) rotate(45deg);
+        }
+        .btn-gear svg {
+            width: 24px;
+            height: 24px;
+            fill: currentColor;
+            display: block;
+        }
+
+        /* Spieler-Kacheln */
         .player-card {
             display: flex;
             align-items: center;
@@ -94,9 +192,12 @@
             background-color: var(--md-sys-color-surface-container-low);
             padding: 16px;
             border-radius: var(--md-sys-shape-corner-lg);
-            border: 1px solid var(--md-sys-color-outline-variant);
+            border: 2px solid var(--md-sys-color-outline-variant);
             box-shadow: var(--md-sys-elevation-1);
-            transition: all 0.25s ease;
+            width: 100% !important;
+            max-width: 100% !important;
+            box-sizing: border-box !important;
+            transition: background-color 0.25s ease, border-color 0.25s ease;
         }
 
         .leader {
@@ -105,11 +206,27 @@
             color: var(--md-sys-color-on-primary-container);
         }
 
-        .winner-card {
-            background-color: var(--md-sys-color-warning-container);
-            color: var(--md-sys-color-on-warning-container);
-            border: 2px solid var(--md-sys-color-warning);
-            transform: scale(1.02);
+        /* Gelbe Sieger-Kachel: Exakt gleiche Größe wie die anderen Kacheln (kein Schrumpfen durch styles.css) */
+        .player-card.winner-card,
+        .winner-card.player-card {
+            display: flex !important;
+            align-items: center !important;
+            justify-content: space-between !important;
+            gap: 12px !important;
+            margin-bottom: 12px !important;
+            margin-left: 0 !important;
+            margin-right: 0 !important;
+            background-color: var(--md-sys-color-warning-container) !important;
+            color: var(--md-sys-color-on-warning-container) !important;
+            border: 2px solid var(--md-sys-color-warning) !important;
+            border-radius: var(--md-sys-shape-corner-lg) !important;
+            padding: 16px !important;
+            box-shadow: var(--md-sys-elevation-1) !important;
+            width: 100% !important;
+            max-width: 100% !important;
+            box-sizing: border-box !important;
+            transform: none !important;
+            text-align: left !important;
         }
 
         .player-info { flex-grow: 1; }
@@ -130,6 +247,236 @@
             gap: 10px;
             margin-top: 16px;
         }
+
+        /* Setup-Chips für hinzugefügte Spieler: Rotes X exakt auf gleicher Höhe wie Name */
+        .setup-player-chips {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 14px;
+        }
+        .setup-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 10px 6px 14px;
+            background-color: var(--md-sys-color-surface-container-high);
+            border: 1px solid var(--md-sys-color-outline-variant);
+            border-radius: var(--md-sys-shape-corner-full);
+            font-size: 0.95rem;
+            font-weight: 600;
+            line-height: 1;
+        }
+        .chip-name {
+            display: inline-flex;
+            align-items: center;
+            line-height: 1;
+        }
+        .chip-remove {
+            background: none;
+            border: none;
+            color: var(--md-sys-color-error);
+            cursor: pointer;
+            padding: 0;
+            margin: 0;
+            width: 20px;
+            height: 20px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            transition: background-color 0.2s ease, transform 0.15s ease;
+        }
+        .chip-remove:hover {
+            background-color: var(--md-sys-color-error-container);
+            transform: scale(1.1);
+        }
+        .chip-remove svg {
+            width: 14px;
+            height: 14px;
+            fill: currentColor;
+            display: block;
+        }
+
+        /* Einstellungen-Modal & Tabelle */
+        .settings-table-wrapper {
+            max-height: 290px;
+            overflow-y: auto;
+            border: 1px solid var(--md-sys-color-outline-variant);
+            border-radius: var(--md-sys-shape-corner-md);
+            background-color: var(--md-sys-color-surface-container-low);
+            margin: 14px 0 16px 0;
+            box-shadow: inset 0 1px 3px rgba(0,0,0,0.06);
+        }
+        .settings-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.88rem;
+        }
+        .settings-table th {
+            position: sticky;
+            top: 0;
+            background-color: var(--md-sys-color-surface-container-high);
+            color: var(--md-sys-color-on-surface-variant);
+            font-weight: 700;
+            font-size: 0.76rem;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            padding: 10px 10px;
+            border-bottom: 2px solid var(--md-sys-color-outline-variant);
+            z-index: 2;
+        }
+        .settings-table td {
+            padding: 10px 10px;
+            border-bottom: 1px solid var(--md-sys-color-outline-variant);
+        }
+        .settings-table tr:last-child td {
+            border-bottom: none;
+        }
+
+        /* Farbliche Markierung der 3 führenden Spieler */
+        .leader-rank-1 {
+            background-color: var(--md-sys-color-warning-container) !important;
+            color: var(--md-sys-color-on-warning-container) !important;
+        }
+        .leader-rank-1 td {
+            font-weight: 700;
+        }
+        .leader-rank-2 {
+            background-color: var(--md-sys-color-secondary-container) !important;
+            color: var(--md-sys-color-on-secondary-container) !important;
+        }
+        .leader-rank-2 td {
+            font-weight: 600;
+        }
+        .leader-rank-3 {
+            background-color: var(--md-sys-color-tertiary-container) !important;
+            color: var(--md-sys-color-on-tertiary-container) !important;
+        }
+        .leader-rank-3 td {
+            font-weight: 600;
+        }
+
+        /* Spieler-Anpassen Dialog */
+        .adjust-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin: 16px 0;
+            max-height: 320px;
+            overflow-y: auto;
+            padding-right: 4px;
+        }
+        .adjust-card {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            padding: 12px 14px;
+            border-radius: var(--md-sys-shape-corner-lg);
+            border: 1px solid var(--md-sys-color-outline-variant);
+            background-color: var(--md-sys-color-surface-container-low);
+            transition: all 0.2s ease;
+        }
+        .adjust-card.inactive {
+            opacity: 0.72;
+            background-color: var(--md-sys-color-surface-container-lowest);
+            border-style: dashed;
+        }
+        .adjust-top-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            width: 100%;
+        }
+        .adjust-name-group {
+            display: flex;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 6px;
+        }
+        .adjust-name {
+            font-weight: 700;
+            font-size: 1.05rem;
+        }
+        .adjust-sub {
+            font-size: 0.8rem;
+            color: var(--md-sys-color-on-surface-variant);
+            margin-top: 2px;
+        }
+        .status-badge {
+            display: inline-block;
+            font-size: 0.75rem;
+            font-weight: 700;
+            padding: 2px 8px;
+            border-radius: var(--md-sys-shape-corner-full);
+        }
+        .badge-active {
+            background-color: var(--md-sys-color-tertiary-container);
+            color: var(--md-sys-color-on-tertiary-container);
+        }
+        .badge-inactive {
+            background-color: var(--md-sys-color-surface-container-highest);
+            color: var(--md-sys-color-outline);
+        }
+
+        .btn-toggle-player {
+            height: 32px;
+            padding: 0 12px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            border-radius: var(--md-sys-shape-corner-full);
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
+            border: none;
+            flex-shrink: 0;
+            transition: transform 0.15s ease, filter 0.2s ease;
+        }
+        .btn-remove {
+            background-color: var(--md-sys-color-error-container);
+            color: var(--md-sys-color-on-error-container);
+        }
+        .btn-add-back {
+            background-color: var(--md-sys-color-primary-container);
+            color: var(--md-sys-color-on-primary-container);
+        }
+        .btn-toggle-player:hover {
+            filter: brightness(0.95);
+        }
+        .btn-toggle-player:active {
+            transform: scale(0.96);
+        }
+
+        .info-callout {
+            font-size: 0.82rem;
+            line-height: 1.45;
+            padding: 10px 14px;
+            border-radius: var(--md-sys-shape-corner-md);
+            background-color: var(--md-sys-color-surface-container-high);
+            color: var(--md-sys-color-on-surface-variant);
+            border-left: 4px solid var(--md-sys-color-primary);
+            text-align: left;
+            margin: 12px 0 16px 0;
+        }
+
+        /* Highscore Anzeige */
+        .hs-rank {
+            font-size: 1.2rem;
+            font-weight: 800;
+            min-width: 32px;
+            color: var(--md-sys-color-outline);
+        }
+        .hs-winner .hs-rank {
+            color: var(--md-sys-color-warning);
+        }
+        .hs-breakdown {
+            font-size: 0.78rem;
+            color: var(--md-sys-color-on-surface-variant);
+            margin-top: 3px;
+        }
     </style>
 </head>
 <body>
@@ -141,79 +488,277 @@
         </a>
         <div class="m3-top-app-bar-title-group">
             <h1 class="m3-top-app-bar-title">Flip7</h1>
-            <p class="m3-top-app-bar-subtitle">Ziel: 200 Punkte</p>
+            <p id="topBarSubtitle" class="m3-top-app-bar-subtitle">Ziel: 200 Punkte</p>
         </div>
         <button type="button" class="m3-icon-btn" onclick="toggleTheme()" aria-label="Darstellung umschalten" title="Light/Dark Mode umschalten">
-            <svg class="icon-sun" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 7c-2.76 0-5 2.24-5 5s2.24 5 5 5 5-2.24 5-5-2.24-5-5-5zM2 13h2c.55 0 1-.45 1-1s-.45-1-1-1H2c-.55 0-1 .45-1 1s.45 1 1 1zm18 0h2c.55 0 1-.45 1-1s-.45-1-1-1h-2c-.55 0-1 .45-1 1s.45 1 1 1zM11 2v2c0 .55.45 1 1 1s1-.45 1-1V2c0-.55-.45-1-1-1s-1 .45-1 1zm0 18v2c0 .55.45 1 1 1s1-.45 1-1v-2c0-.55-.45-1-1-1s-1 .45-1 1zM5.99 4.58a.996.996 0 0 0-1.41 0 .996.996 0 0 0 0 1.41l1.06 1.06c.39.39 1.03.39 1.41 0s.39-1.03 0-1.41L5.99 4.58zm12.37 12.37a.996.996 0 0 0-1.41 0 .996.996 0 0 0 0 1.41l1.06 1.06c.39.39 1.03.39 1.41 0a.996.996 0 0 0 0-1.41l-1.06-1.06zm1.06-10.96a.996.996 0 0 0 0-1.41.996.996 0 0 0-1.41 0l-1.06 1.06c-.39.39-.39 1.03 0 1.41s1.03.39 1.41 0l1.06-1.06zM7.05 18.36a.996.996 0 0 0 0-1.41.996.996 0 0 0-1.41 0l-1.06 1.06c-.39.39-.39 1.03 0 1.41s1.03.39 1.41 0l1.06-1.06z"/></svg>
+            <svg class="icon-sun" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 7c-2.76 0-5 2.24-5 5s2.24 5 5 5 5-2.24 5-5-2.24-5-5-5zM2 13h2c.55 0 1-.45 1-1s-.45-1-1-1H2c-.55 0-1 .45-1 1s.45 1 1 1zm18 0h2c.55 0 1-.45 1-1s-.45-1-1-1h-2c-.55 0-1 .45-1 1s.45 1 1 1zM11 2v2c0 .55.45 1 1 1s1-.45 1-1V2c0-.55-.45-1-1-1s-1 .45-1 1zm0 18v2c0 .55.45 1 1 1s1-.45 1-1v-2c0-.55-.45-1-1-1s-1 .45-1 1zM5.99 4.58a.996.996 0 0 0-1.41 0 .996.996 0 0 0 0 1.41l1.06 1.06c.39.39 1.03.39 1.41 0s.39-1.03 0-1.41L5.99 4.58zm12.37 12.37a.996.996 0 0 0-1.41 0 .996.996 0 0 0 0 1.41l1.06 1.06c.39.39 1.03.39 1.41 0a.996.996 0 0 0 0-1.41l-1.06-1.06zm1.06-10.96a.996.996 0 0 0 0-1.41.996.996 0 0 0-1.41 0l-1.06 1.06c-.39.39-.39 1.03 0 1.41s1.03.39 1.41 0l1.06-1.06zM7.05 18.36a.996.996 0 0 0 0-1.41.996.996 0 0 0 0-1.41 0l-1.06 1.06c-.39.39-.39 1.03 0 1.41s1.03.39 1.41 0l1.06-1.06z"/></svg>
             <svg class="icon-moon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3a9 9 0 1 0 9 9c0-.46-.04-.92-.1-1.36a5.389 5.389 0 0 1-4.4 2.26 5.403 5.403 0 0 1-3.14-9.8c-.44-.06-.9-.1-1.36-.1z"/></svg>
         </button>
     </header>
 
-    <!-- Spieler-Eingabe -->
+    <!-- Spieler-Eingabe (Vor Spielbeginn) -->
     <div id="setupCard" class="setup-card">
         <h3 class="card-title">Spieler hinzufügen</h3>
         <div class="input-group">
-            <input type="text" id="playerName" placeholder="Spielername..." onkeypress="if(event.key==='Enter') addPlayer()">
-            <button class="btn-add" onclick="addPlayer()">+</button>
+            <input type="text" id="playerName" placeholder="Spielername..." onkeypress="if(event.key==='Enter') addPlayerInitial()">
+            <button class="btn-add" onclick="addPlayerInitial()" title="Spieler hinzufügen" aria-label="Spieler hinzufügen">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <line x1="12" y1="5" x2="12" y2="19"></line>
+                    <line x1="5" y1="12" x2="19" y2="12"></line>
+                </svg>
+            </button>
         </div>
+        <div id="setupPlayerChips" class="setup-player-chips"></div>
+        <button id="startGameBtn" class="btn-confirm" onclick="startFirstGame()" style="display:none; margin-top: 18px;">
+            Spiel starten
+        </button>
     </div>
 
     <!-- Aktives Spiel -->
     <div id="gameArea" style="display:none;">
+        <div class="round-info-bar">
+            <span id="roundBadge" class="round-badge">🃏 Runde 1</span>
+            <!-- Reines Zahnrad ohne Buttonkreis -->
+            <button type="button" class="btn-gear" onclick="openSettingsModal()" aria-label="Einstellungen" title="Einstellungen">
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/>
+                </svg>
+            </button>
+        </div>
         <div id="playerInputList"></div>
         <button class="btn-confirm" onclick="submitRound()">Runde abschließen</button>
-        <button id="undoBtn" class="btn-undo" onclick="undoLastRound()" style="display:none;">↩ Korrigieren</button>
+        <button id="undoBtn" class="btn-undo" onclick="undoLastRound()" style="display:none;">↩ Eingabe korrigieren</button>
     </div>
 
-    <!-- Highscore / Siege-Übersicht -->
+    <!-- Highscore / Endstand -->
     <div id="highscoreArea" class="setup-card" style="display:none;">
         <h2 style="text-align: center; margin-top: 0; color: var(--md-sys-color-primary);">🏆 Highscore</h2>
-        <p style="text-align: center; color: var(--md-sys-color-on-surface-variant); font-size: 0.85rem; margin-bottom: 18px;">Gewonnene Runden</p>
+        <div id="hsAbortedNotice" style="display:none;"></div>
+        <p id="hsSubtitle" style="text-align: center; color: var(--md-sys-color-on-surface-variant); font-size: 0.85rem; margin-bottom: 18px;">
+            Sortiert nach Gesamtpunkten (unabhängig von der Rundenanzahl)
+        </p>
         <div id="highscoreList"></div>
-        <button class="btn-confirm" onclick="resetEntireGame()" style="margin-top: 20px;">Neues Spiel (Neue Spieler)</button>
-        <button class="btn-undo" onclick="startNextRoundSamePlayers()" style="margin-top: 10px;">🔄 Gleiche Spieler nochmal</button>
+
+        <div id="hsActions">
+            <!-- Aktions-Buttons nach Spielende oder Rundenabbruch -->
+            <button id="hsAdjustBtn" class="btn-confirm" onclick="openPlayerAdjustModal('highscore')" style="margin-top: 20px;">
+                👥 Nächste Runde (Spieler anpassen)
+            </button>
+            <button id="hsSamePlayersBtn" class="btn-tonal" onclick="startNextRoundSamePlayers()" style="width: 100%; margin-top: 10px; padding: 14px;">
+                🔄 Nächste Runde (Gleiche Spieler)
+            </button>
+            <button class="btn-undo" onclick="resetEntireGame()" style="margin-top: 10px;">
+                ✨ Komplett neues Spiel
+            </button>
+        </div>
     </div>
 </div>
 
-<!-- Modal Dialog nach Spielende -->
+<!-- Modal Dialog 1: Einstellungen (über Zahnradsymbol aufrufbar) -->
+<div id="settingsModal" class="modal-overlay" style="display:none;">
+    <div class="modal-content" style="max-width: 500px;">
+        <div style="display: flex; align-items: center; justify-content: center; gap: 8px; margin-bottom: 4px;">
+            <span style="font-size: 1.35rem;">⚙️</span>
+            <h2 style="margin: 0;">Einstellungen</h2>
+        </div>
+        <p id="settingsSubtitle" style="color: var(--md-sys-color-on-surface-variant); font-size: 0.85rem; margin: 4px 0 12px 0;">
+            Übersicht der laufenden Runde
+        </p>
+
+        <!-- Tabelle mit allen Spielern der Gesamtsitzung & farbiger Markierung der Top 3 -->
+        <div class="settings-table-wrapper">
+            <table class="settings-table">
+                <thead>
+                    <tr>
+                        <th style="text-align: left;">Spieler</th>
+                        <th style="text-align: center;">Runden</th>
+                        <th style="text-align: right;">Gesamt</th>
+                        <th style="text-align: right;">Aktuell</th>
+                    </tr>
+                </thead>
+                <tbody id="settingsTableBody"></tbody>
+            </table>
+        </div>
+
+        <div style="font-size: 0.78rem; color: var(--md-sys-color-on-surface-variant); margin-bottom: 12px; text-align: left;">
+            🥇 🥈 🥉 <em>Die 3 Führenden des bisherigen Gesamtergebnisses sind farblich markiert.</em>
+        </div>
+
+        <!-- Die 3 verlangten Einstellungs-Buttons -->
+        <div class="modal-actions" style="margin-top: 10px;">
+            <button class="btn-confirm" style="margin-top:0;" onclick="closeSettingsModal()">
+                ▶ Zurück zur laufenden Runde
+            </button>
+            <button class="btn-tonal" style="width: 100%; padding: 13px; font-size: 0.95rem;" onclick="restartCurrentRoundWithAdjustedPlayers()">
+                👥 Spieler anpassen und Runde neustarten
+            </button>
+            <button class="btn-undo" style="border-color: var(--md-sys-color-error); color: var(--md-sys-color-error); margin-top: 4px;" onclick="abortCurrentRound()">
+                ⏹ Laufende Runde abbrechen
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Dialog 2: Nach Rundenabschluss (wenn jemand 200 Pkt erreicht) -->
 <div id="gameOverModal" class="modal-overlay" style="display:none;">
     <div class="modal-content">
         <h2 style="margin-top:0;">🎉 Runde beendet!</h2>
-        <p id="modalWinnerDesc" style="color: var(--md-sys-color-on-surface-variant); margin: 12px 0 20px 0;"></p>
-        <p style="font-weight: 600; margin-bottom: 20px;">Möchtest du eine weitere Runde mit denselben Spielern spielen?</p>
+        <p id="modalWinnerDesc" style="color: var(--md-sys-color-on-surface-variant); margin: 12px 0 16px 0;"></p>
+        <p style="font-weight: 600; margin-bottom: 20px;">Wie möchtest du fortfahren?</p>
         <div class="modal-actions">
-            <button class="btn-confirm" style="margin-top:0;" onclick="startNextRoundSamePlayers()">Ja, weitere Runde</button>
-            <button class="btn-add" style="padding: 14px; width: 100%; font-size: 1rem;" onclick="showHighscore()">Nein, Highscore anzeigen</button>
-            <button class="btn-undo" style="margin-top: 5px;" onclick="undoLastRound()">↩ Eingabe korrigieren</button>
+            <!-- 1. Weitere Runde mit denselben Spielern -->
+            <button class="btn-confirm" style="margin-top:0;" onclick="startNextRoundSamePlayers()">
+                Ja, weitere Runde (gleiche Spieler)
+            </button>
+            <!-- 2. Spieler für nächste Runde anpassen (ERSETZT den Korrekturbutton) -->
+            <button class="btn-tonal" style="width: 100%; padding: 14px; font-size: 1rem;" onclick="openPlayerAdjustModal('gameOver')">
+                👥 Spieler anpassen (hinzufügen / entfernen)
+            </button>
+            <!-- 3. Spiel beenden und Highscore anzeigen -->
+            <button class="btn-secondary" style="padding: 14px; width: 100%; font-size: 1rem;" onclick="showHighscore()">
+                🏆 Highscore anzeigen
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Dialog 3: Zum Anpassen der Spieler (für nächste oder neugestartete Runde) -->
+<div id="playerAdjustModal" class="modal-overlay" style="display:none;">
+    <div class="modal-content" style="max-width: 480px;">
+        <h2 style="margin-top:0;">👥 Spieler anpassen</h2>
+        <p id="adjustModalSubtitle" style="color: var(--md-sys-color-on-surface-variant); font-size: 0.88rem; margin: 8px 0 16px 0;">
+            Wähle Spieler für die Runde aus oder füge neue hinzu.
+        </p>
+
+        <!-- Neuen Spieler hinzufügen mit exakt zentriertem, fettem "+" -->
+        <div class="input-group" style="margin-bottom: 12px;">
+            <input type="text" id="newPlayerNameInput" placeholder="Neuer Spielername..." onkeypress="if(event.key==='Enter') addNewPlayerInModal()">
+            <button class="btn-add" onclick="addNewPlayerInModal()" title="Spieler hinzufügen" aria-label="Spieler hinzufügen">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <line x1="12" y1="5" x2="12" y2="19"></line>
+                    <line x1="5" y1="12" x2="19" y2="12"></line>
+                </svg>
+            </button>
+        </div>
+
+        <div class="info-callout">
+            💡 <strong>Hinweis:</strong> Entfernte oder pausierte Spieler scheiden nur aus den kommenden Runden aus. Ihre bisherigen Punkte bleiben im finalen Highscore vollständig gewertet!
+        </div>
+
+        <!-- Liste der Spieler mit Status & Toggle-Button -->
+        <div id="adjustPlayerList" class="adjust-list"></div>
+
+        <div class="modal-actions" style="margin-top: 14px;">
+            <button id="startAdjustedRoundBtn" class="btn-confirm" style="margin-top:0;" onclick="confirmAndStartAdjustedRound()">
+                ▶ Runde starten
+            </button>
+            <button class="btn-undo" onclick="closePlayerAdjustModal()">
+                Abbrechen
+            </button>
         </div>
     </div>
 </div>
 
 <script>
-    let players = [];
+    // Datenstruktur für alle Spieler der Spielsitzung:
+    // player = {
+    //   id: number,
+    //   name: string,
+    //   active: boolean,       // Nimmt an der aktuellen/kommenden Spielrunde teil
+    //   currentScore: number, // Punkte in der laufenden Spielrunde bis 200
+    //   totalScore: number,   // Summe aller bisher beendeten Spielrunden
+    //   roundScores: number[],// Punkte pro beendeter Spielrunde
+    //   wins: number,         // Anzahl gewonnener Spielrunden
+    //   roundsPlayed: number  // Anzahl mitgespielter Spielrunden
+    // }
+    let allPlayers = [];
+    let currentRound = 1;
+    let isRoundActive = false; // true = Runde läuft gerade; false = 200 Pkt erreicht und gewertet
     let history = []; 
     let hasWonBefore = false;
+    let nextPlayerId = 1;
+    let adjustModalSource = 'gameOver'; // 'gameOver', 'highscore' oder 'restartCurrentRound'
+    let abortedRoundNotice = ''; // Informationstext, falls eine Runde abgebrochen wurde
     const TARGET_SCORE = 200;
 
-    function addPlayer() {
+    // --- SETUP-PHASE (Vor Beginn von Runde 1) ---
+    function addPlayerInitial() {
         const nameInput = document.getElementById('playerName');
         const name = nameInput.value.trim();
         if (name !== "") {
-            players.push({ name: name, score: 0, wins: 0 });
+            if (allPlayers.some(p => p.name.toLowerCase() === name.toLowerCase())) {
+                alert('Ein Spieler mit diesem Namen existiert bereits.');
+                return;
+            }
+            allPlayers.push({
+                id: nextPlayerId++,
+                name: name,
+                active: true,
+                currentScore: 0,
+                totalScore: 0,
+                roundScores: [],
+                wins: 0,
+                roundsPlayed: 0
+            });
             nameInput.value = "";
-            renderList();
+            renderSetupChips();
         }
+    }
+
+    function removePlayerInitial(id) {
+        allPlayers = allPlayers.filter(p => p.id !== id);
+        renderSetupChips();
+    }
+
+    function renderSetupChips() {
+        const container = document.getElementById('setupPlayerChips');
+        const startBtn = document.getElementById('startGameBtn');
+        
+        container.innerHTML = allPlayers.map(p => `
+            <div class="setup-chip">
+                <span class="chip-name">${escapeHtml(p.name)}</span>
+                <button type="button" class="chip-remove" onclick="removePlayerInitial(${p.id})" title="Entfernen" aria-label="${escapeHtml(p.name)} entfernen">
+                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+                </button>
+            </div>
+        `).join('');
+
+        startBtn.style.display = allPlayers.length > 0 ? "block" : "none";
+    }
+
+    function startFirstGame() {
+        if (allPlayers.length === 0) return;
+        document.getElementById('setupCard').style.display = 'none';
+        document.getElementById('gameArea').style.display = 'block';
+        currentRound = 1;
+        isRoundActive = true;
+        abortedRoundNotice = '';
+        updateRoundBadge();
+        renderList();
+    }
+
+    function updateRoundBadge() {
+        const badge = document.getElementById('roundBadge');
+        if (badge) badge.innerText = `🃏 Runde ${currentRound}`;
+        const subtitle = document.getElementById('topBarSubtitle');
+        if (subtitle) subtitle.innerText = `Runde ${currentRound} • Ziel: ${TARGET_SCORE} Pkt.`;
+    }
+
+    // --- LAUFENDES SPIEL ---
+    function getActivePlayers() {
+        return allPlayers.filter(p => p.active);
     }
 
     function renderList() {
         const gameArea = document.getElementById('gameArea');
         const inputList = document.getElementById('playerInputList');
         const undoBtn = document.getElementById('undoBtn');
+        const activePlayers = getActivePlayers();
 
-        if (players.length > 0) gameArea.style.display = "block";
+        if (activePlayers.length > 0) gameArea.style.display = "block";
         undoBtn.style.display = history.length > 0 ? "inline-flex" : "none";
 
-        const maxScore = Math.max(...players.map(p => p.score));
+        const maxScore = activePlayers.length > 0 ? Math.max(...activePlayers.map(p => p.currentScore)) : 0;
         const gameFinished = maxScore >= TARGET_SCORE;
 
         if (gameFinished && !hasWonBefore) {
@@ -225,10 +770,10 @@
 
         inputList.innerHTML = "";
 
-        players.forEach((player, index) => {
-            const isWinner = gameFinished && player.score === maxScore;
-            const isLeader = !gameFinished && player.score === maxScore && maxScore > 0;
-            const pointsToWin = TARGET_SCORE - player.score;
+        activePlayers.forEach((player) => {
+            const isWinner = gameFinished && player.currentScore === maxScore;
+            const isLeader = !gameFinished && player.currentScore === maxScore && maxScore > 0;
+            const pointsToWin = TARGET_SCORE - player.currentScore;
             
             const div = document.createElement('div');
             div.className = `player-card ${isWinner ? 'winner-card' : ''} ${isLeader ? 'leader' : ''}`;
@@ -237,15 +782,15 @@
                 <div class="player-info">
                     <div>
                         ${isWinner || isLeader ? '<span class="crown">👑</span>' : ''}
-                        <span class="player-name">${player.name}</span>
+                        <span class="player-name">${escapeHtml(player.name)}</span>
                     </div>
                     <div class="score-stats">
-                        <span class="total-val">${player.score}</span> 
+                        <span class="total-val">${player.currentScore}</span> 
                         <span style="margin: 0 8px; opacity: 0.4">/</span>
                         <span class="${isWinner ? 'winner-text' : ''}">${isWinner ? 'CHAMPION! 🏆' : 'noch ' + (pointsToWin > 0 ? pointsToWin : 0)}</span>
                     </div>
                 </div>
-                <input type="number" class="score-input" data-index="${index}" placeholder="0" inputmode="numeric" onfocus="this.select()">
+                <input type="number" class="score-input" data-id="${player.id}" placeholder="0" inputmode="numeric" onfocus="this.select()" onkeypress="if(event.key==='Enter') submitRound()">
             `;
             inputList.appendChild(div);
         });
@@ -255,26 +800,34 @@
         const inputs = document.querySelectorAll('.score-input');
         let hasChanges = false;
 
-        // Zustand vor Rundenabschluss im Verlauf speichern
-        history.push(JSON.parse(JSON.stringify(players)));
+        // Zustand vor Eingabe im Verlauf sichern
+        history.push({
+            allPlayers: JSON.parse(JSON.stringify(allPlayers)),
+            currentRound: currentRound,
+            hasWonBefore: hasWonBefore,
+            isRoundActive: isRoundActive
+        });
 
         inputs.forEach(input => {
-            const idx = input.getAttribute('data-index');
-            const val = parseInt(input.value) || 0;
+            const id = parseInt(input.getAttribute('data-id'), 10);
+            const val = parseInt(input.value, 10) || 0;
             if (val !== 0) {
-                players[idx].score += val;
-                hasChanges = true;
+                const player = allPlayers.find(p => p.id === id);
+                if (player) {
+                    player.currentScore += val;
+                    hasChanges = true;
+                }
             }
             input.value = ""; 
         });
 
         if (hasChanges) {
-            const maxScore = Math.max(...players.map(p => p.score));
+            const activePlayers = getActivePlayers();
+            const maxScore = Math.max(...activePlayers.map(p => p.currentScore));
             if (maxScore >= TARGET_SCORE) {
-                // Gewinner ermitteln und Siege hochzählen
-                players.forEach(p => {
-                    if (p.score === maxScore) p.wins += 1;
-                });
+                // Runde offiziell abschließen: Punkte auf Gesamtpunkte buchen & Siege hochzählen
+                finalizeCurrentRound(maxScore);
+                isRoundActive = false;
                 renderList();
                 showGameOverModal(maxScore);
             } else {
@@ -285,81 +838,432 @@
         }
     }
 
+    function finalizeCurrentRound(maxScore) {
+        getActivePlayers().forEach(p => {
+            p.totalScore += p.currentScore;
+            p.roundScores.push(p.currentScore);
+            p.roundsPlayed += 1;
+            if (p.currentScore === maxScore) {
+                p.wins += 1;
+            }
+        });
+    }
+
     function showGameOverModal(maxScore) {
-        const winners = players.filter(p => p.score === maxScore).map(p => p.name);
+        const activePlayers = getActivePlayers();
+        const winners = activePlayers.filter(p => p.currentScore === maxScore).map(p => p.name);
         const desc = document.getElementById('modalWinnerDesc');
         
         if (winners.length === 1) {
-            desc.innerHTML = `Gewinner der Runde: <strong style="color: var(--md-sys-color-primary);">${winners[0]}</strong>`;
+            desc.innerHTML = `Gewinner von Runde ${currentRound}: <strong style="color: var(--md-sys-color-primary);">${escapeHtml(winners[0])}</strong> (${maxScore} Pkt.)`;
         } else {
-            desc.innerHTML = `Gewinner der Runde: <strong style="color: var(--md-sys-color-primary);">${winners.join(', ')}</strong>`;
+            desc.innerHTML = `Gewinner von Runde ${currentRound}: <strong style="color: var(--md-sys-color-primary);">${escapeHtml(winners.join(', '))}</strong> (${maxScore} Pkt.)`;
         }
 
         setTimeout(() => {
             document.getElementById('gameOverModal').style.display = 'flex';
-        }, 500);
+            // Konfetti genau auf Ebene des Popups zünden (z-index 2500)
+            shootConfetti();
+        }, 300);
     }
 
+    // --- EINSTELLUNGEN-MODAL (ZAHNRAD-SYMBOL) ---
+    function openSettingsModal() {
+        const subtitle = document.getElementById('settingsSubtitle');
+        if (subtitle) {
+            subtitle.innerText = `Übersicht der laufenden Runde ${currentRound}`;
+        }
+        renderSettingsTable();
+        document.getElementById('settingsModal').style.display = 'flex';
+    }
+
+    function closeSettingsModal() {
+        document.getElementById('settingsModal').style.display = 'none';
+    }
+
+    function renderSettingsTable() {
+        const tbody = document.getElementById('settingsTableBody');
+        if (!tbody) return;
+
+        // Alle Spieler aus dem Gesamtspiel mit ihren Werten
+        const list = allPlayers.map(p => {
+            const cur = isRoundActive ? p.currentScore : 0;
+            return {
+                ...p,
+                currentPoints: cur,
+                effectiveTotal: p.totalScore + cur
+            };
+        });
+
+        // Nach aktuellem Gesamtergebnis absteigend sortieren
+        list.sort((a, b) => {
+            if (b.effectiveTotal !== a.effectiveTotal) return b.effectiveTotal - a.effectiveTotal;
+            return b.wins - a.wins;
+        });
+
+        // Top 3 Punktewerte ermitteln (> 0)
+        const positiveScores = [...new Set(list.map(p => p.effectiveTotal).filter(s => s > 0))];
+        const top1 = positiveScores[0] ?? null;
+        const top2 = positiveScores[1] ?? null;
+        const top3 = positiveScores[2] ?? null;
+
+        tbody.innerHTML = list.map((p) => {
+            let leaderClass = '';
+            let medal = '';
+
+            if (top1 !== null && p.effectiveTotal === top1) {
+                leaderClass = 'leader-rank-1';
+                medal = '🥇 ';
+            } else if (top2 !== null && p.effectiveTotal === top2) {
+                leaderClass = 'leader-rank-2';
+                medal = '🥈 ';
+            } else if (top3 !== null && p.effectiveTotal === top3) {
+                leaderClass = 'leader-rank-3';
+                medal = '🥉 ';
+            }
+
+            const inactiveTag = !p.active ? '<span class="status-badge badge-inactive" style="font-size:0.68rem; padding:1px 6px;">Pausiert</span>' : '';
+
+            return `
+                <tr class="${leaderClass}">
+                    <td style="text-align: left;">
+                        <div>${medal}<strong>${escapeHtml(p.name)}</strong> ${inactiveTag}</div>
+                    </td>
+                    <td style="text-align: center;">${p.roundsPlayed}</td>
+                    <td style="text-align: right;"><strong>${p.totalScore}</strong></td>
+                    <td style="text-align: right;">${p.active ? p.currentPoints : '<span style="opacity:0.4">-</span>'}</td>
+                </tr>
+            `;
+        }).join('');
+    }
+
+    // Einstellungs-Aktion 2: Spieler anpassen und Runde neustarten
+    function restartCurrentRoundWithAdjustedPlayers() {
+        if (!confirm(`Möchtest du Runde ${currentRound} wirklich neu starten? Bisherige Punkte dieser laufenden Runde werden auf 0 zurückgesetzt.`)) {
+            return;
+        }
+
+        // Punkte der laufenden Runde auf 0 zurücksetzen
+        getActivePlayers().forEach(p => p.currentScore = 0);
+        closeSettingsModal();
+        openPlayerAdjustModal('restartCurrentRound');
+    }
+
+    // Einstellungs-Aktion 3: Laufende Runde abbrechen
+    function abortCurrentRound() {
+        if (!confirm(`Möchtest du die laufende Runde ${currentRound} wirklich abbrechen? Die Punkte dieser Runde werden nicht gewertet.`)) {
+            return;
+        }
+
+        // Punkte der aktuellen Runde verwerfen (nicht werten)
+        getActivePlayers().forEach(p => p.currentScore = 0);
+        isRoundActive = false;
+        
+        abortedRoundNotice = `Runde ${currentRound} wurde abgebrochen und nicht gewertet. Hier ist der Highscore der vorherigen Runden:`;
+
+        closeSettingsModal();
+        showHighscore();
+    }
+
+    // --- MODAL-AKTION 1: Gleiche Spieler noch einmal ---
     function startNextRoundSamePlayers() {
-        players.forEach(p => p.score = 0);
+        getActivePlayers().forEach(p => p.currentScore = 0);
+        if (!isRoundActive) {
+            currentRound += 1;
+        }
+        isRoundActive = true;
+        abortedRoundNotice = '';
         history = [];
         hasWonBefore = false;
         
         document.getElementById('gameOverModal').style.display = 'none';
+        document.getElementById('settingsModal').style.display = 'none';
         document.getElementById('highscoreArea').style.display = 'none';
-        document.getElementById('setupCard').style.display = 'block';
+        document.getElementById('setupCard').style.display = 'none';
         document.getElementById('gameArea').style.display = 'block';
         
+        updateRoundBadge();
         renderList();
     }
 
+    // --- MODAL-AKTION 2: Spieler anpassen (hinzufügen / entfernen) ---
+    function openPlayerAdjustModal(source = 'gameOver') {
+        adjustModalSource = source;
+        document.getElementById('gameOverModal').style.display = 'none';
+        document.getElementById('settingsModal').style.display = 'none';
+        document.getElementById('highscoreArea').style.display = 'none';
+        
+        const subtitle = document.getElementById('adjustModalSubtitle');
+        let targetRoundNum = currentRound + 1;
+        if (source === 'restartCurrentRound') {
+            targetRoundNum = currentRound;
+            subtitle.innerText = `Passe die Mitspieler an, um Runde ${currentRound} neu zu starten:`;
+        } else {
+            subtitle.innerText = `Passe die Mitspieler für die kommende Runde ${targetRoundNum} an:`;
+        }
+        
+        document.getElementById('newPlayerNameInput').value = '';
+        renderAdjustPlayerList();
+        
+        document.getElementById('playerAdjustModal').style.display = 'flex';
+    }
+
+    function closePlayerAdjustModal() {
+        document.getElementById('playerAdjustModal').style.display = 'none';
+        if (adjustModalSource === 'highscore') {
+            showHighscore();
+        } else if (adjustModalSource === 'restartCurrentRound') {
+            document.getElementById('gameArea').style.display = 'block';
+            renderList();
+        } else if (!isRoundActive) {
+            document.getElementById('gameOverModal').style.display = 'flex';
+        } else {
+            document.getElementById('gameArea').style.display = 'block';
+        }
+    }
+
+    function addNewPlayerInModal() {
+        const input = document.getElementById('newPlayerNameInput');
+        const name = input.value.trim();
+        if (!name) return;
+
+        const existing = allPlayers.find(p => p.name.toLowerCase() === name.toLowerCase());
+        if (existing) {
+            if (!existing.active) {
+                existing.active = true;
+                input.value = '';
+                renderAdjustPlayerList();
+                return;
+            } else {
+                alert('Ein aktiver Spieler mit diesem Namen ist bereits in der Liste.');
+                return;
+            }
+        }
+
+        allPlayers.push({
+            id: nextPlayerId++,
+            name: name,
+            active: true,
+            currentScore: 0,
+            totalScore: 0,
+            roundScores: [],
+            wins: 0,
+            roundsPlayed: 0
+        });
+
+        input.value = '';
+        renderAdjustPlayerList();
+    }
+
+    function togglePlayerActive(id) {
+        const player = allPlayers.find(p => p.id === id);
+        if (player) {
+            player.active = !player.active;
+            renderAdjustPlayerList();
+        }
+    }
+
+    function renderAdjustPlayerList() {
+        const listContainer = document.getElementById('adjustPlayerList');
+        const startBtn = document.getElementById('startAdjustedRoundBtn');
+        const activeCount = allPlayers.filter(p => p.active).length;
+        const isRestart = adjustModalSource === 'restartCurrentRound';
+        const targetRoundNum = isRestart ? currentRound : (currentRound + 1);
+
+        startBtn.disabled = activeCount === 0;
+        startBtn.innerText = isRestart
+            ? `▶ Runde ${targetRoundNum} mit ${activeCount} ${activeCount === 1 ? 'Spieler' : 'Spielern'} neu starten`
+            : `▶ Runde ${targetRoundNum} mit ${activeCount} ${activeCount === 1 ? 'Spieler' : 'Spielern'} starten`;
+
+        listContainer.innerHTML = allPlayers.map(p => {
+            const statusBadge = p.active 
+                ? '<span class="status-badge badge-active">Spielt mit</span>' 
+                : '<span class="status-badge badge-inactive">Pausiert / Ausgeschieden</span>';
+            
+            const btnHtml = p.active
+                ? `<button type="button" class="btn-toggle-player btn-remove" onclick="togglePlayerActive(${p.id})" title="Aus nächster Runde entfernen">✕ Entfernen</button>`
+                : `<button type="button" class="btn-toggle-player btn-add-back" onclick="togglePlayerActive(${p.id})" title="Wieder mitspielen">+ Wieder mitspielen</button>`;
+
+            const subInfo = !p.active ? '<div class="adjust-sub"><em>Bleibt im Highscore gewertet</em></div>' : '';
+
+            return `
+                <div class="adjust-card ${p.active ? '' : 'inactive'}">
+                    <div class="adjust-top-row">
+                        <div class="adjust-name-group">
+                            <span class="adjust-name">${escapeHtml(p.name)}</span>
+                            ${statusBadge}
+                        </div>
+                        <div>
+                            ${btnHtml}
+                        </div>
+                    </div>
+                    ${subInfo}
+                </div>
+            `;
+        }).join('');
+    }
+
+    function confirmAndStartAdjustedRound() {
+        const activePlayers = getActivePlayers();
+        if (activePlayers.length === 0) {
+            alert('Bitte mindestens einen aktiven Spieler auswählen.');
+            return;
+        }
+
+        activePlayers.forEach(p => p.currentScore = 0);
+        
+        if (adjustModalSource !== 'restartCurrentRound' && !isRoundActive) {
+            currentRound += 1;
+        }
+        
+        isRoundActive = true;
+        abortedRoundNotice = '';
+        history = [];
+        hasWonBefore = false;
+
+        document.getElementById('playerAdjustModal').style.display = 'none';
+        document.getElementById('settingsModal').style.display = 'none';
+        document.getElementById('gameOverModal').style.display = 'none';
+        document.getElementById('highscoreArea').style.display = 'none';
+        document.getElementById('setupCard').style.display = 'none';
+        document.getElementById('gameArea').style.display = 'block';
+
+        updateRoundBadge();
+        renderList();
+    }
+
+    // --- HIGHSCORE ANZEIGEN ---
     function showHighscore() {
         document.getElementById('gameOverModal').style.display = 'none';
+        document.getElementById('settingsModal').style.display = 'none';
+        document.getElementById('playerAdjustModal').style.display = 'none';
         document.getElementById('gameArea').style.display = 'none';
         document.getElementById('setupCard').style.display = 'none';
         
         const hsArea = document.getElementById('highscoreArea');
         const hsList = document.getElementById('highscoreList');
+        const hsNotice = document.getElementById('hsAbortedNotice');
+        
         hsArea.style.display = 'block';
-        
-        // Nach Siegen sortieren
-        const sorted = [...players].sort((a, b) => b.wins - a.wins);
-        
-        hsList.innerHTML = sorted.map((p, idx) => `
-            <div class="player-card">
-                <div class="player-info">
-                    <span class="player-name">${idx === 0 && p.wins > 0 ? '👑 ' : ''}${p.name}</span>
+
+        // Eventuellen Abbruch-Hinweis anzeigen
+        if (abortedRoundNotice) {
+            hsNotice.style.display = 'block';
+            hsNotice.innerHTML = `
+                <div class="info-callout" style="border-left-color: var(--md-sys-color-warning); background-color: var(--md-sys-color-warning-container); color: var(--md-sys-color-on-warning-container); margin-bottom: 16px;">
+                    ⏹ <strong>${escapeHtml(abortedRoundNotice)}</strong>
                 </div>
-                <div style="font-weight: 800; color: var(--md-sys-color-primary); font-size: 1.1rem;">
-                    ${p.wins} ${p.wins === 1 ? 'Sieg' : 'Siege'}
+            `;
+        } else {
+            hsNotice.style.display = 'none';
+            hsNotice.innerHTML = '';
+        }
+        
+        // HIGHSCORE-REGELN:
+        // 1. Alle Spieler (auch entfernte / pausierte) werden vollständig angezeigt!
+        // 2. Als Gewinner gilt weiterhin, wer die meisten Gesamtpunkte hat, unabhängig von der gespielten Rundenanzahl!
+        // Bei abgebrochener Runde zählt nur der Stand der beendeten Runden (isRoundActive ist false).
+        const sorted = [...allPlayers].map(p => {
+            const currentPoints = isRoundActive ? p.currentScore : 0;
+            return {
+                ...p,
+                calculatedTotal: p.totalScore + currentPoints,
+                currentPoints: currentPoints
+            };
+        }).sort((a, b) => {
+            if (b.calculatedTotal !== a.calculatedTotal) return b.calculatedTotal - a.calculatedTotal;
+            return b.wins - a.wins;
+        });
+
+        const maxTotal = sorted.length > 0 ? sorted[0].calculatedTotal : 0;
+
+        hsList.innerHTML = sorted.map((p, idx) => {
+            const isChampion = p.calculatedTotal === maxTotal && maxTotal > 0;
+            let roundBreakdownText = '';
+            
+            if (p.roundScores.length > 0) {
+                const parts = p.roundScores.map((s, i) => `R${i+1}: ${s}`);
+                roundBreakdownText = parts.join(' | ');
+            } else {
+                roundBreakdownText = 'Noch keine gewertete Runde beendet';
+            }
+
+            return `
+                <div class="player-card ${isChampion ? 'winner-card' : ''}">
+                    <div class="hs-rank">${isChampion ? '🏆' : '#' + (idx + 1)}</div>
+                    <div class="player-info">
+                        <div>
+                            ${isChampion ? '<span class="crown">👑</span>' : ''}
+                            <span class="player-name">${escapeHtml(p.name)}</span>
+                            ${!p.active ? '<span class="status-badge badge-inactive">Ausgeschieden</span>' : ''}
+                        </div>
+                        <div class="score-stats">
+                            ${p.wins} ${p.wins === 1 ? 'Sieg' : 'Siege'} &bull; ${p.roundsPlayed} ${p.roundsPlayed === 1 ? 'Runde beendet' : 'Runden beendet'}
+                        </div>
+                        <div class="hs-breakdown">${roundBreakdownText}</div>
+                    </div>
+                    <div style="text-align: right;">
+                        <div style="font-weight: 800; color: var(--md-sys-color-primary); font-size: 1.25rem;">
+                            ${p.calculatedTotal}
+                        </div>
+                        <div style="font-size: 0.75rem; color: var(--md-sys-color-on-surface-variant); font-weight: 600;">
+                            Punkte
+                        </div>
+                    </div>
                 </div>
-            </div>
-        `).join('');
+            `;
+        }).join('');
     }
 
+    // --- ALLES ZURÜCKSETZEN ---
     function resetEntireGame() {
-        players = [];
+        if (!confirm('Möchtest du wirklich ein komplett neues Spiel mit neuen Spielern starten?')) return;
+        
+        allPlayers = [];
         history = [];
         hasWonBefore = false;
+        currentRound = 1;
+        isRoundActive = false;
+        nextPlayerId = 1;
+        abortedRoundNotice = '';
         
         document.getElementById('highscoreArea').style.display = 'none';
+        document.getElementById('settingsModal').style.display = 'none';
+        document.getElementById('playerAdjustModal').style.display = 'none';
+        document.getElementById('gameOverModal').style.display = 'none';
         document.getElementById('gameArea').style.display = 'none';
         document.getElementById('setupCard').style.display = 'block';
         document.getElementById('playerName').value = '';
+        renderSetupChips();
+        updateRoundBadge();
     }
 
+    // --- RÜCKGÄNGIG-FUNKTION (Während des Spiels) ---
     function undoLastRound() {
         if (history.length > 0) {
-            players = history.pop();
-            hasWonBefore = false;
+            const prevState = history.pop();
+            allPlayers = prevState.allPlayers;
+            currentRound = prevState.currentRound;
+            hasWonBefore = prevState.hasWonBefore;
+            isRoundActive = prevState.isRoundActive;
             
             document.getElementById('gameOverModal').style.display = 'none';
+            document.getElementById('settingsModal').style.display = 'none';
+            document.getElementById('playerAdjustModal').style.display = 'none';
             document.getElementById('highscoreArea').style.display = 'none';
-            document.getElementById('setupCard').style.display = 'block';
-            document.getElementById('gameArea').style.display = players.length > 0 ? 'block' : 'none';
+            document.getElementById('setupCard').style.display = 'none';
+            document.getElementById('gameArea').style.display = 'block';
             
+            updateRoundBadge();
             renderList();
         }
+    }
+
+    // --- HILFSFUNKTIONEN ---
+    function escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
     }
 
     function shootConfetti() {
@@ -368,18 +1272,20 @@
 
         (function frame() {
             confetti({
-                particleCount: 3,
+                particleCount: 4,
                 angle: 60,
-                spread: 55,
+                spread: 60,
                 origin: { x: 0 },
-                colors: ['#0b57d0', '#fbbc04', '#146c2e']
+                colors: ['#0b57d0', '#fbbc04', '#146c2e', '#e91e63'],
+                zIndex: 2500
             });
             confetti({
-                particleCount: 3,
+                particleCount: 4,
                 angle: 120,
-                spread: 55,
+                spread: 60,
                 origin: { x: 1 },
-                colors: ['#0b57d0', '#fbbc04', '#146c2e']
+                colors: ['#0b57d0', '#fbbc04', '#146c2e', '#e91e63'],
+                zIndex: 2500
             });
 
             if (Date.now() < end) {
