@@ -74,6 +74,8 @@
     .container {
       width: 100%;
       max-width: 820px;
+      position: relative;
+      z-index: 2;
     }
 
     /* M3 Category Accordion */
@@ -130,6 +132,11 @@
       background-color: var(--md-sys-color-secondary-container);
       color: var(--md-sys-color-on-secondary-container);
       font-size: 1.15rem;
+      transition: transform 0.2s ease;
+    }
+
+    summary.category-header:hover .category-badge {
+      transform: scale(1.1);
     }
 
     .chevron {
@@ -218,6 +225,9 @@
 </head>
 <body>
 
+<!-- Responsive Vollbild Canvas für Partikel & Sprite FX -->
+<canvas id="fxCanvas" style="position:fixed; top:0; left:0; width:100vw; height:100vh; pointer-events:none; z-index:99999;"></canvas>
+
 <div class="container">
   <header class="m3-top-app-bar">
     <div class="m3-top-app-bar-spacer" aria-hidden="true"></div>
@@ -232,7 +242,7 @@
   </header>
 
   <!-- 1. Kategorie: Gesellschaftsspiele -->
-  <details class="category" close>
+  <details class="category" id="cat-boardgames">
     <summary class="category-header">
       <span class="category-badge">🎲</span>
       <span class="category-label">Gesellschaftsspiele</span>
@@ -246,7 +256,7 @@
         <div class="icon">🃏</div>
         <div>
           <div class="title">Flip7</div>
-          <div class="desc">Scorekeeper mit Highscore-Board für Flip7.</div>
+          <div class="desc">Scorekeeper mit Highscore-Board & flexibler Spielerauswahl.</div>
         </div>
       </a>
 
@@ -294,7 +304,7 @@
   </details>
 
   <!-- 2. Kategorie: Outdoor Spiele -->
-  <details class="category">
+  <details class="category" id="cat-outdoor">
     <summary class="category-header">
       <span class="category-badge">🌳</span>
       <span class="category-label">Outdoor-Spiele</span>
@@ -322,7 +332,7 @@
   </details>
 
   <!-- 3. Kategorie: Arcade -->
-  <details class="category">
+  <details class="category" id="cat-arcade">
     <summary class="category-header">
       <span class="category-badge">🕹️</span>
       <span class="category-label">Arcade</span>
@@ -358,6 +368,1314 @@
   </details>
 
 </div>
+
+<!-- ==========================================================================
+     HOCHENTWICKELTE HTML5 CANVAS VOLLBILD-PARTIKEL- & SPRITE-ENGINE
+     ========================================================================== -->
+<script>
+(function() {
+  'use strict';
+
+  const canvas = document.getElementById('fxCanvas');
+  const ctx = canvas.getContext('2d');
+
+  let width = 0;
+  let height = 0;
+  let dpr = 1;
+  let animId = null;
+  let currentEffect = null;
+  let effectStartTime = 0;
+  const EFFECT_DURATION = 2300; // 2.3 Sekunden Gesamtlaufzeit
+  const FADE_DURATION = 650;   // Letzte 650ms sanftes Ausblenden
+
+  // ==========================================
+  // Resize & DPI Handling
+  // ==========================================
+  function resize() {
+    dpr = Math.min(window.devicePixelRatio || 1, 2);
+    width = window.innerWidth;
+    height = window.innerHeight;
+    canvas.width = Math.floor(width * dpr);
+    canvas.height = Math.floor(height * dpr);
+    canvas.style.width = width + 'px';
+    canvas.style.height = height + 'px';
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  }
+  window.addEventListener('resize', resize);
+  resize();
+
+  function isDarkMode() {
+    const docTheme = document.documentElement.getAttribute('data-theme');
+    if (docTheme) return docTheme === 'dark';
+    return window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+  }
+
+  // ==========================================
+  // 3D Matrix & Vektor Hilfsfunktionen
+  // ==========================================
+  function rotatePoint3D(p, rx, ry, rz) {
+    let [x, y, z] = p;
+    // Rotate X
+    const cx = Math.cos(rx), sx = Math.sin(rx);
+    const y1 = y * cx - z * sx;
+    const z1 = y * sx + z * cx;
+    // Rotate Y
+    const cy = Math.cos(ry), sy = Math.sin(ry);
+    const x2 = x * cy + z1 * sy;
+    const z2 = -x * sy + z1 * cy;
+    // Rotate Z
+    const cz = Math.cos(rz), sz = Math.sin(rz);
+    const x3 = x2 * cz - y1 * sz;
+    const y3 = x2 * sz + y1 * cz;
+    return [x3, y3, z2];
+  }
+
+  // Bilineare Interpolation für Pips auf rotierender 3D-Fläche
+  function interpolateQuad(p0, p1, p2, p3, u, v) {
+    const w0 = (0.5 - u) * (0.5 - v);
+    const w1 = (0.5 + u) * (0.5 - v);
+    const w2 = (0.5 + u) * (0.5 + v);
+    const w3 = (0.5 - u) * (0.5 + v);
+    return [
+      w0 * p0[0] + w1 * p1[0] + w2 * p2[0] + w3 * p3[0],
+      w0 * p0[1] + w1 * p1[1] + w2 * p2[1] + w3 * p3[1]
+    ];
+  }
+
+  // ==========================================
+  // EFFEKT 1: GESELLSCHAFTSSPIELE (3D WÜRFEL & MEEPLES)
+  // ==========================================
+  class BoardGamesFX {
+    constructor() {
+      this.dice = [];
+      this.meeples = [];
+      this.sparkles = [];
+      this.init();
+    }
+
+    init() {
+      const dark = isDarkMode();
+      const numDice = 7;
+      const diceThemes = [
+        { body: '#ffffff', pip: '#111827', edge: '#cbd5e1', accentPip: '#dc2626' }, // Elfenbeinweiß
+        { body: '#ffffff', pip: '#111827', edge: '#cbd5e1', accentPip: '#dc2626' },
+        { body: '#e11d48', pip: '#ffffff', edge: '#9f1239', accentPip: '#ffd54f' }, // Rubinrot
+        { body: '#2563eb', pip: '#ffffff', edge: '#1d4ed8', accentPip: '#ffffff' }, // Königsblau
+        { body: '#059669', pip: '#ffffff', edge: '#047857', accentPip: '#ffffff' }, // Smaragdgrün
+        { body: '#ffffff', pip: '#0f172a', edge: '#94a3b8', accentPip: '#dc2626' },
+        { body: '#d97706', pip: '#ffffff', edge: '#b45309', accentPip: '#111827' }  // Bernstein
+      ];
+
+      for (let i = 0; i < numDice; i++) {
+        const t = diceThemes[i % diceThemes.length];
+        const startX = width * (0.15 + 0.7 * (i / (numDice - 1))) + (Math.random() - 0.5) * 80;
+        const startY = height * 0.45 + (Math.random() - 0.5) * 60;
+        const vx = (Math.random() - 0.5) * 550;
+        const vy = -(650 + Math.random() * 550);
+
+        this.dice.push({
+          x: startX,
+          y: startY,
+          vx: vx,
+          vy: vy,
+          size: 26 + Math.random() * 8, // Halbe Seitenlänge ca. 26-34px
+          rx: Math.random() * Math.PI * 2,
+          ry: Math.random() * Math.PI * 2,
+          rz: Math.random() * Math.PI * 2,
+          drx: (Math.random() - 0.5) * 9,
+          dry: (Math.random() - 0.5) * 9,
+          drz: (Math.random() - 0.5) * 9,
+          theme: t,
+          bounces: 0
+        });
+      }
+
+      // Meeples (Spielfiguren in M3 Farben)
+      const meepleColors = ['#0b57d0', '#b3261e', '#146c2e', '#e37400', '#6b21a8', '#00639b', '#d93025'];
+      const numMeeples = 10;
+      for (let i = 0; i < numMeeples; i++) {
+        const mx = width * (0.1 + 0.8 * Math.random());
+        const my = height * 0.5 + (Math.random() - 0.5) * 80;
+        this.meeples.push({
+          x: mx,
+          y: my,
+          vx: (Math.random() - 0.5) * 450,
+          vy: -(600 + Math.random() * 450),
+          rot: (Math.random() - 0.5) * 0.8,
+          dRot: (Math.random() - 0.5) * 5,
+          tumbleX: Math.random() * Math.PI * 2,
+          dTumbleX: (Math.random() - 0.5) * 7,
+          color: meepleColors[i % meepleColors.length],
+          size: 30 + Math.random() * 10
+        });
+      }
+
+      // 40 Funkelnde Konfetti / Spielchips
+      for (let i = 0; i < 45; i++) {
+        this.sparkles.push({
+          x: width * 0.5 + (Math.random() - 0.5) * (width * 0.6),
+          y: height * 0.45 + (Math.random() - 0.5) * 100,
+          vx: (Math.random() - 0.5) * 700,
+          vy: -(300 + Math.random() * 700),
+          size: 4 + Math.random() * 6,
+          color: meepleColors[Math.floor(Math.random() * meepleColors.length)],
+          rot: Math.random() * Math.PI * 2,
+          dRot: (Math.random() - 0.5) * 10,
+          shape: Math.random() > 0.4 ? 'circle' : 'star'
+        });
+      }
+    }
+
+    update(dt) {
+      const gravity = 1250;
+      const floor = height - 35;
+
+      // Update Dice
+      this.dice.forEach(d => {
+        d.vy += gravity * dt;
+        d.x += d.vx * dt;
+        d.y += d.vy * dt;
+
+        d.rx += d.drx * dt;
+        d.ry += d.dry * dt;
+        d.rz += d.drz * dt;
+
+        // Bounce am Boden
+        if (d.y > floor) {
+          d.y = floor;
+          d.vy = -Math.abs(d.vy) * 0.65;
+          d.vx *= 0.82;
+          d.drx *= 0.8;
+          d.dry *= 0.8;
+          d.drz *= 0.8;
+          d.bounces++;
+        }
+        // Wände
+        if (d.x < d.size) { d.x = d.size; d.vx = Math.abs(d.vx) * 0.7; }
+        if (d.x > width - d.size) { d.x = width - d.size; d.vx = -Math.abs(d.vx) * 0.7; }
+      });
+
+      // Update Meeples
+      this.meeples.forEach(m => {
+        m.vy += gravity * 0.9 * dt;
+        m.x += m.vx * dt;
+        m.y += m.vy * dt;
+        m.rot += m.dRot * dt;
+        m.tumbleX += m.dTumbleX * dt;
+
+        if (m.y > floor) {
+          m.y = floor;
+          m.vy = -Math.abs(m.vy) * 0.6;
+          m.vx *= 0.85;
+          m.dRot *= 0.8;
+        }
+      });
+
+      // Update Sparkles
+      this.sparkles.forEach(s => {
+        s.vy += gravity * 0.6 * dt;
+        s.x += s.vx * dt;
+        s.y += s.vy * dt;
+        s.rot += s.dRot * dt;
+      });
+    }
+
+    draw(ctx, alpha) {
+      ctx.save();
+      ctx.globalAlpha = alpha;
+
+      // 1. Sparkles zeichnen
+      this.sparkles.forEach(s => {
+        ctx.save();
+        ctx.translate(s.x, s.y);
+        ctx.rotate(s.rot);
+        ctx.fillStyle = s.color;
+        if (s.shape === 'circle') {
+          ctx.beginPath();
+          ctx.arc(0, 0, s.size * 0.5, 0, Math.PI * 2);
+          ctx.fill();
+        } else {
+          // 4-Point Star
+          ctx.beginPath();
+          for (let p = 0; p < 4; p++) {
+            const angle = (p * Math.PI) / 2;
+            const rOuter = s.size;
+            const rInner = s.size * 0.35;
+            ctx.lineTo(Math.cos(angle) * rOuter, Math.sin(angle) * rOuter);
+            ctx.lineTo(Math.cos(angle + Math.PI / 4) * rInner, Math.sin(angle + Math.PI / 4) * rInner);
+          }
+          ctx.closePath();
+          ctx.fill();
+        }
+        ctx.restore();
+      });
+
+      // 2. Meeples zeichnen
+      this.meeples.forEach(m => {
+        ctx.save();
+        ctx.translate(m.x, m.y);
+        ctx.rotate(m.rot);
+        const flip = Math.cos(m.tumbleX);
+        ctx.scale(flip, 1);
+
+        // Sanfter Schatten
+        ctx.shadowColor = 'rgba(0,0,0,0.35)';
+        ctx.shadowBlur = 8;
+        ctx.shadowOffsetY = 3;
+
+        this.drawMeepleSilhouette(ctx, m.size, m.color);
+        ctx.restore();
+      });
+
+      // 3. 3D Würfel mit Augen rendern
+      this.dice.forEach(d => {
+        this.render3DCube(ctx, d);
+      });
+
+      ctx.restore();
+    }
+
+    drawMeepleSilhouette(ctx, size, color) {
+      const s = size / 40;
+      ctx.fillStyle = color;
+      ctx.strokeStyle = 'rgba(255,255,255,0.4)';
+      ctx.lineWidth = 1.5;
+
+      ctx.beginPath();
+      // Kopf
+      ctx.arc(0, -13 * s, 6.5 * s, 0, Math.PI * 2);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+
+      // Körper mit Händen & Beinen
+      ctx.beginPath();
+      ctx.moveTo(0, -6.5 * s);
+      ctx.bezierCurveTo(4 * s, -6 * s, 9 * s, -3 * s, 11 * s, 0);
+      ctx.lineTo(17 * s, 6 * s);
+      ctx.bezierCurveTo(17 * s, 9 * s, 14 * s, 9 * s, 12 * s, 7 * s);
+      ctx.lineTo(8 * s, 6 * s);
+      ctx.lineTo(13 * s, 19 * s);
+      ctx.lineTo(5 * s, 19 * s);
+      ctx.bezierCurveTo(3 * s, 14 * s, 1 * s, 9 * s, 0, 9 * s);
+      ctx.bezierCurveTo(-1 * s, 9 * s, -3 * s, 14 * s, -5 * s, 19 * s);
+      ctx.lineTo(-13 * s, 19 * s);
+      ctx.lineTo(-8 * s, 6 * s);
+      ctx.lineTo(-12 * s, 7 * s);
+      ctx.bezierCurveTo(-14 * s, 9 * s, -17 * s, 9 * s, -17 * s, 6 * s);
+      ctx.lineTo(-11 * s, 0);
+      ctx.bezierCurveTo(-9 * s, -3 * s, -4 * s, -6 * s, 0, -6.5 * s);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+
+      // Glanz-Highlight auf dem Kopf
+      ctx.beginPath();
+      ctx.arc(-2 * s, -15 * s, 2 * s, 0, Math.PI * 2);
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.45)';
+      ctx.fill();
+    }
+
+    render3DCube(ctx, d) {
+      const s = d.size;
+      const rawVertices = [
+        [-s, -s, -s], [ s, -s, -s], [ s,  s, -s], [-s,  s, -s], // Back 0,1,2,3
+        [-s, -s,  s], [ s, -s,  s], [ s,  s,  s], [-s,  s,  s]  // Front 4,5,6,7
+      ];
+
+      const rotV = rawVertices.map(v => rotatePoint3D(v, d.rx, d.ry, d.rz));
+
+      const faces = [
+        { v: [4, 5, 6, 7], norm: [0, 0, 1], val: 1 },  // Vorne (1)
+        { v: [1, 0, 3, 2], norm: [0, 0, -1], val: 6 }, // Hinten (6)
+        { v: [3, 2, 6, 7], norm: [0, 1, 0], val: 2 },  // Oben/Unten (2)
+        { v: [0, 1, 5, 4], norm: [0, -1, 0], val: 5 }, // Unten/Oben (5)
+        { v: [5, 1, 2, 6], norm: [1, 0, 0], val: 3 },  // Rechts (3)
+        { v: [0, 4, 7, 3], norm: [-1, 0, 0], val: 4 }  // Links (4)
+      ];
+
+      // Nur sichtbare Flächen (Backface Culling via Z-Komponente der transformierten Normale)
+      const visibleFaces = [];
+      faces.forEach(f => {
+        const rotNorm = rotatePoint3D(f.norm, d.rx, d.ry, d.rz);
+        if (rotNorm[2] > 0.05) {
+          const zDepth = (rotV[f.v[0]][2] + rotV[f.v[1]][2] + rotV[f.v[2]][2] + rotV[f.v[3]][2]) / 4;
+          visibleFaces.push({
+            ...f,
+            rotNorm: rotNorm,
+            zDepth: zDepth,
+            pts: f.v.map(idx => [d.x + rotV[idx][0], d.y + rotV[idx][1]])
+          });
+        }
+      });
+
+      // Painter's Algorithm: von hinten nach vorne zeichnen
+      visibleFaces.sort((a, b) => a.zDepth - b.zDepth);
+
+      // Lichtvektor (von oben-vorne-links)
+      const lx = 0.35, ly = -0.55, lz = 0.75;
+
+      visibleFaces.forEach(f => {
+        const dot = Math.max(0, f.rotNorm[0] * lx - f.rotNorm[1] * ly + f.rotNorm[2] * lz);
+        const shade = 0.55 + 0.45 * dot;
+
+        ctx.save();
+        ctx.shadowColor = 'rgba(0, 0, 0, 0.28)';
+        ctx.shadowBlur = 10;
+        ctx.shadowOffsetY = 4;
+
+        // Fläche zeichnen
+        ctx.beginPath();
+        ctx.moveTo(f.pts[0][0], f.pts[0][1]);
+        ctx.lineTo(f.pts[1][0], f.pts[1][1]);
+        ctx.lineTo(f.pts[2][0], f.pts[2][1]);
+        ctx.lineTo(f.pts[3][0], f.pts[3][1]);
+        ctx.closePath();
+
+        // Shading anwenden
+        ctx.fillStyle = d.theme.body;
+        ctx.fill();
+        ctx.strokeStyle = d.theme.edge;
+        ctx.lineWidth = 1.8;
+        ctx.stroke();
+
+        // Leichter Schattierungsfilter
+        ctx.fillStyle = `rgba(0, 0, 0, ${(1 - shade) * 0.45})`;
+        ctx.fill();
+        ctx.restore();
+
+        // Würfel-Augen (Pips) auf der Fläche rendern
+        this.renderPips(ctx, f, d);
+      });
+    }
+
+    renderPips(ctx, f, d) {
+      const pipCoords = {
+        1: [[0, 0]],
+        2: [[-0.26, -0.26], [0.26, 0.26]],
+        3: [[-0.26, -0.26], [0, 0], [0.26, 0.26]],
+        4: [[-0.26, -0.26], [0.26, -0.26], [-0.26, 0.26], [0.26, 0.26]],
+        5: [[-0.26, -0.26], [0.26, -0.26], [0, 0], [-0.26, 0.26], [0.26, 0.26]],
+        6: [[-0.26, -0.28], [0.26, -0.28], [-0.26, 0], [0.26, 0], [-0.26, 0.28], [0.26, 0.28]]
+      };
+
+      const coords = pipCoords[f.val] || [];
+      const pipRadius = d.size * (f.val === 1 ? 0.22 : 0.15);
+      const isSpecialOne = f.val === 1 && d.theme.accentPip;
+      const pipFill = isSpecialOne ? d.theme.accentPip : d.theme.pip;
+
+      ctx.fillStyle = pipFill;
+      coords.forEach(([u, v]) => {
+        const [px, py] = interpolateQuad(f.pts[0], f.pts[1], f.pts[2], f.pts[3], u, v);
+        ctx.beginPath();
+        ctx.arc(px, py, pipRadius, 0, Math.PI * 2);
+        ctx.fill();
+      });
+    }
+  }
+
+  // ==========================================
+  // EFFEKT 2: OUTDOOR-SPIELE (TAUMELNDE BLÄTTER & WIND)
+  // ==========================================
+  class OutdoorNatureFX {
+    constructor() {
+      this.leaves = [];
+      this.windGusts = [];
+      this.pollen = [];
+      this.init();
+    }
+
+    init() {
+      const dark = isDarkMode();
+      const numLeaves = 44;
+      const leafTypes = ['maple', 'oak', 'birch'];
+
+      // Naturgetreue Farbpalette: Herbstfarben + Frisches Grün
+      const leafColors = [
+        { main: '#d32f2f', under: '#ef9a9a', name: 'maple-red' },
+        { main: '#e65100', under: '#ffcc80', name: 'amber-orange' },
+        { main: '#f57f17', under: '#fff59d', name: 'golden-yellow' },
+        { main: '#2e7d32', under: '#a5d6a7', name: 'forest-green' },
+        { main: '#558b2f', under: '#c5e1a5', name: 'olive-green' },
+        { main: '#8bc34a', under: '#dcedc8', name: 'spring-lime' },
+        { main: '#c2410c', under: '#fed7aa', name: 'warm-russet' }
+      ];
+
+      for (let i = 0; i < numLeaves; i++) {
+        const type = leafTypes[i % leafTypes.length];
+        const color = leafColors[i % leafColors.length];
+        const startX = -60 - Math.random() * (width * 0.4);
+        const startY = Math.random() * (height * 0.9);
+
+        this.leaves.push({
+          x: startX,
+          y: startY,
+          baseSpeedX: 380 + Math.random() * 320,
+          baseSpeedY: 60 + Math.random() * 120,
+          waveAmp: 40 + Math.random() * 50,
+          waveFreq: 2.2 + Math.random() * 1.8,
+          phase: Math.random() * Math.PI * 2,
+          type: type,
+          color: color,
+          scale: 0.65 + Math.random() * 0.55,
+          yaw: Math.random() * Math.PI * 2,
+          dYaw: (Math.random() - 0.5) * 4.5,
+          pitch: Math.random() * Math.PI * 2,
+          dPitch: 2.8 + Math.random() * 4.2,
+          roll: Math.random() * Math.PI * 2,
+          dRoll: 1.8 + Math.random() * 3.5
+        });
+      }
+
+      // Wind-Strömungslinien (Swooshes)
+      for (let i = 0; i < 9; i++) {
+        this.windGusts.push({
+          y: height * (0.15 + 0.75 * (i / 8)) + (Math.random() - 0.5) * 40,
+          speed: 700 + Math.random() * 400,
+          progress: -(Math.random() * 0.5),
+          length: width * (0.35 + Math.random() * 0.3),
+          amplitude: 25 + Math.random() * 30,
+          freq: 0.003 + Math.random() * 0.002,
+          thickness: 1.5 + Math.random() * 2
+        });
+      }
+
+      // Schwebende Pollen / Wald-Partikel
+      for (let i = 0; i < 48; i++) {
+        this.pollen.push({
+          x: Math.random() * width,
+          y: Math.random() * height,
+          vx: 220 + Math.random() * 300,
+          vy: (Math.random() - 0.5) * 60,
+          radius: 1 + Math.random() * 2.5,
+          alpha: 0.3 + Math.random() * 0.6
+        });
+      }
+    }
+
+    update(dt, elapsedSec) {
+      // Blätter bewegen & 3D taumeln
+      this.leaves.forEach(l => {
+        const wave = Math.sin(elapsedSec * l.waveFreq + l.phase);
+        l.x += (l.baseSpeedX + wave * 60) * dt;
+        l.y += (l.baseSpeedY + wave * l.waveAmp) * dt;
+
+        l.yaw += l.dYaw * dt;
+        l.pitch += l.dPitch * dt;
+        l.roll += l.dRoll * dt;
+      });
+
+      // Windströme
+      this.windGusts.forEach(g => {
+        g.progress += (g.speed / width) * dt;
+      });
+
+      // Pollen
+      this.pollen.forEach(p => {
+        p.x += p.vx * dt;
+        p.y += p.vy * dt;
+        if (p.x > width + 20) p.x = -20;
+      });
+    }
+
+    draw(ctx, alpha) {
+      ctx.save();
+      ctx.globalAlpha = alpha;
+      const dark = isDarkMode();
+
+      // 1. Wind-Hauchlinien (Luftwirbel)
+      this.windGusts.forEach(g => {
+        const startX = g.progress * width;
+        if (startX > width + 50 || startX + g.length < -50) return;
+
+        ctx.save();
+        ctx.beginPath();
+        const pts = 24;
+        for (let p = 0; p <= pts; p++) {
+          const px = startX + (p / pts) * g.length;
+          const py = g.y + Math.sin(px * g.freq + g.progress * 4) * g.amplitude;
+          if (p === 0) ctx.moveTo(px, py);
+          else ctx.lineTo(px, py);
+        }
+
+        const grad = ctx.createLinearGradient(startX, g.y, startX + g.length, g.y);
+        const strokeColor = dark ? '255, 255, 255' : '46, 125, 50';
+        grad.addColorStop(0, `rgba(${strokeColor}, 0)`);
+        grad.addColorStop(0.5, `rgba(${strokeColor}, ${dark ? 0.28 : 0.2})`);
+        grad.addColorStop(1, `rgba(${strokeColor}, 0)`);
+
+        ctx.strokeStyle = grad;
+        ctx.lineWidth = g.thickness;
+        ctx.stroke();
+        ctx.restore();
+      });
+
+      // 2. Pollen-Partikel
+      ctx.fillStyle = dark ? '#c4eed0' : '#81c784';
+      this.pollen.forEach(p => {
+        ctx.save();
+        ctx.globalAlpha = alpha * p.alpha;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+      });
+
+      // 3. Taumelnde 3D-Blätter
+      this.leaves.forEach(l => {
+        ctx.save();
+        ctx.translate(l.x, l.y);
+        ctx.rotate(l.yaw);
+
+        // 3D Taumel-Projektion
+        const cosPitch = Math.cos(l.pitch);
+        const sinRoll = Math.sin(l.roll);
+        ctx.scale(cosPitch * l.scale, sinRoll * l.scale);
+
+        // Blatt-Oberseite vs. Unterseite (echter 3D-Farbwechsel)
+        const isBackside = cosPitch * sinRoll < 0;
+        const currentFill = isBackside ? l.color.under : l.color.main;
+        const veinColor = isBackside ? 'rgba(0,0,0,0.15)' : 'rgba(255,255,255,0.35)';
+
+        ctx.shadowColor = 'rgba(0, 0, 0, 0.2)';
+        ctx.shadowBlur = 6;
+        ctx.shadowOffsetY = 3;
+
+        ctx.fillStyle = currentFill;
+        ctx.strokeStyle = isBackside ? 'rgba(0,0,0,0.1)' : 'rgba(0,0,0,0.25)';
+        ctx.lineWidth = 1;
+
+        if (l.type === 'maple') {
+          this.drawMapleLeaf(ctx);
+        } else if (l.type === 'oak') {
+          this.drawOakLeaf(ctx);
+        } else {
+          this.drawBirchLeaf(ctx);
+        }
+
+        // Blattadern
+        ctx.strokeStyle = veinColor;
+        ctx.lineWidth = 1.2;
+        ctx.stroke();
+
+        ctx.restore();
+      });
+
+      ctx.restore();
+    }
+
+    drawMapleLeaf(ctx) {
+      // 5-lappiges Ahornblatt
+      ctx.beginPath();
+      ctx.moveTo(0, 22);
+      ctx.lineTo(0, 28); // Stiel
+      ctx.moveTo(0, 22);
+      // Rechts
+      ctx.bezierCurveTo(6, 20, 14, 18, 18, 12);
+      ctx.lineTo(13, 8);
+      ctx.bezierCurveTo(18, 6, 26, 2, 28, -6);
+      ctx.lineTo(16, -9);
+      ctx.bezierCurveTo(18, -16, 12, -24, 0, -30); // Spitze
+      // Links
+      ctx.bezierCurveTo(-12, -24, -18, -16, -16, -9);
+      ctx.lineTo(-28, -6);
+      ctx.bezierCurveTo(-26, 2, -18, 6, -13, 8);
+      ctx.lineTo(-18, 12);
+      ctx.bezierCurveTo(-14, 18, -6, 20, 0, 22);
+      ctx.closePath();
+      ctx.fill();
+
+      // Blattadern
+      ctx.beginPath();
+      ctx.moveTo(0, 22);
+      ctx.lineTo(0, -26);
+      ctx.moveTo(0, 6);
+      ctx.lineTo(18, -4);
+      ctx.moveTo(0, 6);
+      ctx.lineTo(-18, -4);
+      ctx.moveTo(0, 14);
+      ctx.lineTo(12, 10);
+      ctx.moveTo(0, 14);
+      ctx.lineTo(-12, 10);
+    }
+
+    drawOakLeaf(ctx) {
+      // Welliges Eichenblatt
+      ctx.beginPath();
+      ctx.moveTo(0, 26);
+      ctx.lineTo(0, 20);
+      // Rechte Lappen
+      ctx.bezierCurveTo(9, 19, 14, 14, 7, 9);
+      ctx.bezierCurveTo(16, 8, 18, 2, 9, -3);
+      ctx.bezierCurveTo(17, -5, 15, -14, 7, -17);
+      ctx.bezierCurveTo(9, -22, 4, -26, 0, -27); // Krone
+      // Linke Lappen
+      ctx.bezierCurveTo(-4, -26, -9, -22, -7, -17);
+      ctx.bezierCurveTo(-15, -14, -17, -5, -9, -3);
+      ctx.bezierCurveTo(-18, 2, -16, 8, -7, 9);
+      ctx.bezierCurveTo(-14, 14, -9, 19, 0, 20);
+      ctx.closePath();
+      ctx.fill();
+
+      // Haupt- und Seitenadern
+      ctx.beginPath();
+      ctx.moveTo(0, 20);
+      ctx.lineTo(0, -24);
+      ctx.moveTo(0, 12);
+      ctx.lineTo(8, 7);
+      ctx.moveTo(0, 12);
+      ctx.lineTo(-8, 7);
+      ctx.moveTo(0, 0);
+      ctx.lineTo(10, -5);
+      ctx.moveTo(0, 0);
+      ctx.lineTo(-10, -5);
+    }
+
+    drawBirchLeaf(ctx) {
+      // Zartes Birken-/Buchenblatt
+      ctx.beginPath();
+      ctx.moveTo(0, 22);
+      ctx.lineTo(0, 16);
+      // Rechte Herz- und Spitzform
+      ctx.bezierCurveTo(12, 16, 18, 8, 16, 0);
+      ctx.bezierCurveTo(14, -8, 8, -17, 0, -24);
+      // Linke Seite
+      ctx.bezierCurveTo(-8, -17, -14, -8, -16, 0);
+      ctx.bezierCurveTo(-18, 8, -12, 16, 0, 16);
+      ctx.closePath();
+      ctx.fill();
+
+      // Adern
+      ctx.beginPath();
+      ctx.moveTo(0, 16);
+      ctx.lineTo(0, -21);
+      ctx.moveTo(0, 8);
+      ctx.lineTo(9, 2);
+      ctx.moveTo(0, 8);
+      ctx.lineTo(-9, 2);
+      ctx.moveTo(0, -2);
+      ctx.lineTo(8, -8);
+      ctx.moveTo(0, -2);
+      ctx.lineTo(-8, -8);
+    }
+  }
+
+  // ==========================================
+  // EFFEKT 3: ARCADE (SUPER 16-BIT MULTI-SHADED INVADERS & UFO)
+  // ==========================================
+  const SPRITES = {
+    // Krabbe (11 x 8) mit Chitin-Schatten & glühenden Augen
+    crab: [
+      [
+        "..S.....S..",
+        "...B...B...",
+        "..HHHHHHH..",
+        ".HHBEEBEBHS",
+        "SHBBBBBBBBS",
+        "S.SBBBBBBS.",
+        "S.S.S.S..S.",
+        "...S...S..."
+      ],
+      [
+        "..S.....S..",
+        "S..B...B..S",
+        "S.HHHHHHH.S",
+        "SHHBEEBEBHS",
+        ".HBBBBBBBB.",
+        "..SBBBBBBS.",
+        ".S.......S.",
+        "S.........S"
+      ]
+    ],
+    // Krake / Squid (8 x 8)
+    squid: [
+      [
+        "...HH...",
+        "..HHHH..",
+        ".HBEEBH.",
+        "SHBBBBBS",
+        "SHBBBBBS",
+        "..S..S..",
+        ".S.SS.S.",
+        "S......S"
+      ],
+      [
+        "...HH...",
+        "..HHHH..",
+        ".HBEEBH.",
+        "SHBBBBBS",
+        "SHBBBBBS",
+        ".S.SS.S.",
+        "S......S",
+        ".S....S."
+      ]
+    ],
+    // Octopus (12 x 8)
+    octopus: [
+      [
+        "....HHHH....",
+        "..HHHHHHHH..",
+        ".HHHBEEBHHH.",
+        "SHHBBBBBBHHS",
+        ".SHBBBBBBHS.",
+        "..SS..SS....",
+        ".S..SS..S...",
+        "S..S..S..S.."
+      ],
+      [
+        "....HHHH....",
+        "..HHHHHHHH..",
+        ".HHHBEEBHHH.",
+        "SHHBBBBBBHHS",
+        ".SHBBBBBBHS.",
+        "...SSSS.....",
+        "..S....S....",
+        ".S......S..."
+      ]
+    ],
+    // Deluxe Mystery UFO (16 x 8) mit Cockpit-Leuchten & Triebwerk
+    ufo: [
+      [
+        ".....CCCC.....F.",
+        "...CCHHHHCC...F.",
+        "..HHHHHHHHHH..F.",
+        ".HBBEEBBEEBBH...",
+        "SHBBBBBBBBBBBS..",
+        "SHWBSWBSWBSWBHS.",
+        ".SSSSSSSSSSSS...",
+        "...SS....SS....."
+      ]
+    ],
+    // Player Defense Cannon (13 x 8)
+    player: [
+      [
+        "......C......",
+        ".....CCC.....",
+        ".....CCC.....",
+        ".HHHHHHHHHHH.",
+        "HBBBBWBBBBBBH",
+        "SBBBBBBBBBBBS",
+        "SSSSSSSSSSSSS",
+        ".SS.......SS."
+      ]
+    ]
+  };
+
+  class ArcadeFX {
+    constructor() {
+      this.invaders = [];
+      this.ufo = null;
+      this.player = null;
+      this.lasers = [];
+      this.explosions = [];
+      this.floatTexts = [];
+      this.exhaustParticles = [];
+      this.stepTimer = 0;
+      this.stepFrame = 0;
+      this.blinkTimer = 0;
+      this.blinkState = false;
+      this.init();
+    }
+
+    init() {
+      const dark = isDarkMode();
+      // Detailreiche 16-Bit Multi-Shade Paletten
+      const palettes = {
+        squid: {
+          B: dark ? '#f50057' : '#c2185b',
+          H: dark ? '#ff80ab' : '#f48fb1',
+          S: dark ? '#880e4f' : '#560027',
+          E: '#ffea00', // Glühendes Gelb
+          W: '#ffffff'
+        },
+        crab: {
+          B: dark ? '#00e676' : '#2e7d32',
+          H: dark ? '#b9f6ca' : '#81c784',
+          S: dark ? '#007038' : '#1b5e20',
+          E: '#ff1744', // Glühendes Rubinrot
+          W: '#ffffff'
+        },
+        octopus: {
+          B: dark ? '#00b0ff' : '#0277bd',
+          H: dark ? '#80d8ff' : '#4fc3f7',
+          S: dark ? '#01579b' : '#002f6c',
+          E: '#ffea00',
+          W: '#ffffff'
+        },
+        ufo: {
+          B: '#d50000',
+          H: '#ff5252',
+          S: '#5c0000',
+          C: '#00e5ff',
+          E: '#ffea00',
+          W: '#ffffff',
+          F: '#ff9100'
+        },
+        player: {
+          B: dark ? '#00e676' : '#2e7d32',
+          H: dark ? '#b9f6ca' : '#81c784',
+          S: dark ? '#004d20' : '#1b5e20',
+          C: '#00e5ff',
+          W: '#ffffff'
+        }
+      };
+      this.palettes = palettes;
+
+      // Formations-Aufstellung (3 Reihen: Squid, Crab, Octopus)
+      const rows = [
+        { type: 'squid', palette: palettes.squid },
+        { type: 'crab', palette: palettes.crab },
+        { type: 'octopus', palette: palettes.octopus }
+      ];
+
+      const cols = Math.min(8, Math.floor(width / 65));
+      const startX = (width - cols * 60) / 2 + 30;
+
+      rows.forEach((rowInfo, rIdx) => {
+        for (let c = 0; c < cols; c++) {
+          this.invaders.push({
+            origX: startX + c * 60,
+            origY: 90 + rIdx * 54,
+            x: startX + c * 60 - 280,
+            y: 90 + rIdx * 54,
+            type: rowInfo.type,
+            palette: rowInfo.palette,
+            pixelSize: 3.5,
+            alive: true,
+            score: (3 - rIdx) * 100
+          });
+        }
+      });
+
+      // Rotes UFO oben quer fliegend
+      this.ufo = {
+        x: width + 80,
+        y: 46,
+        vx: -((width + 160) / 2.05),
+        pixelSize: 3.8,
+        palette: palettes.ufo,
+        alive: true
+      };
+
+      // Spieler-Verteidigungskanone (unten)
+      this.player = {
+        x: width * 0.5,
+        targetX: width * 0.5,
+        y: height - 38,
+        pixelSize: 3.4,
+        palette: palettes.player
+      };
+
+      // Retro Laser-Salven
+      for (let i = 0; i < 8; i++) {
+        const lx = width * (0.15 + 0.7 * Math.random());
+        const isPlayer = i % 2 === 0;
+        this.lasers.push({
+          x: lx,
+          y: isPlayer ? height * 0.95 : 120,
+          vy: isPlayer ? -(880 + Math.random() * 200) : (680 + Math.random() * 200),
+          length: isPlayer ? 24 : 16,
+          isPlayer: isPlayer,
+          color: isPlayer ? '#00e5ff' : '#ffea00',
+          delay: 0.15 + i * 0.22
+        });
+      }
+
+      // "1UP!" & "BONUS +300" Arcade Badges
+      this.floatTexts.push({
+        text: '1UP!',
+        x: width * 0.16,
+        y: 52,
+        vy: -22,
+        color: '#ffea00',
+        timer: 0
+      });
+
+      this.floatTexts.push({
+        text: '+300 PTS',
+        x: width * 0.78,
+        y: 48,
+        vy: -28,
+        color: '#ff0055',
+        timer: 0.35
+      });
+    }
+
+    update(dt, elapsedSec) {
+      // 2-Frame Taktung der Aliens (150ms)
+      this.stepTimer += dt;
+      if (this.stepTimer > 0.16) {
+        this.stepFrame = 1 - this.stepFrame;
+        this.stepTimer = 0;
+      }
+
+      // Blinken der UFO-Cockpit-Fenster
+      this.blinkTimer += dt;
+      if (this.blinkTimer > 0.12) {
+        this.blinkState = !this.blinkState;
+        this.blinkTimer = 0;
+        this.palettes.ufo.C = this.blinkState ? '#00e5ff' : '#ffea00';
+      }
+
+      // Spieler-Kanone folgt rhythmisch der Formation
+      if (this.player) {
+        this.player.targetX = width * 0.5 + Math.sin(elapsedSec * 2.8) * (width * 0.28);
+        this.player.x += (this.player.targetX - this.player.x) * Math.min(1, dt * 8);
+      }
+
+      // Invaders Formations-Flug mit lebendiger Welle
+      const marchX = Math.sin(elapsedSec * 3.6) * 48;
+      const marchY = Math.min(55, elapsedSec * 26);
+
+      this.invaders.forEach((inv, idx) => {
+        const targetX = inv.origX + marchX;
+        const targetY = inv.origY + marchY + Math.sin(elapsedSec * 4 + idx * 0.3) * 6;
+        inv.x += (targetX - inv.x) * Math.min(1, dt * 7);
+        inv.y += (targetY - inv.y) * Math.min(1, dt * 7);
+
+        // Gelegentliche zufällige Explosion bei Laser-Treffer
+        if (inv.alive && elapsedSec > 0.65 && Math.random() < 0.009) {
+          inv.alive = false;
+          this.spawnExplosion(inv.x, inv.y, inv.palette);
+          this.floatTexts.push({
+            text: `+${inv.score}`,
+            x: inv.x,
+            y: inv.y - 12,
+            vy: -35,
+            color: '#ffea00',
+            timer: 0
+          });
+        }
+      });
+
+      // Rotes UFO quer fliegend mit Triebwerkspartikeln
+      if (this.ufo && this.ufo.alive) {
+        this.ufo.x += this.ufo.vx * dt;
+        if (this.ufo.x > -60 && this.ufo.x < width + 60) {
+          // Triebwerks-Abgas
+          if (Math.random() < 0.6) {
+            this.exhaustParticles.push({
+              x: this.ufo.x + 36,
+              y: this.ufo.y + (Math.random() - 0.5) * 6,
+              vx: 80 + Math.random() * 80,
+              vy: (Math.random() - 0.5) * 30,
+              size: 2.5 + Math.random() * 2.5,
+              color: Math.random() > 0.4 ? '#ff9100' : '#ffea00',
+              life: 1.0
+            });
+          }
+        }
+      }
+
+      // Triebwerkspartikel aktualisieren
+      this.exhaustParticles.forEach(ep => {
+        ep.x += ep.vx * dt;
+        ep.y += ep.vy * dt;
+        ep.life -= dt * 3.5;
+      });
+      this.exhaustParticles = this.exhaustParticles.filter(ep => ep.life > 0);
+
+      // Laser bewegen
+      this.lasers.forEach(l => {
+        if (elapsedSec < l.delay) return;
+        l.y += l.vy * dt;
+        if (l.y < -40 && l.isPlayer) {
+          l.y = height * 0.95;
+          l.x = (this.player ? this.player.x : width * 0.5) + (Math.random() - 0.5) * 40;
+        }
+      });
+
+      // Explosionen
+      this.explosions.forEach(exp => {
+        exp.x += exp.vx * dt;
+        exp.y += exp.vy * dt;
+        exp.life -= dt * 2.2;
+      });
+      this.explosions = this.explosions.filter(exp => exp.life > 0);
+
+      // Schwebende Texte
+      this.floatTexts.forEach(ft => {
+        ft.y += ft.vy * dt;
+      });
+    }
+
+    spawnExplosion(x, y, palette) {
+      // 14 Multi-Shade Trümmerpartikel
+      const colors = [palette.B, palette.H, palette.S, palette.E || '#ffffff'];
+      for (let i = 0; i < 14; i++) {
+        const angle = Math.random() * Math.PI * 2;
+        const speed = 120 + Math.random() * 280;
+        this.explosions.push({
+          x: x,
+          y: y,
+          vx: Math.cos(angle) * speed,
+          vy: Math.sin(angle) * speed,
+          size: 3 + Math.random() * 2,
+          color: colors[i % colors.length],
+          life: 1.0
+        });
+      }
+    }
+
+    draw(ctx, alpha) {
+      ctx.save();
+      ctx.globalAlpha = alpha;
+      const dark = isDarkMode();
+
+      // Retro CRT Scanlines
+      const scanlineStep = 4;
+      ctx.fillStyle = dark ? 'rgba(0, 0, 0, 0.08)' : 'rgba(0, 0, 0, 0.04)';
+      for (let sy = 0; sy < height; sy += scanlineStep) {
+        ctx.fillRect(0, sy, width, 1.2);
+      }
+
+      // Retro Glow im Dark Mode
+      if (dark) {
+        ctx.shadowBlur = 10;
+      } else {
+        ctx.shadowBlur = 0;
+      }
+
+      // 1. Invaders zeichnen
+      this.invaders.forEach(inv => {
+        if (!inv.alive) return;
+        ctx.shadowColor = inv.palette.B;
+        const matrix = SPRITES[inv.type][this.stepFrame];
+        this.drawShadedSprite(ctx, matrix, inv.x, inv.y, inv.pixelSize, inv.palette);
+      });
+
+      // 2. Rotes UFO zeichnen
+      if (this.ufo && this.ufo.alive && this.ufo.x > -80 && this.ufo.x < width + 80) {
+        ctx.shadowColor = '#ff1744';
+        const ufoMatrix = SPRITES.ufo[0];
+        this.drawShadedSprite(ctx, ufoMatrix, this.ufo.x, this.ufo.y, this.ufo.pixelSize, this.ufo.palette);
+      }
+
+      // 3. Triebwerkspartikel des UFOs
+      this.exhaustParticles.forEach(ep => {
+        ctx.save();
+        ctx.globalAlpha = alpha * Math.max(0, ep.life);
+        ctx.fillStyle = ep.color;
+        ctx.shadowColor = ep.color;
+        ctx.fillRect(ep.x, ep.y, ep.size, ep.size);
+        ctx.restore();
+      });
+
+      // 4. Spieler-Kanone zeichnen
+      if (this.player) {
+        ctx.shadowColor = '#00e676';
+        const playerMatrix = SPRITES.player[0];
+        this.drawShadedSprite(ctx, playerMatrix, this.player.x, this.player.y, this.player.pixelSize, this.player.palette);
+      }
+
+      // 5. Laser-Salven
+      this.lasers.forEach(l => {
+        if (l.y < -30 || l.y > height + 30) return;
+        ctx.shadowColor = l.color;
+        ctx.fillStyle = l.color;
+        if (l.isPlayer) {
+          // Doppel-Plasmastrahl des Spielers
+          ctx.fillRect(l.x - 4, l.y, 2.8, l.length);
+          ctx.fillRect(l.x + 4, l.y, 2.8, l.length);
+        } else {
+          // Zickzack-Alien-Bombe
+          ctx.fillRect(l.x - 1.5, l.y, 3, l.length);
+        }
+      });
+
+      // 6. Multi-Shade Pixel-Explosionen
+      this.explosions.forEach(exp => {
+        ctx.save();
+        ctx.globalAlpha = alpha * Math.max(0, exp.life);
+        ctx.fillStyle = exp.color;
+        ctx.shadowColor = exp.color;
+        ctx.fillRect(exp.x - exp.size / 2, exp.y - exp.size / 2, exp.size, exp.size);
+        ctx.restore();
+      });
+
+      // 7. Arcade Marquee Header (SCORE & HI-SCORE)
+      ctx.save();
+      ctx.font = '900 13px "Courier New", monospace';
+      ctx.textAlign = 'left';
+      ctx.shadowColor = '#00e5ff';
+      ctx.fillStyle = dark ? '#00e5ff' : '#006688';
+      ctx.fillText('SCORE<1> 02840', 20, 26);
+      ctx.textAlign = 'right';
+      ctx.shadowColor = '#ffea00';
+      ctx.fillStyle = dark ? '#ffea00' : '#886600';
+      ctx.fillText('HI-SCORE 50000', width - 20, 26);
+      ctx.restore();
+
+      // 8. Schwebende Arcade Badges / Score Popups
+      this.floatTexts.forEach(ft => {
+        ctx.save();
+        ctx.font = '900 22px monospace, "Courier New", sans-serif';
+        ctx.textAlign = 'center';
+        ctx.shadowColor = ft.color;
+        // Text Outline
+        ctx.strokeStyle = dark ? '#000000' : '#ffffff';
+        ctx.lineWidth = 4;
+        ctx.strokeText(ft.text, ft.x, ft.y);
+        ctx.fillStyle = ft.color;
+        ctx.fillText(ft.text, ft.x, ft.y);
+        ctx.restore();
+      });
+
+      ctx.restore();
+    }
+
+    drawShadedSprite(ctx, matrix, x, y, pixelSize, palette) {
+      const rows = matrix.length;
+      const cols = matrix[0].length;
+      const offX = -(cols * pixelSize) / 2;
+      const offY = -(rows * pixelSize) / 2;
+
+      for (let r = 0; r < rows; r++) {
+        const rowStr = matrix[r];
+        for (let c = 0; c < cols; c++) {
+          const char = rowStr[c];
+          if (char === '.' || char === ' ') continue;
+          const color = palette[char] || palette.B;
+          ctx.fillStyle = color;
+          ctx.fillRect(
+            Math.round(x + offX + c * pixelSize),
+            Math.round(y + offY + r * pixelSize),
+            pixelSize,
+            pixelSize
+          );
+        }
+      }
+    }
+  }
+
+  // ==========================================
+  // MASTER ANIMATION LOOP & LIFECYCLE
+  // ==========================================
+  let lastTimestamp = 0;
+
+  function runLoop(timestamp) {
+    if (!lastTimestamp) lastTimestamp = timestamp;
+    const dt = Math.min((timestamp - lastTimestamp) / 1000, 0.1);
+    lastTimestamp = timestamp;
+
+    const elapsed = timestamp - effectStartTime;
+
+    // Berechnung des sanften Ausblendens (Fade-Out)
+    let alpha = 1.0;
+    if (elapsed > EFFECT_DURATION - FADE_DURATION) {
+      const remaining = EFFECT_DURATION - elapsed;
+      alpha = Math.max(0, remaining / FADE_DURATION);
+    }
+
+    // Canvas leeren für neuen Frame
+    ctx.clearRect(0, 0, width, height);
+
+    if (currentEffect) {
+      currentEffect.update(dt, elapsed / 1000);
+      currentEffect.draw(ctx, alpha);
+    }
+
+    // Ende der Animation erreicht?
+    if (elapsed >= EFFECT_DURATION) {
+      // Loop sauber beenden & GPU entlasten
+      ctx.clearRect(0, 0, width, height);
+      currentEffect = null;
+      animId = null;
+      lastTimestamp = 0;
+      return;
+    }
+
+    animId = requestAnimationFrame(runLoop);
+  }
+
+  function startEffect(type) {
+    if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      return; // Barrierefreiheit: Keine intensiven Animationen bei reduzierter Bewegung
+    }
+    // Falls bereits ein Effekt läuft, Frame abbrechen und sauber neu starten
+    if (animId) {
+      cancelAnimationFrame(animId);
+      animId = null;
+    }
+
+    resize();
+    effectStartTime = performance.now();
+    lastTimestamp = 0;
+
+    if (type === 'boardgames') {
+      currentEffect = new BoardGamesFX();
+    } else if (type === 'outdoor') {
+      currentEffect = new OutdoorNatureFX();
+    } else if (type === 'arcade') {
+      currentEffect = new ArcadeFX();
+    }
+
+    animId = requestAnimationFrame(runLoop);
+  }
+
+  // ==========================================
+  // EVENT LISTENER FÜR KATEGORIEN-TOGGLE
+  // ==========================================
+  function setupCategoryTriggers() {
+    document.querySelectorAll('details.category').forEach(details => {
+      details.addEventListener('toggle', () => {
+        if (details.open) {
+          const badge = details.querySelector('.category-badge')?.textContent || '';
+          const label = details.querySelector('.category-label')?.textContent || '';
+
+          if (badge.includes('🎲') || label.includes('Gesellschaft')) {
+            startEffect('boardgames');
+          } else if (badge.includes('🌳') || label.includes('Outdoor')) {
+            startEffect('outdoor');
+          } else if (badge.includes('🕹️') || label.includes('Arcade')) {
+            startEffect('arcade');
+          }
+        }
+      });
+
+      // Klick auf das Emoji-Badge löst Effekt auch bei geöffneter Kategorie erneut aus
+      const badgeEl = details.querySelector('.category-badge');
+      if (badgeEl) {
+        badgeEl.style.cursor = 'pointer';
+        badgeEl.setAttribute('title', 'Klicken für Vollbild-Effekt');
+        badgeEl.addEventListener('click', (e) => {
+          if (details.open) {
+            e.preventDefault();
+            e.stopPropagation();
+            const bText = badgeEl.textContent || '';
+            if (bText.includes('🎲')) startEffect('boardgames');
+            else if (bText.includes('🌳')) startEffect('outdoor');
+            else if (bText.includes('🕹️')) startEffect('arcade');
+          }
+        });
+      }
+    });
+  }
+
+  // Globale Hilfsfunktion für Vorschau-Buttons
+  window.triggerEffectDirectly = function(type) {
+    // Entsprechendes details-Element auch öffnen falls geschlossen
+    let detailsEl = null;
+    if (type === 'boardgames') detailsEl = document.getElementById('cat-boardgames');
+    else if (type === 'outdoor') detailsEl = document.getElementById('cat-outdoor');
+    else if (type === 'arcade') detailsEl = document.getElementById('cat-arcade');
+
+    if (detailsEl && !detailsEl.open) {
+      detailsEl.open = true;
+    } else {
+      startEffect(type);
+    }
+  };
+
+  // Initialisieren sobald DOM bereit ist
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', setupCategoryTriggers);
+  } else {
+    setupCategoryTriggers();
+  }
+
+})();
+</script>
 
 <script>
   if ('serviceWorker' in navigator) {
