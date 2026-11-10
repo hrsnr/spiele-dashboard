@@ -13,9 +13,9 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="manifest" href="manifest.json">
-  <link rel="stylesheet" href="styles.css?v=14.0">
-  <script src="theme.js?v=14.0"></script>
-  <script src="tournament.js?v=14.0"></script>
+  <link rel="stylesheet" href="styles.css?v=14.1">
+  <script src="theme.js?v=14.1"></script>
+  <script src="tournament.js?v=14.1"></script>
   <style>
     .container {
       width: 100%;
@@ -2710,12 +2710,12 @@
       let refreshing = false;
       navigator.serviceWorker.addEventListener('controllerchange', () => {
         if (!hadController || refreshing) return;
-        if (sessionStorage.getItem('sw_reloaded_v14') === '1') return;
-        sessionStorage.setItem('sw_reloaded_v14', '1');
+        if (sessionStorage.getItem('sw_reloaded_v14_1') === '1') return;
+        sessionStorage.setItem('sw_reloaded_v14_1', '1');
         refreshing = true;
         window.location.reload();
       });
-      navigator.serviceWorker.register('./sw.js?v=14.0', { updateViaCache: 'none' })
+      navigator.serviceWorker.register('./sw.js?v=14.1', { updateViaCache: 'none' })
         .then((reg) => { reg.update().catch(() => {}); })
         .catch(() => {});
     });

@@ -368,6 +368,7 @@
     overlay = document.createElement('div');
     overlay.id = 't-cloud-pin-modal';
     overlay.className = 'modal-overlay t-pin-overlay hidden';
+    overlay.style.display = 'none';
     overlay.setAttribute('role', 'dialog');
     overlay.setAttribute('aria-modal', 'true');
     overlay.setAttribute('aria-labelledby', 't-pin-modal-title');
@@ -375,12 +376,17 @@
       <div class="modal-content t-pin-card">
         <div class="t-modal-header">
           <h2 id="t-pin-modal-title">🔑 Turnier-PIN eingeben</h2>
-          <button type="button" class="t-modal-close" id="t-pin-close-btn" aria-label="Abbrechen">✕</button>
         </div>
         <p id="t-pin-reason" class="t-pin-desc">
           Zum Speichern oder Bearbeiten in der gemeinsamen Google-Drive-CSV wird die Turnier-PIN benötigt (einmalig pro Gerät).
         </p>
         <input type="password" id="t-pin-input" class="t-pin-input" placeholder="Turnier-PIN..." autocomplete="off" inputmode="text">
+        <div id="t-pin-loading" class="t-pin-loading hidden" aria-live="polite">
+          <div class="t-pin-loading-label">PIN wird geprüft &amp; Gerät freigeschaltet...</div>
+          <div class="t-pin-progress" role="progressbar" aria-label="Gerät wird freigeschaltet">
+            <div class="t-pin-progress-bar"></div>
+          </div>
+        </div>
         <div id="t-pin-error" class="t-password-error hidden" role="alert"></div>
         <div style="display:flex; gap:10px; margin-top:14px;">
           <button type="button" class="btn-outline" id="t-pin-cancel-btn" style="flex:1;">Abbrechen</button>
@@ -399,15 +405,28 @@
       const overlay = ensurePinModalElement();
       const reasonEl = overlay.querySelector('#t-pin-reason');
       const inputEl = overlay.querySelector('#t-pin-input');
+      const loadingEl = overlay.querySelector('#t-pin-loading');
       const errEl = overlay.querySelector('#t-pin-error');
       const submitBtn = overlay.querySelector('#t-pin-submit-btn');
       const cancelBtn = overlay.querySelector('#t-pin-cancel-btn');
-      const closeBtn = overlay.querySelector('#t-pin-close-btn');
+
+      let submitting = false;
+      let cancelled = false;
+
+      function setLoading(busy) {
+        submitting = busy;
+        inputEl.disabled = busy;
+        submitBtn.disabled = busy;
+        submitBtn.textContent = busy ? 'Prüfe...' : 'Freischalten';
+        if (loadingEl) {
+          loadingEl.classList.toggle('hidden', !busy);
+          loadingEl.style.display = busy ? 'block' : 'none';
+        }
+      }
 
       reasonEl.textContent = reasonText || 'Zum Speichern oder Bearbeiten in der gemeinsamen Google-Drive-CSV wird die Turnier-PIN benötigt (einmalig pro Gerät).';
       inputEl.value = '';
-      submitBtn.disabled = false;
-      submitBtn.textContent = 'Freischalten';
+      setLoading(false);
 
       if (initialErrorText) {
         errEl.textContent = initialErrorText;
@@ -419,9 +438,10 @@
 
       function cleanup(result) {
         overlay.classList.add('hidden');
+        overlay.style.display = 'none';
+        setLoading(false);
         submitBtn.removeEventListener('click', onSubmit);
         cancelBtn.removeEventListener('click', onCancel);
-        closeBtn.removeEventListener('click', onCancel);
         inputEl.removeEventListener('keydown', onKeyDown);
         overlay.removeEventListener('click', onBackdrop);
         activePinPromise = null;
@@ -429,6 +449,7 @@
       }
 
       function onCancel() {
+        cancelled = true;
         cleanup(null);
       }
 
@@ -447,6 +468,7 @@
       }
 
       async function onSubmit() {
+        if (submitting) return;
         const entered = String(inputEl.value || '').trim();
         if (!entered) {
           errEl.textContent = 'Bitte gib die Turnier-PIN ein.';
@@ -461,12 +483,13 @@
           return;
         }
 
-        submitBtn.disabled = true;
-        submitBtn.textContent = 'Prüfe PIN...';
         errEl.classList.add('hidden');
+        setLoading(true);
 
         try {
           const res = await callCloudPost({ action: 'verifyPin', pin: entered });
+          if (cancelled) return;
+
           if (res.ok) {
             setStoredPin(entered);
             saveCloudMeta({
@@ -476,28 +499,27 @@
             });
             cleanup(entered);
           } else {
+            setLoading(false);
             errEl.textContent = res.error || 'Falsche Turnier-PIN!';
             errEl.classList.remove('hidden');
-            submitBtn.disabled = false;
-            submitBtn.textContent = 'Freischalten';
             inputEl.select();
             inputEl.focus();
           }
         } catch (err) {
+          if (cancelled) return;
+          setLoading(false);
           errEl.textContent = 'Keine Verbindung zu Google Drive beim Prüfen der PIN.';
           errEl.classList.remove('hidden');
-          submitBtn.disabled = false;
-          submitBtn.textContent = 'Freischalten';
         }
       }
 
       submitBtn.addEventListener('click', onSubmit);
       cancelBtn.addEventListener('click', onCancel);
-      closeBtn.addEventListener('click', onCancel);
       inputEl.addEventListener('keydown', onKeyDown);
       overlay.addEventListener('click', onBackdrop);
 
       overlay.classList.remove('hidden');
+      overlay.style.display = 'flex';
       setTimeout(() => inputEl.focus(), 40);
     });
 

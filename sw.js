@@ -1,6 +1,6 @@
-// Service Worker v14.0 (Online-Modus für GitHub Pages & Google-Drive-Sync)
+// Service Worker v14.1 (Online-Modus für GitHub Pages & Google-Drive-Sync)
 // Löscht alte Offline-Caches automatisch und lädt Seiten/Assets immer frisch vom Server.
-const SW_VERSION = 'spiele-dashboard-v14.0';
+const SW_VERSION = 'spiele-dashboard-v14.1';
 
 self.addEventListener('install', () => {
   self.skipWaiting();
