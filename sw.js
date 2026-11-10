@@ -1,5 +1,5 @@
 // ⚠️ WICHTIG: Erhöhe diese Versionsnummer (z. B. v1 -> v2) bei JEDER Änderung!
-const CACHE_NAME = 'spiele-dashboard-v13.1';
+const CACHE_NAME = 'spiele-dashboard-v13.2';
 
 const ASSETS_TO_CACHE = [
   './',
@@ -10,17 +10,13 @@ const ASSETS_TO_CACHE = [
   './manifest.json',
   './spiele/cabo.html',
   './spiele/charlie_run.html',
-  './spiele/Testspiele/charlie_run_deluxe.html',
   './spiele/flappy_henri.html',
-  './spiele/Testspiele/flappy_henri_deluxe.html',
   './spiele/flip7.html',
-  './spiele/flip7_v2.html',
   './spiele/kniffel.html',
   './spiele/minigolf.html',
   './spiele/moelkky.html',
   './spiele/qwirkle.html',
   './spiele/theken_tim.html',
-  './spiele/Testspiele/theken_tim_deluxe.html',
   './spiele/tutto.html',
   './spiele/wizard.html',
   './spiele/wuerfel_auswahl.html',
