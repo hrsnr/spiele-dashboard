@@ -1,5 +1,5 @@
 // ⚠️ WICHTIG: Erhöhe diese Versionsnummer (z. B. v1 -> v2) bei JEDER Änderung!
-const CACHE_NAME = 'spiele-dashboard-v13.0';
+const CACHE_NAME = 'spiele-dashboard-v13.1';
 
 const ASSETS_TO_CACHE = [
   './',
