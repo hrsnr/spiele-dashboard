@@ -5,64 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Theken Tim</title>
   <link rel="stylesheet" href="../styles.css">
-  <script>
-    (function() {
-      function updateLinks(theme) {
-        document.querySelectorAll('a[href]').forEach(function(link) {
-          const raw = link.getAttribute('href');
-          if (!raw || raw.startsWith('#') || raw.startsWith('javascript:')) return;
-          link.setAttribute('href', raw.split('#')[0] + '#theme=' + theme);
-        });
-      }
-      function applyTheme(theme) {
-        document.documentElement.setAttribute('data-theme', theme);
-        try { localStorage.setItem('spiele_theme', theme); } catch (e) {}
-        try { window.name = 'spiele_theme:' + theme; } catch (e) {}
-        try { history.replaceState(null, '', location.pathname + location.search + '#theme=' + theme); } catch (e) {}
-        updateLinks(theme);
-      }
-      function getInitialTheme() {
-        const hashMatch = (location.hash || '').match(/theme=(dark|light)/);
-        if (hashMatch) return hashMatch[1];
-        const nameMatch = (window.name || '').match(/spiele_theme:(dark|light)/);
-        if (nameMatch) return nameMatch[1];
-        try {
-          const saved = localStorage.getItem('spiele_theme');
-          if (saved === 'dark' || saved === 'light') return saved;
-        } catch (e) {}
-        return (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) ? 'dark' : 'light';
-      }
-      applyTheme(getInitialTheme());
-      window.addEventListener('DOMContentLoaded', function() {
-        applyTheme(document.documentElement.getAttribute('data-theme') || 'dark');
-      });
-      window.addEventListener('pageshow', function() {
-        const nameMatch = (window.name || '').match(/spiele_theme:(dark|light)/);
-        if (nameMatch) { applyTheme(nameMatch[1]); return; }
-        try {
-          const saved = localStorage.getItem('spiele_theme');
-          if (saved === 'dark' || saved === 'light') applyTheme(saved);
-        } catch (err) {}
-      });
-      window.addEventListener('storage', function(e) {
-        if (e.key === 'spiele_theme' && (e.newValue === 'dark' || e.newValue === 'light')) {
-          applyTheme(e.newValue);
-        }
-      });
-      document.addEventListener('click', function(e) {
-        const link = e.target && e.target.closest ? e.target.closest('a[href]') : null;
-        if (!link) return;
-        const raw = link.getAttribute('href');
-        if (!raw || raw.startsWith('#') || raw.startsWith('javascript:')) return;
-        const theme = document.documentElement.getAttribute('data-theme') || 'dark';
-        link.setAttribute('href', raw.split('#')[0] + '#theme=' + theme);
-      }, true);
-      window.toggleTheme = function() {
-        const current = document.documentElement.getAttribute('data-theme') || 'dark';
-        applyTheme(current === 'dark' ? 'light' : 'dark');
-      };
-    })();
-  </script>
+  <script src="../theme.js"></script>
   <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
   <style>
     * {
@@ -74,33 +17,33 @@
     }
 
     body {
-      background: var(--md-sys-color-background);
       display: flex;
       flex-direction: column;
       justify-content: flex-start;
       align-items: center;
       min-height: 100vh;
-      font-family: 'Press Start 2P', monospace;
+      font-family: var(--md-sys-typescale-body-font);
       color: var(--md-sys-color-on-background);
-      padding: 12px 16px;
+      padding: max(14px, env(safe-area-inset-top)) 16px 24px 16px;
       overflow-x: hidden;
     }
 
     .arcade-bar {
       width: 100%;
       max-width: 800px;
-      font-family: 'Roboto', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      font-family: var(--md-sys-typescale-body-font);
     }
 
     #game-container {
       position: relative;
-      border: 4px solid var(--md-sys-color-outline-variant);
-      border-radius: 20px;
-      box-shadow: var(--md-sys-elevation-3);
+      border: 3px solid var(--md-sys-color-outline-variant);
+      border-radius: var(--md-sys-shape-corner-xl);
+      box-shadow: var(--md-sys-elevation-2);
       overflow: hidden;
       background: #110702;
       width: 100%;
       max-width: 800px;
+      font-family: 'Press Start 2P', monospace;
     }
 
     canvas {
@@ -111,14 +54,14 @@
       image-rendering: crisp-edges;
     }
 
-    /* Touch-Steuerung für Mobilgeräte */
+    /* Touch-Steuerung für Mobilgeräte (M3 Expressive Gamepad) */
     #touch-controls {
       display: flex;
       justify-content: space-between;
-      align-items: center;
+      align-items: stretch;
       width: 100%;
       max-width: 800px;
-      margin-top: 12px;
+      margin-top: 14px;
       gap: 12px;
     }
 
@@ -129,44 +72,46 @@
     }
 
     .arcade-btn {
-      background: linear-gradient(180deg, #3b1d0c 0%, #1f0e05 100%);
-      border: 3px solid #f59e0b;
-      color: #f59e0b;
-      font-family: 'Press Start 2P', monospace;
-      border-radius: 12px;
-      padding: 16px 24px;
-      font-size: 16px;
-      box-shadow: 0 5px 0 #92400e, inset 0 2px 0 rgba(255,255,255,0.25);
+      background-color: var(--md-sys-color-secondary-container);
+      border: 1px solid var(--md-sys-color-outline-variant);
+      color: var(--md-sys-color-on-secondary-container);
+      font-family: var(--md-sys-typescale-display-font);
+      font-weight: 600;
+      border-radius: var(--md-sys-shape-corner-lg);
+      padding: 14px 22px;
+      font-size: 0.96rem;
+      box-shadow: var(--md-sys-elevation-1);
       cursor: pointer;
       touch-action: manipulation;
-      transition: background 0.1s;
+      transition: transform 0.12s ease, background-color 0.15s ease;
     }
 
     .arcade-btn:active {
-      transform: translateY(4px);
-      box-shadow: 0 1px 0 #92400e;
-      background: #4a2410;
+      transform: scale(0.97);
+      background-color: var(--md-sys-color-secondary);
+      color: var(--md-sys-color-on-secondary);
     }
 
     .btn-serve {
       flex: 1;
-      height: 94px;
-      font-size: 18px;
-      background: linear-gradient(180deg, #16a34a 0%, #14532d 100%);
-      border-color: #4ade80;
-      color: #ffffff;
-      box-shadow: 0 5px 0 #092e16, inset 0 2px 0 rgba(255,255,255,0.3);
+      min-height: 98px;
+      font-size: 1.12rem;
+      background-color: var(--md-sys-color-tertiary);
+      border: 1px solid transparent;
+      color: var(--md-sys-color-on-tertiary);
+      border-radius: var(--md-sys-shape-corner-xl);
+      box-shadow: var(--md-sys-elevation-1);
       display: flex;
       justify-content: center;
       align-items: center;
       gap: 10px;
-      text-shadow: 0 2px 4px rgba(0,0,0,0.8);
     }
 
     .btn-serve:active {
-      transform: translateY(4px);
-      box-shadow: 0 1px 0 #092e16;
-      background: #15803d;
+      transform: scale(0.97);
+      background-color: var(--md-sys-color-tertiary);
+      color: var(--md-sys-color-on-tertiary);
+      filter: brightness(0.94);
     }
   </style>
 </head>

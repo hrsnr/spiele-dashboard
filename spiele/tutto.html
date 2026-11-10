@@ -5,64 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Tutto Assistant</title>
     <link rel="stylesheet" href="../styles.css">
-    <script>
-        (function() {
-            function updateLinks(theme) {
-                document.querySelectorAll('a[href]').forEach(function(link) {
-                    const raw = link.getAttribute('href');
-                    if (!raw || raw.startsWith('#') || raw.startsWith('javascript:')) return;
-                    link.setAttribute('href', raw.split('#')[0] + '#theme=' + theme);
-                });
-            }
-            function applyTheme(theme) {
-                document.documentElement.setAttribute('data-theme', theme);
-                try { localStorage.setItem('spiele_theme', theme); } catch (e) {}
-                try { window.name = 'spiele_theme:' + theme; } catch (e) {}
-                try { history.replaceState(null, '', location.pathname + location.search + '#theme=' + theme); } catch (e) {}
-                updateLinks(theme);
-            }
-            function getInitialTheme() {
-                const hashMatch = (location.hash || '').match(/theme=(dark|light)/);
-                if (hashMatch) return hashMatch[1];
-                const nameMatch = (window.name || '').match(/spiele_theme:(dark|light)/);
-                if (nameMatch) return nameMatch[1];
-                try {
-                    const saved = localStorage.getItem('spiele_theme');
-                    if (saved === 'dark' || saved === 'light') return saved;
-                } catch (e) {}
-                return (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) ? 'dark' : 'light';
-            }
-            applyTheme(getInitialTheme());
-            window.addEventListener('DOMContentLoaded', function() {
-                applyTheme(document.documentElement.getAttribute('data-theme') || 'dark');
-            });
-            window.addEventListener('pageshow', function() {
-                const nameMatch = (window.name || '').match(/spiele_theme:(dark|light)/);
-                if (nameMatch) { applyTheme(nameMatch[1]); return; }
-                try {
-                    const saved = localStorage.getItem('spiele_theme');
-                    if (saved === 'dark' || saved === 'light') applyTheme(saved);
-                } catch (err) {}
-            });
-            window.addEventListener('storage', function(e) {
-                if (e.key === 'spiele_theme' && (e.newValue === 'dark' || e.newValue === 'light')) {
-                    applyTheme(e.newValue);
-                }
-            });
-            document.addEventListener('click', function(e) {
-                const link = e.target && e.target.closest ? e.target.closest('a[href]') : null;
-                if (!link) return;
-                const raw = link.getAttribute('href');
-                if (!raw || raw.startsWith('#') || raw.startsWith('javascript:')) return;
-                const theme = document.documentElement.getAttribute('data-theme') || 'dark';
-                link.setAttribute('href', raw.split('#')[0] + '#theme=' + theme);
-            }, true);
-            window.toggleTheme = function() {
-                const current = document.documentElement.getAttribute('data-theme') || 'dark';
-                applyTheme(current === 'dark' ? 'light' : 'dark');
-            };
-        })();
-    </script>
+    <script src="../theme.js"></script>
+    <script src="../tournament.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <style>
         .container {
@@ -71,18 +15,18 @@
         }
 
         .input-group input[type="text"] { flex-grow: 1; }
-        input[type="number"] { width: 100%; text-align: center; font-weight: bold; font-size: 1.2rem; }
+        input[type="number"] { width: 100%; text-align: center; font-weight: 700; font-size: 1.2rem; }
 
         .btn-primary { 
             width: 100%; 
-            padding: 15px;
-            font-size: 1.05rem;
-            margin-top: 14px;
+            padding: 14px;
+            font-size: 1rem;
+            margin-top: 12px;
         }
         
         .btn-undo {
             width: 100%;
-            margin-top: 12px;
+            margin-top: 10px;
         }
 
         /* Spezial-Aktionen Grid */
@@ -90,20 +34,21 @@
             display: grid;
             grid-template-columns: 1fr 1fr;
             gap: 10px;
-            margin-top: 14px;
+            margin-top: 12px;
         }
 
         .btn-special {
             padding: 12px 10px;
-            font-size: 0.9rem;
+            font-size: 0.88rem;
             display: flex;
             align-items: center;
             justify-content: center;
             gap: 6px;
             border-radius: var(--md-sys-shape-corner-md);
-            background-color: var(--md-sys-color-surface-container-high);
+            background-color: var(--md-sys-color-surface-container-low);
             border: 1px solid var(--md-sys-color-outline-variant);
             color: var(--md-sys-color-on-surface);
+            box-shadow: none;
         }
 
         .btn-kleeblatt {
@@ -130,50 +75,52 @@
         /* Aktiver Spieler Highlights */
         .active-player-header {
             text-align: center;
-            margin-bottom: 15px;
+            margin-bottom: 14px;
         }
 
         .active-badge {
             background-color: var(--md-sys-color-primary-container);
             color: var(--md-sys-color-on-primary-container);
             font-size: 0.75rem;
-            font-weight: 800;
-            padding: 5px 14px;
+            font-weight: 700;
+            padding: 4px 14px;
             border-radius: var(--md-sys-shape-corner-full);
             text-transform: uppercase;
-            letter-spacing: 1px;
+            letter-spacing: 0.05em;
             display: inline-block;
-            margin-bottom: 8px;
+            margin-bottom: 6px;
         }
 
         .active-name {
-            font-size: 1.8rem;
-            font-weight: 800;
+            font-size: 1.75rem;
+            font-weight: 700;
             margin: 0;
         }
 
         .active-stats {
             display: flex;
             justify-content: space-around;
-            margin-top: 15px;
-            padding-top: 15px;
+            margin-top: 14px;
+            padding-top: 14px;
             border-top: 1px solid var(--md-sys-color-outline-variant);
         }
 
         .stat-item { text-align: center; }
-        .stat-val { font-size: 1.35rem; font-weight: 800; color: var(--md-sys-color-primary); }
-        .stat-lbl { font-size: 0.75rem; color: var(--md-sys-color-on-surface-variant); text-transform: uppercase; }
+        .stat-val { font-size: 1.35rem; font-weight: 700; color: var(--md-sys-color-primary); }
+        .stat-lbl { font-size: 0.74rem; font-weight: 600; color: var(--md-sys-color-on-surface-variant); text-transform: uppercase; }
 
         /* Spielerliste */
         .player-card {
             display: flex;
             align-items: center;
             justify-content: space-between;
-            margin-bottom: 10px;
-            background-color: var(--md-sys-color-surface-container);
-            padding: 14px 16px;
+            margin-bottom: 8px;
+            background-color: var(--md-sys-color-surface-container-low);
+            padding: 13px 16px;
             border-radius: var(--md-sys-shape-corner-lg);
             border: 1px solid var(--md-sys-color-outline-variant);
+            box-shadow: none;
+            transition: background-color 0.16s ease, border-color 0.16s ease;
         }
 
         .player-card.is-active {
@@ -186,8 +133,8 @@
             border-color: var(--md-sys-color-warning);
         }
 
-        .player-name { font-weight: 700; font-size: 1.05rem; }
-        .player-score { font-weight: 800; color: var(--md-sys-color-primary); font-size: 1.15rem; }
+        .player-name { font-weight: 700; font-size: 1.02rem; }
+        .player-score { font-weight: 700; color: var(--md-sys-color-primary); font-size: 1.2rem; }
         .player-card.is-active .player-score { color: var(--md-sys-color-on-primary-container); }
 
         .final-banner {
@@ -199,27 +146,21 @@
             text-align: center;
             font-weight: 700;
             font-size: 0.9rem;
-            margin-bottom: 15px;
-            animation: pulse 2s infinite;
-        }
-
-        @keyframes pulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.65; }
+            margin-bottom: 14px;
         }
 
         .modal-actions {
             display: flex;
             flex-direction: column;
             gap: 10px;
-            margin-top: 20px;
+            margin-top: 18px;
         }
 
         .setup-list-item {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            background-color: var(--md-sys-color-surface-container);
+            background-color: var(--md-sys-color-surface-container-low);
             padding: 10px 14px;
             border-radius: var(--md-sys-shape-corner-md);
             border: 1px solid var(--md-sys-color-outline-variant);
@@ -251,6 +192,7 @@
             <input type="text" id="playerNameInput" placeholder="Name eingeben..." onkeypress="if(event.key==='Enter') addPlayer()">
             <button class="btn-add" onclick="addPlayer()">+</button>
         </div>
+        <div id="t-player-chips"></div>
         <div id="setupPlayerList" style="margin-top: 15px;"></div>
         <button id="startGameBtn" class="btn-primary" style="display:none;" onclick="startGame()">Spiel starten</button>
     </div>
@@ -336,6 +278,7 @@
     <div class="modal-content">
         <h2>🎉 Spiel beendet!</h2>
         <p id="winnerAnnouncement" style="font-size: 1.1rem; margin: 12px 0 20px 0;"></p>
+        <div id="t-save-container" class="t-save-wrapper" style="margin-bottom: 14px;"></div>
         <div class="modal-actions">
             <button class="btn-primary" style="margin-top:0;" onclick="startNextRoundSamePlayers()">Weitere Runde mit denselben Spielern</button>
             <button class="btn-special" style="padding: 14px; width: 100%; justify-content: center; border-radius: var(--md-sys-shape-corner-full);" onclick="showHighscore()">Highscore anzeigen</button>
@@ -385,6 +328,20 @@
         });
 
         startBtn.style.display = players.length >= 1 ? 'inline-flex' : 'none';
+        renderTournamentChips();
+    }
+
+    function renderTournamentChips() {
+        if (!window.Tournament) return;
+        Tournament.renderPlayerChips('t-player-chips', {
+            isSelected: (name) => players.some(p => p.name.toLowerCase() === name.toLowerCase()),
+            onToggle: (name) => {
+                const idx = players.findIndex(p => p.name.toLowerCase() === name.toLowerCase());
+                if (idx >= 0) players.splice(idx, 1);
+                else players.push({ name: name, score: 0, roundsPlayed: 0, wins: 0 });
+                renderSetupList();
+            }
+        });
     }
 
     function startGame() {
@@ -530,6 +487,7 @@
 
     function triggerWinScreen(messageHtml) {
         shootConfetti();
+        if (tSaveCtrl) tSaveCtrl.reset();
         document.getElementById('winnerAnnouncement').innerHTML = messageHtml;
         document.getElementById('gameOverModal').style.display = 'flex';
     }
@@ -644,6 +602,14 @@
             }
         }());
     }
+
+    const tSaveCtrl = window.Tournament ? Tournament.mountSaveButton('t-save-container', {
+        gameName: 'Tutto',
+        lowerIsBetter: false,
+        getEntries: () => players.map(p => ({ name: p.name, score: p.score }))
+    }) : null;
+
+    renderTournamentChips();
 </script>
 
 </body>

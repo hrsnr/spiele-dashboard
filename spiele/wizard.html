@@ -5,64 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Wizard Deluxe Scoreboard</title>
     <link rel="stylesheet" href="../styles.css">
-    <script>
-        (function() {
-            function updateLinks(theme) {
-                document.querySelectorAll('a[href]').forEach(function(link) {
-                    const raw = link.getAttribute('href');
-                    if (!raw || raw.startsWith('#') || raw.startsWith('javascript:')) return;
-                    link.setAttribute('href', raw.split('#')[0] + '#theme=' + theme);
-                });
-            }
-            function applyTheme(theme) {
-                document.documentElement.setAttribute('data-theme', theme);
-                try { localStorage.setItem('spiele_theme', theme); } catch (e) {}
-                try { window.name = 'spiele_theme:' + theme; } catch (e) {}
-                try { history.replaceState(null, '', location.pathname + location.search + '#theme=' + theme); } catch (e) {}
-                updateLinks(theme);
-            }
-            function getInitialTheme() {
-                const hashMatch = (location.hash || '').match(/theme=(dark|light)/);
-                if (hashMatch) return hashMatch[1];
-                const nameMatch = (window.name || '').match(/spiele_theme:(dark|light)/);
-                if (nameMatch) return nameMatch[1];
-                try {
-                    const saved = localStorage.getItem('spiele_theme');
-                    if (saved === 'dark' || saved === 'light') return saved;
-                } catch (e) {}
-                return (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) ? 'dark' : 'light';
-            }
-            applyTheme(getInitialTheme());
-            window.addEventListener('DOMContentLoaded', function() {
-                applyTheme(document.documentElement.getAttribute('data-theme') || 'dark');
-            });
-            window.addEventListener('pageshow', function() {
-                const nameMatch = (window.name || '').match(/spiele_theme:(dark|light)/);
-                if (nameMatch) { applyTheme(nameMatch[1]); return; }
-                try {
-                    const saved = localStorage.getItem('spiele_theme');
-                    if (saved === 'dark' || saved === 'light') applyTheme(saved);
-                } catch (err) {}
-            });
-            window.addEventListener('storage', function(e) {
-                if (e.key === 'spiele_theme' && (e.newValue === 'dark' || e.newValue === 'light')) {
-                    applyTheme(e.newValue);
-                }
-            });
-            document.addEventListener('click', function(e) {
-                const link = e.target && e.target.closest ? e.target.closest('a[href]') : null;
-                if (!link) return;
-                const raw = link.getAttribute('href');
-                if (!raw || raw.startsWith('#') || raw.startsWith('javascript:')) return;
-                const theme = document.documentElement.getAttribute('data-theme') || 'dark';
-                link.setAttribute('href', raw.split('#')[0] + '#theme=' + theme);
-            }, true);
-            window.toggleTheme = function() {
-                const current = document.documentElement.getAttribute('data-theme') || 'dark';
-                applyTheme(current === 'dark' ? 'light' : 'dark');
-            };
-        })();
-    </script>
+    <script src="../theme.js"></script>
+    <script src="../tournament.js"></script>
     <style>
         .container {
             width: 100%;
@@ -73,49 +17,48 @@
         .setup-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 12px;
+            gap: 10px;
             margin-top: 12px;
         }
 
         /* Spieler-Karten im Spiel */
         .player-row {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(135px, 1fr));
-            gap: 12px;
-            margin-bottom: 20px;
+            grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+            gap: 10px;
+            margin-bottom: 16px;
         }
 
         .player-status-card {
-            background-color: var(--md-sys-color-surface-container-low);
+            background-color: var(--md-sys-color-surface-container-lowest);
             border: 1px solid var(--md-sys-color-outline-variant);
-            padding: 16px 12px;
+            padding: 14px 12px;
             border-radius: var(--md-sys-shape-corner-lg);
             text-align: center;
             position: relative;
             box-shadow: var(--md-sys-elevation-1);
-            transition: transform 0.25s ease, background-color 0.25s ease, border-color 0.25s ease;
+            transition: background-color 0.2s ease, border-color 0.2s ease;
         }
 
         .player-status-card.leader {
-            border: 2px solid var(--md-sys-color-primary);
+            border: 1.5px solid var(--md-sys-color-primary);
             background-color: var(--md-sys-color-primary-container);
             color: var(--md-sys-color-on-primary-container);
-            box-shadow: var(--md-sys-elevation-2);
-            transform: translateY(-2px);
         }
 
         .leader-crown {
             position: absolute;
-            top: -14px;
+            top: -12px;
             left: 50%;
             transform: translateX(-50%);
-            font-size: 1.4rem;
+            font-size: 1.3rem;
         }
 
         .player-label {
-            font-size: 0.85rem;
+            font-size: 0.84rem;
             font-weight: 700;
             text-transform: uppercase;
+            letter-spacing: 0.03em;
             color: var(--md-sys-color-on-surface-variant);
         }
 
@@ -124,8 +67,8 @@
         }
 
         .score-val {
-            font-size: 1.85rem;
-            font-weight: 800;
+            font-size: 1.75rem;
+            font-weight: 700;
             display: block;
             margin-top: 4px;
             color: var(--md-sys-color-primary);
@@ -139,22 +82,22 @@
         .round-info-badge {
             background-color: var(--md-sys-color-primary-container);
             color: var(--md-sys-color-on-primary-container);
-            padding: 6px 16px;
+            padding: 5px 16px;
             border-radius: var(--md-sys-shape-corner-full);
             font-weight: 700;
-            font-size: 0.85rem;
+            font-size: 0.84rem;
             display: inline-block;
-            margin-bottom: 16px;
+            margin-bottom: 14px;
         }
 
         .input-group-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(135px, 1fr));
-            gap: 12px;
+            gap: 10px;
         }
 
         .mini-card-input {
-            background-color: var(--md-sys-color-surface-container);
+            background-color: var(--md-sys-color-surface-container-low);
             padding: 12px;
             border-radius: var(--md-sys-shape-corner-md);
             border: 1px solid var(--md-sys-color-outline-variant);
@@ -165,8 +108,8 @@
             width: 58px;
             padding: 8px 6px;
             text-align: center;
-            font-size: 1.05rem;
-            font-weight: bold;
+            font-size: 1.02rem;
+            font-weight: 700;
         }
 
         .btn-gold {
@@ -179,8 +122,8 @@
             padding: 0;
         }
 
-        .pts-pos { color: var(--md-sys-color-tertiary); font-weight: 800; }
-        .pts-neg { color: var(--md-sys-color-error); font-weight: 800; }
+        .pts-pos { color: var(--md-sys-color-tertiary); font-weight: 700; }
+        .pts-neg { color: var(--md-sys-color-error); font-weight: 700; }
         .sub-data { font-size: 0.75rem; color: var(--md-sys-color-on-surface-variant); display: block; }
 
         /* Winner Overlay */
@@ -197,7 +140,8 @@
         <h2 style="font-size: 2rem; margin: 10px 0;">Der Meister-Magier!</h2>
         <h3 id="winner-name" style="font-size: 1.75rem; color: var(--md-sys-color-primary);">Spieler</h3>
         <p style="font-size: 1.1rem; color: var(--md-sys-color-on-surface-variant); margin-top: 6px;">Sieg mit <strong id="winner-score" style="color: var(--md-sys-color-on-surface);">0</strong> Punkten</p>
-        <button class="btn btn-gold" onclick="location.reload()" style="margin-top: 24px;">Neues Turnier starten</button>
+        <div id="t-save-container" class="t-save-wrapper" style="margin-top: 16px;"></div>
+        <button class="btn btn-gold" onclick="location.reload()" style="margin-top: 12px;">Neues Turnier starten</button>
     </div>
 </div>
 
@@ -218,6 +162,7 @@
 
     <div id="setup-screen" class="card">
         <h3 class="card-title">Gefährten wählen (3–6 Spieler)</h3>
+        <div id="t-player-chips" style="margin-bottom: 14px;"></div>
         <div class="setup-grid">
             <input type="text" class="p-name" placeholder="Name Spieler 1">
             <input type="text" class="p-name" placeholder="Name Spieler 2">
@@ -421,6 +366,7 @@
         
         document.getElementById('winner-name').innerText = totals[0].name;
         document.getElementById('winner-score').innerText = totals[0].score;
+        if (tSaveCtrl) tSaveCtrl.reset();
         document.getElementById('winner-overlay').style.display = 'flex';
     }
 
@@ -436,6 +382,42 @@
         document.getElementById('input-container').style.display = 'block';
         document.getElementById('winner-overlay').style.display = 'none';
     }
+
+    function renderWizardChips() {
+        if (!window.Tournament) return;
+        const inputs = Array.from(document.querySelectorAll('.p-name'));
+        Tournament.renderPlayerChips('t-player-chips', {
+            isSelected: (name) => inputs.some(i => i.value.trim().toLowerCase() === name.toLowerCase()),
+            onToggle: (name) => {
+                const match = inputs.find(i => i.value.trim().toLowerCase() === name.toLowerCase());
+                if (match) {
+                    match.value = '';
+                } else {
+                    const empty = inputs.find(i => i.value.trim() === '');
+                    if (empty) {
+                        empty.value = name;
+                    } else {
+                        alert('Maximal 6 Spieler bei Wizard möglich.');
+                    }
+                }
+            }
+        });
+    }
+
+    document.querySelectorAll('.p-name').forEach(inp => {
+        inp.addEventListener('input', renderWizardChips);
+    });
+
+    const tSaveCtrl = window.Tournament ? Tournament.mountSaveButton('t-save-container', {
+        gameName: 'Wizard',
+        lowerIsBetter: false,
+        getEntries: () => players.map((p, i) => ({
+            name: p,
+            score: history.reduce((sum, r) => sum + r.results[i].points, 0)
+        }))
+    }) : null;
+
+    renderWizardChips();
 </script>
 </body>
 </html>

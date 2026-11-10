@@ -5,64 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Flip7 Scorekeeper</title>
     <link rel="stylesheet" href="../styles.css">
-    <script>
-        (function() {
-            function updateLinks(theme) {
-                document.querySelectorAll('a[href]').forEach(function(link) {
-                    const raw = link.getAttribute('href');
-                    if (!raw || raw.startsWith('#') || raw.startsWith('javascript:')) return;
-                    link.setAttribute('href', raw.split('#')[0] + '#theme=' + theme);
-                });
-            }
-            function applyTheme(theme) {
-                document.documentElement.setAttribute('data-theme', theme);
-                try { localStorage.setItem('spiele_theme', theme); } catch (e) {}
-                try { window.name = 'spiele_theme:' + theme; } catch (e) {}
-                try { history.replaceState(null, '', location.pathname + location.search + '#theme=' + theme); } catch (e) {}
-                updateLinks(theme);
-            }
-            function getInitialTheme() {
-                const hashMatch = (location.hash || '').match(/theme=(dark|light)/);
-                if (hashMatch) return hashMatch[1];
-                const nameMatch = (window.name || '').match(/spiele_theme:(dark|light)/);
-                if (nameMatch) return nameMatch[1];
-                try {
-                    const saved = localStorage.getItem('spiele_theme');
-                    if (saved === 'dark' || saved === 'light') return saved;
-                } catch (e) {}
-                return (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) ? 'dark' : 'light';
-            }
-            applyTheme(getInitialTheme());
-            window.addEventListener('DOMContentLoaded', function() {
-                applyTheme(document.documentElement.getAttribute('data-theme') || 'dark');
-            });
-            window.addEventListener('pageshow', function() {
-                const nameMatch = (window.name || '').match(/spiele_theme:(dark|light)/);
-                if (nameMatch) { applyTheme(nameMatch[1]); return; }
-                try {
-                    const saved = localStorage.getItem('spiele_theme');
-                    if (saved === 'dark' || saved === 'light') applyTheme(saved);
-                } catch (err) {}
-            });
-            window.addEventListener('storage', function(e) {
-                if (e.key === 'spiele_theme' && (e.newValue === 'dark' || e.newValue === 'light')) {
-                    applyTheme(e.newValue);
-                }
-            });
-            document.addEventListener('click', function(e) {
-                const link = e.target && e.target.closest ? e.target.closest('a[href]') : null;
-                if (!link) return;
-                const raw = link.getAttribute('href');
-                if (!raw || raw.startsWith('#') || raw.startsWith('javascript:')) return;
-                const theme = document.documentElement.getAttribute('data-theme') || 'dark';
-                link.setAttribute('href', raw.split('#')[0] + '#theme=' + theme);
-            }, true);
-            window.toggleTheme = function() {
-                const current = document.documentElement.getAttribute('data-theme') || 'dark';
-                applyTheme(current === 'dark' ? 'light' : 'dark');
-            };
-        })();
-    </script>
+    <script src="../theme.js"></script>
+    <script src="../tournament.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <style>
         .container {
@@ -141,12 +85,17 @@
         }
 
         .round-badge {
+            font-family: var(--md-sys-typescale-display-font);
             display: inline-flex;
             align-items: center;
             gap: 6px;
-            font-weight: 700;
-            font-size: 1.05rem;
+            font-weight: 800;
+            font-size: 1.08rem;
             color: var(--md-sys-color-primary);
+            background-color: var(--md-sys-color-primary-container);
+            color: var(--md-sys-color-on-primary-container);
+            padding: 6px 14px;
+            border-radius: var(--md-sys-shape-corner-full);
         }
 
         /* Zahnrad ohne Buttonkreis - nur das reine Zahnrad */
@@ -188,16 +137,16 @@
             align-items: center;
             justify-content: space-between;
             gap: 12px;
-            margin-bottom: 12px;
-            background-color: var(--md-sys-color-surface-container-low);
-            padding: 16px;
+            margin-bottom: 10px;
+            background-color: var(--md-sys-color-surface-container-lowest);
+            padding: 14px 16px;
             border-radius: var(--md-sys-shape-corner-lg);
-            border: 2px solid var(--md-sys-color-outline-variant);
+            border: 1px solid var(--md-sys-color-outline-variant);
             box-shadow: var(--md-sys-elevation-1);
             width: 100% !important;
             max-width: 100% !important;
             box-sizing: border-box !important;
-            transition: background-color 0.25s ease, border-color 0.25s ease;
+            transition: background-color 0.16s ease, border-color 0.16s ease;
         }
 
         .leader {
@@ -213,14 +162,14 @@
             align-items: center !important;
             justify-content: space-between !important;
             gap: 12px !important;
-            margin-bottom: 12px !important;
+            margin-bottom: 10px !important;
             margin-left: 0 !important;
             margin-right: 0 !important;
             background-color: var(--md-sys-color-warning-container) !important;
             color: var(--md-sys-color-on-warning-container) !important;
-            border: 2px solid var(--md-sys-color-warning) !important;
+            border: 1.5px solid var(--md-sys-color-warning) !important;
             border-radius: var(--md-sys-shape-corner-lg) !important;
-            padding: 16px !important;
+            padding: 14px 16px !important;
             box-shadow: var(--md-sys-elevation-1) !important;
             width: 100% !important;
             max-width: 100% !important;
@@ -230,11 +179,11 @@
         }
 
         .player-info { flex-grow: 1; }
-        .player-name { font-size: 1.15rem; font-weight: 700; }
-        .score-stats { font-size: 0.85rem; color: var(--md-sys-color-on-surface-variant); margin-top: 4px; }
+        .player-name { font-size: 1.1rem; font-weight: 700; }
+        .score-stats { font-size: 0.85rem; color: var(--md-sys-color-on-surface-variant); margin-top: 3px; }
         .leader .score-stats { color: var(--md-sys-color-on-primary-container); opacity: 0.85; }
         .winner-card .score-stats { color: var(--md-sys-color-on-warning-container); }
-        .total-val { color: var(--md-sys-color-primary); font-weight: 800; font-size: 1rem; }
+        .total-val { color: var(--md-sys-color-primary); font-weight: 700; font-size: 1rem; }
         .leader .total-val { color: var(--md-sys-color-on-primary-container); }
         .winner-text { color: var(--md-sys-color-warning); font-weight: bold; }
         .winner-card .winner-text { color: var(--md-sys-color-on-warning-container); }
@@ -260,10 +209,11 @@
             align-items: center;
             gap: 8px;
             padding: 6px 10px 6px 14px;
-            background-color: var(--md-sys-color-surface-container-high);
+            background-color: var(--md-sys-color-surface-container-low);
             border: 1px solid var(--md-sys-color-outline-variant);
+            box-shadow: none;
             border-radius: var(--md-sys-shape-corner-full);
-            font-size: 0.95rem;
+            font-size: 0.92rem;
             font-weight: 600;
             line-height: 1;
         }
@@ -508,6 +458,7 @@
                 </svg>
             </button>
         </div>
+        <div id="t-player-chips"></div>
         <div id="setupPlayerChips" class="setup-player-chips"></div>
         <button id="startGameBtn" class="btn-confirm" onclick="startFirstGame()" style="display:none; margin-top: 18px;">
             Spiel starten
@@ -538,6 +489,8 @@
             Sortiert nach Gesamtpunkten (unabhängig von der Rundenanzahl)
         </p>
         <div id="highscoreList"></div>
+
+        <div id="t-save-container" class="t-save-wrapper" style="margin-top: 18px;"></div>
 
         <div id="hsActions">
             <!-- Aktions-Buttons nach Spielende oder Rundenabbruch -->
@@ -604,7 +557,8 @@
     <div class="modal-content">
         <h2 style="margin-top:0;">🎉 Runde beendet!</h2>
         <p id="modalWinnerDesc" style="color: var(--md-sys-color-on-surface-variant); margin: 12px 0 16px 0;"></p>
-        <p style="font-weight: 600; margin-bottom: 20px;">Wie möchtest du fortfahren?</p>
+        <div id="t-save-round-container" class="t-save-wrapper" style="margin-bottom: 14px;"></div>
+        <p style="font-weight: 600; margin-bottom: 16px;">Wie möchtest du fortfahren?</p>
         <div class="modal-actions">
             <!-- 1. Weitere Runde mit denselben Spielern -->
             <button class="btn-confirm" style="margin-top:0;" onclick="startNextRoundSamePlayers()">
@@ -724,6 +678,32 @@
         `).join('');
 
         startBtn.style.display = allPlayers.length > 0 ? "block" : "none";
+        renderTournamentChips();
+    }
+
+    function renderTournamentChips() {
+        if (!window.Tournament) return;
+        Tournament.renderPlayerChips('t-player-chips', {
+            isSelected: (name) => allPlayers.some(p => p.name.toLowerCase() === name.toLowerCase()),
+            onToggle: (name) => {
+                const idx = allPlayers.findIndex(p => p.name.toLowerCase() === name.toLowerCase());
+                if (idx >= 0) {
+                    allPlayers.splice(idx, 1);
+                } else {
+                    allPlayers.push({
+                        id: nextPlayerId++,
+                        name: name,
+                        active: true,
+                        currentScore: 0,
+                        totalScore: 0,
+                        roundScores: [],
+                        wins: 0,
+                        roundsPlayed: 0
+                    });
+                }
+                renderSetupChips();
+            }
+        });
     }
 
     function startFirstGame() {
@@ -847,6 +827,8 @@
                 p.wins += 1;
             }
         });
+        if (tSaveRoundCtrl) tSaveRoundCtrl.reset();
+        if (tSaveTotalCtrl) tSaveTotalCtrl.reset();
     }
 
     function showGameOverModal(maxScore) {
@@ -1293,6 +1275,23 @@
             }
         }());
     }
+
+    const tSaveRoundCtrl = window.Tournament ? Tournament.mountSaveButton('t-save-round-container', {
+        gameName: 'Flip7',
+        lowerIsBetter: false,
+        getEntries: () => getActivePlayers().map(p => ({ name: p.name, score: p.currentScore }))
+    }) : null;
+
+    const tSaveTotalCtrl = window.Tournament ? Tournament.mountSaveButton('t-save-container', {
+        gameName: 'Flip7',
+        lowerIsBetter: false,
+        getEntries: () => allPlayers.map(p => ({
+            name: p.name,
+            score: p.totalScore + (isRoundActive ? p.currentScore : 0)
+        }))
+    }) : null;
+
+    renderTournamentChips();
 </script>
 
 </body>

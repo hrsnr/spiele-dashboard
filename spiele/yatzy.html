@@ -5,64 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Yatzy Digitalblock</title>
     <link rel="stylesheet" href="../styles.css">
-    <script>
-        (function() {
-            function updateLinks(theme) {
-                document.querySelectorAll('a[href]').forEach(function(link) {
-                    const raw = link.getAttribute('href');
-                    if (!raw || raw.startsWith('#') || raw.startsWith('javascript:')) return;
-                    link.setAttribute('href', raw.split('#')[0] + '#theme=' + theme);
-                });
-            }
-            function applyTheme(theme) {
-                document.documentElement.setAttribute('data-theme', theme);
-                try { localStorage.setItem('spiele_theme', theme); } catch (e) {}
-                try { window.name = 'spiele_theme:' + theme; } catch (e) {}
-                try { history.replaceState(null, '', location.pathname + location.search + '#theme=' + theme); } catch (e) {}
-                updateLinks(theme);
-            }
-            function getInitialTheme() {
-                const hashMatch = (location.hash || '').match(/theme=(dark|light)/);
-                if (hashMatch) return hashMatch[1];
-                const nameMatch = (window.name || '').match(/spiele_theme:(dark|light)/);
-                if (nameMatch) return nameMatch[1];
-                try {
-                    const saved = localStorage.getItem('spiele_theme');
-                    if (saved === 'dark' || saved === 'light') return saved;
-                } catch (e) {}
-                return (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) ? 'dark' : 'light';
-            }
-            applyTheme(getInitialTheme());
-            window.addEventListener('DOMContentLoaded', function() {
-                applyTheme(document.documentElement.getAttribute('data-theme') || 'dark');
-            });
-            window.addEventListener('pageshow', function() {
-                const nameMatch = (window.name || '').match(/spiele_theme:(dark|light)/);
-                if (nameMatch) { applyTheme(nameMatch[1]); return; }
-                try {
-                    const saved = localStorage.getItem('spiele_theme');
-                    if (saved === 'dark' || saved === 'light') applyTheme(saved);
-                } catch (err) {}
-            });
-            window.addEventListener('storage', function(e) {
-                if (e.key === 'spiele_theme' && (e.newValue === 'dark' || e.newValue === 'light')) {
-                    applyTheme(e.newValue);
-                }
-            });
-            document.addEventListener('click', function(e) {
-                const link = e.target && e.target.closest ? e.target.closest('a[href]') : null;
-                if (!link) return;
-                const raw = link.getAttribute('href');
-                if (!raw || raw.startsWith('#') || raw.startsWith('javascript:')) return;
-                const theme = document.documentElement.getAttribute('data-theme') || 'dark';
-                link.setAttribute('href', raw.split('#')[0] + '#theme=' + theme);
-            }, true);
-            window.toggleTheme = function() {
-                const current = document.documentElement.getAttribute('data-theme') || 'dark';
-                applyTheme(current === 'dark' ? 'light' : 'dark');
-            };
-        })();
-    </script>
+    <script src="../theme.js"></script>
+    <script src="../tournament.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <style>
         .container {
@@ -76,17 +20,18 @@
             gap: 8px;
             overflow-x: auto;
             padding-bottom: 6px;
-            margin-bottom: 15px;
+            margin-bottom: 14px;
         }
 
         .leader-chip {
-            background-color: var(--md-sys-color-surface-container-low);
+            background-color: var(--md-sys-color-surface-container-lowest);
             border: 1px solid var(--md-sys-color-outline-variant);
             border-radius: var(--md-sys-shape-corner-md);
             padding: 8px 14px;
             min-width: 100px;
             flex-shrink: 0;
             text-align: center;
+            transition: background-color 0.16s ease, border-color 0.16s ease;
         }
 
         .leader-chip.is-active {
@@ -97,31 +42,31 @@
 
         .chip-name { font-size: 0.8rem; font-weight: 700; color: var(--md-sys-color-on-surface-variant); }
         .leader-chip.is-active .chip-name { color: var(--md-sys-color-on-primary-container); }
-        .chip-score { font-size: 1.15rem; font-weight: 800; color: var(--md-sys-color-primary); }
+        .chip-score { font-size: 1.15rem; font-weight: 700; color: var(--md-sys-color-primary); }
         .leader-chip.is-active .chip-score { color: var(--md-sys-color-on-primary-container); }
 
         .input-group input[type="text"] { flex-grow: 1; }
 
         .btn-primary { 
             width: 100%; 
-            padding: 15px;
-            font-size: 1.05rem;
-            margin-top: 15px;
+            padding: 14px;
+            font-size: 1rem;
+            margin-top: 14px;
         }
 
         .btn-undo {
             width: 100%;
-            margin-top: 12px;
+            margin-top: 10px;
         }
 
         /* Block Categories Header */
         .section-header {
-            font-size: 0.85rem;
-            font-weight: 800;
+            font-size: 0.82rem;
+            font-weight: 700;
             text-transform: uppercase;
-            letter-spacing: 1px;
+            letter-spacing: 0.06em;
             color: var(--md-sys-color-primary);
-            margin: 18px 0 10px 0;
+            margin: 18px 0 8px 0;
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -135,7 +80,7 @@
             display: flex;
             align-items: center;
             justify-content: space-between;
-            background-color: var(--md-sys-color-surface-container);
+            background-color: var(--md-sys-color-surface-container-low);
             border: 1px solid var(--md-sys-color-outline-variant);
             border-radius: var(--md-sys-shape-corner-md);
             padding: 10px 14px;
@@ -143,8 +88,8 @@
         }
 
         .category-row.filled {
-            background-color: var(--md-sys-color-surface-container-low);
-            opacity: 0.8;
+            background-color: var(--md-sys-color-surface-container-lowest);
+            opacity: 0.82;
         }
 
         .cat-label {
@@ -178,6 +123,7 @@
             color: var(--md-sys-color-on-primary);
             padding: 8px 14px;
             font-size: 0.85rem;
+            box-shadow: none;
         }
 
         .btn-zero {
@@ -186,6 +132,7 @@
             border: 1px solid var(--md-sys-color-error);
             padding: 8px 12px;
             font-size: 0.85rem;
+            box-shadow: none;
         }
 
         .btn-check {
@@ -193,7 +140,8 @@
             color: var(--md-sys-color-on-tertiary-container);
             border: 1px solid var(--md-sys-color-tertiary);
             padding: 8px 14px;
-            font-size: 0.95rem;
+            font-size: 0.94rem;
+            box-shadow: none;
         }
 
         .btn-cross {
@@ -201,12 +149,13 @@
             color: var(--md-sys-color-on-error-container);
             border: 1px solid var(--md-sys-color-error);
             padding: 8px 14px;
-            font-size: 0.95rem;
+            font-size: 0.94rem;
+            box-shadow: none;
         }
 
         .val-badge {
             font-size: 1.1rem;
-            font-weight: 800;
+            font-weight: 700;
             color: var(--md-sys-color-primary);
             padding: 4px 8px;
         }
@@ -226,7 +175,7 @@
 
         .bonus-status {
             font-size: 0.8rem;
-            opacity: 0.85;
+            opacity: 0.88;
         }
 
         .bonus-active { color: var(--md-sys-color-tertiary) !important; font-weight: bold; opacity: 1; }
@@ -235,7 +184,7 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            background-color: var(--md-sys-color-surface-container);
+            background-color: var(--md-sys-color-surface-container-low);
             border: 1px solid var(--md-sys-color-outline-variant);
             padding: 10px 14px;
             border-radius: var(--md-sys-shape-corner-md);
@@ -267,6 +216,7 @@
             <input type="text" id="playerNameInput" placeholder="Name eingeben..." onkeypress="if(event.key==='Enter') addPlayer()">
             <button class="btn-add" onclick="addPlayer()">+</button>
         </div>
+        <div id="t-player-chips"></div>
         <div id="setupPlayerList" style="margin-top: 15px;"></div>
         <button id="startGameBtn" class="btn-primary" style="display:none;" onclick="startGame()">Spiel starten</button>
     </div>
@@ -316,7 +266,8 @@
         <div class="modal-content">
             <h2>🎉 Spiel beendet!</h2>
             <div id="winnerRankingList" style="margin: 20px 0;"></div>
-            <button class="btn-primary" onclick="resetGameSamePlayers()">🔄 Neue Runde (Gleiche Spieler)</button>
+            <div id="t-save-container" class="t-save-wrapper"></div>
+            <button class="btn-primary" onclick="resetGameSamePlayers()" style="margin-top: 8px;">🔄 Neue Runde (Gleiche Spieler)</button>
             <button class="btn-undo" onclick="resetEntireGame()" style="margin-top: 10px;">Neues Spiel (Neue Spieler)</button>
         </div>
     </div>
@@ -387,6 +338,28 @@
         });
 
         startBtn.style.display = players.length >= 1 ? 'inline-flex' : 'none';
+        renderTournamentChips();
+    }
+
+    function createEmptyScores() {
+        return {
+            einer: null, zweier: null, dreier: null, vierer: null, fuenfer: null, sechser: null,
+            paar: null, zweiPaare: null, dreierpasch: null, viererpasch: null,
+            kleinestrasse: null, grossestrasse: null, fullhouse: null, chance: null, yatzy: null
+        };
+    }
+
+    function renderTournamentChips() {
+        if (!window.Tournament) return;
+        Tournament.renderPlayerChips('t-player-chips', {
+            isSelected: (name) => players.some(p => p.name.toLowerCase() === name.toLowerCase()),
+            onToggle: (name) => {
+                const idx = players.findIndex(p => p.name.toLowerCase() === name.toLowerCase());
+                if (idx >= 0) players.splice(idx, 1);
+                else players.push({ name: name, scores: createEmptyScores() });
+                renderSetupList();
+            }
+        });
     }
 
     function startGame() {
@@ -620,6 +593,7 @@
             </div>
         `).join('');
 
+        if (tSaveCtrl) tSaveCtrl.reset();
         modal.style.display = 'flex';
     }
 
@@ -665,6 +639,14 @@
             }
         }());
     }
+
+    const tSaveCtrl = window.Tournament ? Tournament.mountSaveButton('t-save-container', {
+        gameName: 'Yatzy',
+        lowerIsBetter: false,
+        getEntries: () => players.map(p => ({ name: p.name, score: calculatePlayerTotals(p).total }))
+    }) : null;
+
+    renderTournamentChips();
 </script>
 
 </body>

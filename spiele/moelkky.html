@@ -5,64 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Mölkky Score Master Pro</title>
     <link rel="stylesheet" href="../styles.css">
-    <script>
-        (function() {
-            function updateLinks(theme) {
-                document.querySelectorAll('a[href]').forEach(function(link) {
-                    const raw = link.getAttribute('href');
-                    if (!raw || raw.startsWith('#') || raw.startsWith('javascript:')) return;
-                    link.setAttribute('href', raw.split('#')[0] + '#theme=' + theme);
-                });
-            }
-            function applyTheme(theme) {
-                document.documentElement.setAttribute('data-theme', theme);
-                try { localStorage.setItem('spiele_theme', theme); } catch (e) {}
-                try { window.name = 'spiele_theme:' + theme; } catch (e) {}
-                try { history.replaceState(null, '', location.pathname + location.search + '#theme=' + theme); } catch (e) {}
-                updateLinks(theme);
-            }
-            function getInitialTheme() {
-                const hashMatch = (location.hash || '').match(/theme=(dark|light)/);
-                if (hashMatch) return hashMatch[1];
-                const nameMatch = (window.name || '').match(/spiele_theme:(dark|light)/);
-                if (nameMatch) return nameMatch[1];
-                try {
-                    const saved = localStorage.getItem('spiele_theme');
-                    if (saved === 'dark' || saved === 'light') return saved;
-                } catch (e) {}
-                return (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) ? 'dark' : 'light';
-            }
-            applyTheme(getInitialTheme());
-            window.addEventListener('DOMContentLoaded', function() {
-                applyTheme(document.documentElement.getAttribute('data-theme') || 'dark');
-            });
-            window.addEventListener('pageshow', function() {
-                const nameMatch = (window.name || '').match(/spiele_theme:(dark|light)/);
-                if (nameMatch) { applyTheme(nameMatch[1]); return; }
-                try {
-                    const saved = localStorage.getItem('spiele_theme');
-                    if (saved === 'dark' || saved === 'light') applyTheme(saved);
-                } catch (err) {}
-            });
-            window.addEventListener('storage', function(e) {
-                if (e.key === 'spiele_theme' && (e.newValue === 'dark' || e.newValue === 'light')) {
-                    applyTheme(e.newValue);
-                }
-            });
-            document.addEventListener('click', function(e) {
-                const link = e.target && e.target.closest ? e.target.closest('a[href]') : null;
-                if (!link) return;
-                const raw = link.getAttribute('href');
-                if (!raw || raw.startsWith('#') || raw.startsWith('javascript:')) return;
-                const theme = document.documentElement.getAttribute('data-theme') || 'dark';
-                link.setAttribute('href', raw.split('#')[0] + '#theme=' + theme);
-            }, true);
-            window.toggleTheme = function() {
-                const current = document.documentElement.getAttribute('data-theme') || 'dark';
-                applyTheme(current === 'dark' ? 'light' : 'dark');
-            };
-        })();
-    </script>
+    <script src="../theme.js"></script>
+    <script src="../tournament.js"></script>
     <style>
         /* Fixiertes Grundlayout gegen Springen */
         html, body { 
@@ -85,8 +29,9 @@
         }
 
         .m3-top-app-bar {
-            padding: max(12px, env(safe-area-inset-top)) 15px 10px 15px;
-            margin-bottom: 0;
+            width: calc(100% - 24px);
+            margin: max(10px, env(safe-area-inset-top)) 12px 10px 12px;
+            padding: 6px 8px;
             flex-shrink: 0;
         }
 
@@ -108,7 +53,7 @@
 
         .setup-img { 
             display: block;
-            width: 110px; 
+            width: 106px; 
             height: auto; 
             margin: 0 auto;
         }
@@ -120,7 +65,7 @@
         .admin-area { 
             display: flex;
             gap: 8px;
-            background-color: var(--md-sys-color-surface-container-low);
+            background-color: var(--md-sys-color-surface-container-lowest);
             border: 1px solid var(--md-sys-color-outline-variant);
             padding: 8px;
             border-radius: var(--md-sys-shape-corner-lg);
@@ -142,23 +87,23 @@
             -webkit-overflow-scrolling: touch;
         }
 
-        .player-list { display: grid; gap: 10px; padding-bottom: 20px; }
+        .player-list { display: grid; gap: 8px; padding-bottom: 18px; }
         
         .player-card { 
-            background-color: var(--md-sys-color-surface-container-low);
-            padding: 14px 16px;
+            background-color: var(--md-sys-color-surface-container-lowest);
+            padding: 13px 16px;
             border-radius: var(--md-sys-shape-corner-lg);
             box-shadow: var(--md-sys-elevation-1);
             display: flex;
             justify-content: space-between;
             align-items: center;
             border: 1px solid var(--md-sys-color-outline-variant);
-            transition: all 0.2s ease;
+            transition: background-color 0.16s ease, border-color 0.16s ease;
             scroll-margin-top: 20px;
         }
 
         .player-card.active {
-            border: 2px solid var(--md-sys-color-primary);
+            border: 1.5px solid var(--md-sys-color-primary);
             background-color: var(--md-sys-color-primary-container);
             color: var(--md-sys-color-on-primary-container);
         }
@@ -166,31 +111,31 @@
             background-color: var(--md-sys-color-error-container);
             color: var(--md-sys-color-on-error-container);
             border-color: var(--md-sys-color-error);
-            opacity: 0.82;
+            opacity: 0.8;
         }
         .player-card.winner {
             background-color: var(--md-sys-color-warning-container);
             color: var(--md-sys-color-on-warning-container);
-            border: 2px solid var(--md-sys-color-warning);
+            border: 1.5px solid var(--md-sys-color-warning);
         }
 
         .player-info h3 { margin: 0; font-size: 1.05rem; font-weight: 700; text-align: left; }
-        .player-stats { font-size: 0.8rem; opacity: 0.8; margin-top: 4px; display: flex; align-items: center; gap: 8px; }
+        .player-stats { font-size: 0.8rem; opacity: 0.85; margin-top: 3px; display: flex; align-items: center; gap: 8px; }
         
         .miss-dots { display: flex; gap: 4px; }
         .dot { width: 9px; height: 9px; border-radius: 50%; border: 1px solid var(--md-sys-color-outline); }
         .dot.filled { background-color: var(--md-sys-color-error); border-color: var(--md-sys-color-error); }
 
-        .score-big { font-size: 1.55rem; font-weight: 800; color: var(--md-sys-color-primary); }
+        .score-big { font-size: 1.55rem; font-weight: 700; color: var(--md-sys-color-primary); }
         .player-card.active .score-big { color: var(--md-sys-color-on-primary-container); }
         .player-card.winner .score-big { color: var(--md-sys-color-on-warning-container); }
 
-        /* Tastenfeld - Absolut stabil am unteren Rand */
+        /* Tastenfeld - M3 Bottom Sheet */
         .input-panel { 
-            background-color: var(--md-sys-color-surface-container);
+            background-color: var(--md-sys-color-surface-container-lowest);
             padding: 12px 12px calc(18px + env(safe-area-inset-bottom)) 12px;
             border-top: 1px solid var(--md-sys-color-outline-variant);
-            border-radius: 24px 24px 0 0;
+            border-radius: 28px 28px 0 0;
             box-shadow: var(--md-sys-elevation-3);
             display: grid;
             grid-template-columns: repeat(4, 1fr);
@@ -199,13 +144,14 @@
             z-index: 100;
         }
 
-        .panel-label { grid-column: span 4; text-align: center; font-weight: 600; margin-bottom: 4px; font-size: 0.85rem; color: var(--md-sys-color-on-surface-variant); }
+        .panel-label { grid-column: span 4; text-align: center; font-weight: 600; margin-bottom: 4px; font-size: 0.86rem; color: var(--md-sys-color-on-surface-variant); }
         .num-btn { 
-            background-color: var(--md-sys-color-surface-container-highest);
+            background-color: var(--md-sys-color-surface-container-low);
             border: 1px solid var(--md-sys-color-outline-variant);
-            padding: 10px 0; 
+            box-shadow: none;
+            padding: 11px 0; 
             border-radius: var(--md-sys-shape-corner-md);
-            font-size: 1.05rem;
+            font-size: 1.08rem;
             font-weight: 700;
             color: var(--md-sys-color-on-surface);
             touch-action: manipulation;
@@ -250,7 +196,13 @@
     </div>
 
     <div id="scrollContainer">
+        <div id="t-player-chips" style="margin-bottom: 12px;"></div>
         <div id="playerList" class="player-list"></div>
+        <div id="moelkky-end-card" class="card hidden" style="margin-top: 8px; text-align: center;">
+            <h3 class="card-title" style="margin-bottom: 8px;">🏆 Spiel beendet!</h3>
+            <div id="t-save-container" class="t-save-wrapper"></div>
+            <button type="button" class="btn btn-primary" onclick="resetMoelkkyRound()" style="width: 100%; margin-top: 8px;">🔄 Neue Runde (Gleiche Spieler)</button>
+        </div>
     </div>
 
     <div id="inputPanel" class="input-panel" style="display: none;">
@@ -351,11 +303,54 @@
         }, 100);
     }
 
+    let wasGameOver = false;
+
+    function renderTournamentChips() {
+        if (!window.Tournament) return;
+        const chipsContainer = document.getElementById('t-player-chips');
+        const canEditRoster = players.every(p => p.score === 0 && p.misses === 0 && !p.eliminated && !p.winner);
+        chipsContainer.style.display = canEditRoster ? 'block' : 'none';
+        if (!canEditRoster) return;
+
+        Tournament.renderPlayerChips(chipsContainer, {
+            isSelected: (name) => players.some(p => p.name.toLowerCase() === name.toLowerCase()),
+            onToggle: (name) => {
+                saveState();
+                const idx = players.findIndex(p => p.name.toLowerCase() === name.toLowerCase());
+                if (idx >= 0) players.splice(idx, 1);
+                else players.push({ name: name, score: 0, misses: 0, eliminated: false, winner: false });
+                if (activeIndex >= players.length) activeIndex = 0;
+                render();
+            }
+        });
+    }
+
+    function resetMoelkkyRound() {
+        players.forEach(p => {
+            p.score = 0;
+            p.misses = 0;
+            p.eliminated = false;
+            p.winner = false;
+        });
+        activeIndex = 0;
+        history = [];
+        wasGameOver = false;
+        document.getElementById('undoBtn').disabled = true;
+        if (tSaveCtrl) tSaveCtrl.reset();
+        render();
+    }
+
     function render() {
         const list = document.getElementById('playerList');
         const panel = document.getElementById('inputPanel');
+        const endCard = document.getElementById('moelkky-end-card');
         list.innerHTML = "";
         const isGameOver = checkWinCondition();
+
+        if (isGameOver && !wasGameOver && tSaveCtrl) {
+            tSaveCtrl.reset();
+        }
+        wasGameOver = isGameOver;
 
         if (players.length > 0 && !isGameOver) {
             panel.style.display = 'grid';
@@ -363,6 +358,14 @@
         } else {
             panel.style.display = 'none';
         }
+
+        if (isGameOver && players.length > 0) {
+            endCard.classList.remove('hidden');
+        } else {
+            endCard.classList.add('hidden');
+        }
+
+        renderTournamentChips();
 
         players.forEach((p, i) => {
             const card = document.createElement('div');
@@ -383,6 +386,25 @@
             list.appendChild(card);
         });
     }
+
+    const tSaveCtrl = window.Tournament ? Tournament.mountSaveButton('t-save-container', {
+        gameName: 'Mölkky',
+        lowerIsBetter: false,
+        getEntries: () => {
+            const sorted = [...players].sort((a, b) => {
+                if (a.winner !== b.winner) return a.winner ? -1 : 1;
+                if (a.eliminated !== b.eliminated) return a.eliminated ? 1 : -1;
+                return b.score - a.score;
+            });
+            return sorted.map((p, idx) => ({
+                name: p.name,
+                score: p.score,
+                rank: idx + 1
+            }));
+        }
+    }) : null;
+
+    renderTournamentChips();
 </script>
 </body>
 </html>

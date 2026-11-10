@@ -5,64 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Qwirkle Punktehelfer</title>
   <link rel="stylesheet" href="../styles.css">
-  <script>
-    (function() {
-      function updateLinks(theme) {
-        document.querySelectorAll('a[href]').forEach(function(link) {
-          const raw = link.getAttribute('href');
-          if (!raw || raw.startsWith('#') || raw.startsWith('javascript:')) return;
-          link.setAttribute('href', raw.split('#')[0] + '#theme=' + theme);
-        });
-      }
-      function applyTheme(theme) {
-        document.documentElement.setAttribute('data-theme', theme);
-        try { localStorage.setItem('spiele_theme', theme); } catch (e) {}
-        try { window.name = 'spiele_theme:' + theme; } catch (e) {}
-        try { history.replaceState(null, '', location.pathname + location.search + '#theme=' + theme); } catch (e) {}
-        updateLinks(theme);
-      }
-      function getInitialTheme() {
-        const hashMatch = (location.hash || '').match(/theme=(dark|light)/);
-        if (hashMatch) return hashMatch[1];
-        const nameMatch = (window.name || '').match(/spiele_theme:(dark|light)/);
-        if (nameMatch) return nameMatch[1];
-        try {
-          const saved = localStorage.getItem('spiele_theme');
-          if (saved === 'dark' || saved === 'light') return saved;
-        } catch (e) {}
-        return (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) ? 'dark' : 'light';
-      }
-      applyTheme(getInitialTheme());
-      window.addEventListener('DOMContentLoaded', function() {
-        applyTheme(document.documentElement.getAttribute('data-theme') || 'dark');
-      });
-      window.addEventListener('pageshow', function() {
-        const nameMatch = (window.name || '').match(/spiele_theme:(dark|light)/);
-        if (nameMatch) { applyTheme(nameMatch[1]); return; }
-        try {
-          const saved = localStorage.getItem('spiele_theme');
-          if (saved === 'dark' || saved === 'light') applyTheme(saved);
-        } catch (err) {}
-      });
-      window.addEventListener('storage', function(e) {
-        if (e.key === 'spiele_theme' && (e.newValue === 'dark' || e.newValue === 'light')) {
-          applyTheme(e.newValue);
-        }
-      });
-      document.addEventListener('click', function(e) {
-        const link = e.target && e.target.closest ? e.target.closest('a[href]') : null;
-        if (!link) return;
-        const raw = link.getAttribute('href');
-        if (!raw || raw.startsWith('#') || raw.startsWith('javascript:')) return;
-        const theme = document.documentElement.getAttribute('data-theme') || 'dark';
-        link.setAttribute('href', raw.split('#')[0] + '#theme=' + theme);
-      }, true);
-      window.toggleTheme = function() {
-        const current = document.documentElement.getAttribute('data-theme') || 'dark';
-        applyTheme(current === 'dark' ? 'light' : 'dark');
-      };
-    })();
-  </script>
+  <script src="../theme.js"></script>
+  <script src="../tournament.js"></script>
   <style>
     .container {
       width: 100%;
@@ -95,10 +39,10 @@
       display: flex;
       justify-content: space-between;
       align-items: center;
-      background-color: var(--md-sys-color-surface-container);
+      background-color: var(--md-sys-color-surface-container-low);
+      border: 1px solid var(--md-sys-color-outline-variant);
       padding: 10px 14px;
       border-radius: var(--md-sys-shape-corner-md);
-      border: 1px solid var(--md-sys-color-outline-variant);
     }
 
     .btn-remove {
@@ -113,38 +57,35 @@
     }
 
     /* GAME SCREEN */
-    /* Players Scoreboard Bar */
     .scoreboard {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
       gap: 10px;
-      margin-bottom: 20px;
+      margin-bottom: 16px;
     }
 
     .player-card {
-      background-color: var(--md-sys-color-surface-container-low);
+      background-color: var(--md-sys-color-surface-container-lowest);
       border: 1px solid var(--md-sys-color-outline-variant);
       border-radius: var(--md-sys-shape-corner-lg);
       padding: 14px 12px;
       text-align: center;
       position: relative;
       box-shadow: var(--md-sys-elevation-1);
-      transition: all 0.25s ease;
+      transition: background-color 0.2s ease, border-color 0.2s ease;
     }
 
     .player-card.active {
       border-color: var(--md-sys-color-primary);
       background-color: var(--md-sys-color-primary-container);
       color: var(--md-sys-color-on-primary-container);
-      box-shadow: var(--md-sys-elevation-2);
     }
 
     .crown-icon {
       position: absolute;
       top: -10px;
       right: 8px;
-      font-size: 1.3rem;
-      filter: drop-shadow(0 2px 4px rgba(0,0,0,0.25));
+      font-size: 1.25rem;
     }
 
     .player-name {
@@ -157,8 +98,8 @@
     }
 
     .player-score {
-      font-size: 1.65rem;
-      font-weight: 800;
+      font-size: 1.7rem;
+      font-weight: 700;
       color: var(--md-sys-color-primary);
     }
 
@@ -167,9 +108,10 @@
     }
 
     .player-diff {
-      font-size: 0.75rem;
+      font-size: 0.74rem;
       color: var(--md-sys-color-on-surface-variant);
       margin-top: 2px;
+      font-weight: 500;
     }
 
     .player-card.active .player-diff {
@@ -181,88 +123,91 @@
     .active-player-header {
       text-align: center;
       font-size: 1.1rem;
-      margin-bottom: 16px;
+      margin-bottom: 14px;
     }
 
     .active-player-header span {
       color: var(--md-sys-color-primary);
-      font-weight: 800;
+      font-weight: 700;
     }
 
     .points-input-box {
       display: flex;
       gap: 8px;
-      margin-bottom: 16px;
+      margin-bottom: 14px;
     }
 
     .points-input-box input {
       flex: 1;
       font-size: 1.2rem;
       text-align: center;
-      font-weight: bold;
+      font-weight: 700;
     }
 
     .action-grid {
       display: grid;
       grid-template-columns: 1fr;
       gap: 10px;
-      margin-bottom: 16px;
+      margin-bottom: 14px;
     }
 
     .btn-qwirkle {
       background-color: var(--md-sys-color-purple-container);
       color: var(--md-sys-color-on-purple-container);
-      border: 1px solid var(--md-sys-color-purple);
+      border: 1px solid var(--md-sys-color-outline-variant);
+      box-shadow: none;
     }
 
     .btn-swap {
-      background-color: var(--md-sys-color-surface-container-high);
+      background-color: var(--md-sys-color-surface-container-low);
       color: var(--md-sys-color-on-surface);
       border: 1px solid var(--md-sys-color-outline-variant);
+      box-shadow: none;
     }
 
     .btn-end-game {
       background-color: var(--md-sys-color-warning-container);
       color: var(--md-sys-color-on-warning-container);
       border: 1px solid var(--md-sys-color-warning);
+      box-shadow: none;
     }
 
     .correction-box {
       margin-top: 10px;
       border-top: 1px solid var(--md-sys-color-outline-variant);
-      padding-top: 16px;
+      padding-top: 14px;
     }
 
     /* END SCREEN */
     .winner-banner {
       text-align: center;
-      padding: 20px 0;
+      padding: 16px 0;
     }
 
     .winner-banner .trophy {
-      font-size: 3.5rem;
-      margin-bottom: 10px;
+      font-size: 3.2rem;
+      margin-bottom: 8px;
     }
 
     .winner-banner h2 {
-      font-size: 1.8rem;
+      font-size: 1.75rem;
       color: var(--md-sys-color-primary);
     }
 
     .ranking-list {
       display: flex;
       flex-direction: column;
-      gap: 10px;
-      margin: 20px 0;
+      gap: 8px;
+      margin: 18px 0;
     }
 
     .ranking-item {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      padding: 14px 18px;
+      padding: 12px 16px;
       border-radius: var(--md-sys-shape-corner-md);
-      background-color: var(--md-sys-color-surface-container);
+      background-color: var(--md-sys-color-surface-container-low);
       border: 1px solid var(--md-sys-color-outline-variant);
     }
 
@@ -273,8 +218,8 @@
     }
 
     .rank-num {
-      font-weight: 800;
-      font-size: 1.1rem;
+      font-weight: 700;
+      font-size: 1.08rem;
       width: 30px;
     }
 
@@ -284,8 +229,8 @@
     }
 
     .rank-score {
-      font-size: 1.3rem;
-      font-weight: 800;
+      font-size: 1.25rem;
+      font-weight: 700;
     }
   </style>
 </head>
@@ -313,6 +258,7 @@
       <input type="text" id="player-name-input" placeholder="Name eingeben..." autocomplete="off">
       <button class="btn btn-tonal" id="add-player-btn" style="width: auto;">+</button>
     </div>
+    <div id="t-player-chips"></div>
 
     <div class="player-setup-list" id="player-setup-list">
       <!-- Dynamisch hinzugefügte Spieler -->
@@ -382,7 +328,9 @@
       <!-- Dynamische Rangliste -->
     </div>
 
-    <div style="display: flex; gap: 10px; margin-top: 20px;">
+    <div id="t-save-container" class="t-save-wrapper"></div>
+
+    <div style="display: flex; gap: 10px; margin-top: 12px;">
       <button class="btn" onclick="restartWithSamePlayers()">Neu starten</button>
       <button class="btn btn-secondary" onclick="resetToSetup()">Neue Spieler</button>
     </div>
@@ -448,6 +396,20 @@
     });
 
     startGameBtn.disabled = players.length === 0;
+    renderTournamentChips();
+  }
+
+  function renderTournamentChips() {
+    if (!window.Tournament) return;
+    Tournament.renderPlayerChips('t-player-chips', {
+      isSelected: (name) => players.some(p => p.name.toLowerCase() === name.toLowerCase()),
+      onToggle: (name) => {
+        const idx = players.findIndex(p => p.name.toLowerCase() === name.toLowerCase());
+        if (idx >= 0) players.splice(idx, 1);
+        else players.push({ name: name, score: 0 });
+        renderSetupList();
+      }
+    });
   }
 
   function startGame() {
@@ -571,6 +533,8 @@
       `;
       rankingList.appendChild(item);
     });
+
+    if (tSaveCtrl) tSaveCtrl.reset();
   }
 
   function restartWithSamePlayers() {
@@ -584,6 +548,14 @@
     endScreen.classList.add('hidden');
     setupScreen.classList.remove('hidden');
   }
+
+  const tSaveCtrl = window.Tournament ? Tournament.mountSaveButton('t-save-container', {
+    gameName: 'Qwirkle',
+    lowerIsBetter: false,
+    getEntries: () => players.map(p => ({ name: p.name, score: p.score }))
+  }) : null;
+
+  renderTournamentChips();
 </script>
 
 </body>
