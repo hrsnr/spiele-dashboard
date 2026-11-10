@@ -10,66 +10,12 @@
   <meta http-equiv="Expires" content="0">
 
   <title>Spiele-Helfer</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="manifest" href="manifest.json">
   <link rel="stylesheet" href="styles.css">
-  <script>
-    (function() {
-      function updateLinks(theme) {
-        document.querySelectorAll('a[href]').forEach(function(link) {
-          const raw = link.getAttribute('href');
-          if (!raw || raw.startsWith('#') || raw.startsWith('javascript:')) return;
-          link.setAttribute('href', raw.split('#')[0] + '#theme=' + theme);
-        });
-      }
-      function applyTheme(theme) {
-        document.documentElement.setAttribute('data-theme', theme);
-        try { localStorage.setItem('spiele_theme', theme); } catch (e) {}
-        try { window.name = 'spiele_theme:' + theme; } catch (e) {}
-        try { history.replaceState(null, '', location.pathname + location.search + '#theme=' + theme); } catch (e) {}
-        updateLinks(theme);
-      }
-      function getInitialTheme() {
-        const hashMatch = (location.hash || '').match(/theme=(dark|light)/);
-        if (hashMatch) return hashMatch[1];
-        const nameMatch = (window.name || '').match(/spiele_theme:(dark|light)/);
-        if (nameMatch) return nameMatch[1];
-        try {
-          const saved = localStorage.getItem('spiele_theme');
-          if (saved === 'dark' || saved === 'light') return saved;
-        } catch (e) {}
-        return (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) ? 'dark' : 'light';
-      }
-      applyTheme(getInitialTheme());
-      window.addEventListener('DOMContentLoaded', function() {
-        applyTheme(document.documentElement.getAttribute('data-theme') || 'dark');
-      });
-      window.addEventListener('pageshow', function() {
-        const nameMatch = (window.name || '').match(/spiele_theme:(dark|light)/);
-        if (nameMatch) { applyTheme(nameMatch[1]); return; }
-        try {
-          const saved = localStorage.getItem('spiele_theme');
-          if (saved === 'dark' || saved === 'light') applyTheme(saved);
-        } catch (err) {}
-      });
-      window.addEventListener('storage', function(e) {
-        if (e.key === 'spiele_theme' && (e.newValue === 'dark' || e.newValue === 'light')) {
-          applyTheme(e.newValue);
-        }
-      });
-      document.addEventListener('click', function(e) {
-        const link = e.target && e.target.closest ? e.target.closest('a[href]') : null;
-        if (!link) return;
-        const raw = link.getAttribute('href');
-        if (!raw || raw.startsWith('#') || raw.startsWith('javascript:')) return;
-        const theme = document.documentElement.getAttribute('data-theme') || 'dark';
-        link.setAttribute('href', raw.split('#')[0] + '#theme=' + theme);
-      }, true);
-      window.toggleTheme = function() {
-        const current = document.documentElement.getAttribute('data-theme') || 'dark';
-        applyTheme(current === 'dark' ? 'light' : 'dark');
-      };
-    })();
-  </script>
+  <script src="theme.js"></script>
+  <script src="tournament.js"></script>
   <style>
     .container {
       width: 100%;
@@ -78,35 +24,35 @@
       z-index: 2;
     }
 
-    /* M3 Category Accordion */
+    /* M3 Category Accordion (Calm & Clear) */
     details.category {
-      margin-bottom: 18px;
+      margin-bottom: 14px;
       border: 1px solid var(--md-sys-color-outline-variant);
       border-radius: var(--md-sys-shape-corner-xl);
-      background-color: var(--md-sys-color-surface-container-low);
+      background-color: var(--md-sys-color-surface-container-lowest);
       box-shadow: var(--md-sys-elevation-1);
       overflow: hidden;
-      transition: border-color 0.2s ease, background-color 0.25s ease, box-shadow 0.2s ease;
+      transition: border-color 0.16s ease, background-color 0.2s ease, box-shadow 0.16s ease;
     }
 
     details.category[open] {
       border-color: var(--md-sys-color-primary);
-      background-color: var(--md-sys-color-surface-container);
+      background-color: var(--md-sys-color-surface-container-low);
     }
 
     summary.category-header {
-      padding: 18px 22px;
-      font-size: 1.12rem;
+      padding: 15px 18px;
+      font-size: 1.08rem;
       font-weight: 700;
       color: var(--md-sys-color-on-surface);
       cursor: pointer;
       list-style: none;
       display: grid;
-      grid-template-columns: 36px 1fr 36px;
+      grid-template-columns: 40px 1fr 36px;
       align-items: center;
       gap: 12px;
       user-select: none;
-      transition: background-color 0.2s ease, color 0.2s ease;
+      transition: background-color 0.16s ease;
     }
 
     summary.category-header::-webkit-details-marker {
@@ -114,7 +60,7 @@
     }
 
     summary.category-header:hover {
-      background-color: var(--md-sys-color-surface-container-high);
+      background-color: var(--md-sys-color-surface-container-low);
     }
 
     .category-label {
@@ -123,20 +69,7 @@
     }
 
     .category-badge {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      width: 36px;
-      height: 36px;
-      border-radius: var(--md-sys-shape-corner-md);
-      background-color: var(--md-sys-color-secondary-container);
-      color: var(--md-sys-color-on-secondary-container);
-      font-size: 1.15rem;
-      transition: transform 0.2s ease;
-    }
-
-    summary.category-header:hover .category-badge {
-      transform: scale(1.1);
+      flex-shrink: 0;
     }
 
     .chevron {
@@ -146,9 +79,9 @@
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      background-color: var(--md-sys-color-surface-container-highest);
+      background-color: var(--md-sys-color-surface-container);
       color: var(--md-sys-color-on-surface-variant);
-      transition: transform 0.25s ease, background-color 0.2s ease, color 0.2s ease;
+      transition: transform 0.2s ease, background-color 0.16s ease, color 0.16s ease;
     }
 
     .chevron svg {
@@ -167,57 +100,50 @@
     .grid {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
-      gap: 14px;
-      padding: 4px 18px 20px 18px;
+      gap: 12px;
+      padding: 4px 16px 18px 16px;
+    }
+
+    .accordion-content {
+      padding: 4px 16px 18px 16px;
     }
 
     .game-card {
       background-color: var(--md-sys-color-surface-container-lowest);
       border: 1px solid var(--md-sys-color-outline-variant);
       border-radius: var(--md-sys-shape-corner-lg);
-      padding: 18px;
+      padding: 16px;
       text-decoration: none;
       color: var(--md-sys-color-on-surface);
-      transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
+      transition: border-color 0.16s ease, box-shadow 0.16s ease, background-color 0.16s ease, transform 0.12s ease;
       display: flex;
       align-items: flex-start;
       gap: 14px;
-      box-shadow: var(--md-sys-elevation-1);
+      box-shadow: none;
     }
 
     .game-card:hover {
-      transform: translateY(-2px);
       border-color: var(--md-sys-color-primary);
-      box-shadow: var(--md-sys-elevation-2);
-      background-color: var(--md-sys-color-surface-container-low);
+      box-shadow: var(--md-sys-elevation-1);
     }
 
     .game-card:active {
-      transform: scale(0.98);
+      transform: scale(0.985);
     }
 
     .icon {
-      width: 48px;
-      height: 48px;
-      border-radius: var(--md-sys-shape-corner-md);
-      background-color: var(--md-sys-color-primary-container);
-      color: var(--md-sys-color-on-primary-container);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 1.6rem;
       flex-shrink: 0;
     }
 
     .title {
-      font-size: 1.05rem;
+      font-size: 1.04rem;
       font-weight: 700;
-      margin-bottom: 4px;
+      margin-bottom: 3px;
       color: var(--md-sys-color-on-surface);
     }
 
     .desc {
-      font-size: 0.85rem;
+      font-size: 0.84rem;
       color: var(--md-sys-color-on-surface-variant);
       line-height: 1.4;
     }
@@ -298,22 +224,23 @@
       margin-bottom: 18px;
     }
 
-    /* M3 Styled Checkbox Container */
+    /* M3 Expressive Checkbox Container */
     .m3-checkbox-label {
       display: flex;
       align-items: center;
       gap: 14px;
       cursor: pointer;
       user-select: none;
-      padding: 12px 16px;
+      padding: 12px 14px;
       border-radius: var(--md-sys-shape-corner-lg);
-      background-color: var(--md-sys-color-surface-container);
+      background-color: var(--md-sys-color-surface-container-lowest);
       border: 1px solid var(--md-sys-color-outline-variant);
-      transition: background-color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+      box-shadow: none;
+      transition: background-color 0.16s ease, border-color 0.16s ease;
     }
 
     .m3-checkbox-label:hover {
-      background-color: var(--md-sys-color-surface-container-high);
+      background-color: var(--md-sys-color-surface-container-low);
       border-color: var(--md-sys-color-primary);
     }
 
@@ -397,12 +324,12 @@
       transition: background-color 0.2s ease, color 0.2s ease;
     }
 
-    /* Roll Button */
+    /* Functional Roll Button */
     .random-btn-roll {
       width: 100%;
       padding: 13px 24px;
-      font-size: 1rem;
-      font-weight: 700;
+      font-size: 0.98rem;
+      font-weight: 600;
       border-radius: var(--md-sys-shape-corner-full);
       background-color: var(--md-sys-color-primary);
       color: var(--md-sys-color-on-primary);
@@ -413,13 +340,12 @@
       cursor: pointer;
       border: none;
       box-shadow: var(--md-sys-elevation-1);
-      transition: background-color 0.2s ease, transform 0.15s ease, box-shadow 0.2s ease, filter 0.2s ease;
+      transition: background-color 0.16s ease, transform 0.12s ease, box-shadow 0.16s ease, filter 0.16s ease;
     }
 
     .random-btn-roll:hover:not(:disabled) {
       box-shadow: var(--md-sys-elevation-2);
-      filter: brightness(1.07);
-      transform: translateY(-1px);
+      filter: brightness(1.05);
     }
 
     .random-btn-roll:active:not(:disabled) {
@@ -469,8 +395,7 @@
     }
 
     .placeholder-icon {
-      font-size: 1.6rem;
-      opacity: 0.85;
+      flex-shrink: 0;
     }
 
     .placeholder-text {
@@ -484,47 +409,33 @@
     .random-game-card {
       display: flex;
       align-items: flex-start;
-      gap: 16px;
-      padding: 18px 20px;
+      gap: 14px;
+      padding: 18px;
       border-radius: var(--md-sys-shape-corner-lg);
       border: 2px solid var(--md-sys-color-primary);
       background-color: var(--md-sys-color-surface-container-lowest);
-      box-shadow: var(--md-sys-elevation-2);
+      box-shadow: var(--md-sys-elevation-1);
       text-decoration: none;
       color: var(--md-sys-color-on-surface);
       position: relative;
       cursor: pointer;
       overflow: hidden;
-      transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease, background-color 0.2s ease;
+      transition: box-shadow 0.16s ease, background-color 0.16s ease, transform 0.12s ease;
     }
 
     .random-game-card:hover {
-      transform: translateY(-2px);
-      box-shadow: var(--md-sys-elevation-3);
-      background-color: var(--md-sys-color-surface-container-low);
+      box-shadow: var(--md-sys-elevation-2);
     }
 
     .random-game-card:active {
-      transform: scale(0.99);
+      transform: scale(0.985);
     }
 
     .random-game-icon-wrap {
-      width: 54px;
-      height: 54px;
-      border-radius: var(--md-sys-shape-corner-md);
-      background-color: var(--md-sys-color-primary-container);
-      color: var(--md-sys-color-on-primary-container);
+      flex-shrink: 0;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 1.85rem;
-      flex-shrink: 0;
-      box-shadow: var(--md-sys-elevation-1);
-      transition: transform 0.25s ease;
-    }
-
-    .random-game-card:hover .random-game-icon-wrap {
-      transform: scale(1.08) rotate(4deg);
     }
 
     .random-game-info {
@@ -618,12 +529,88 @@
 </head>
 <body>
 
+<!-- Gemeinsame M3 Expressive Shape Library (SVG-Pfade) -->
+<svg width="0" height="0" style="position:absolute; overflow:hidden;" aria-hidden="true">
+  <defs>
+    <path id="m3-shape-clover" d="M82.9,82.9 C79.5,86.3 70.0,85.7 64.5,85.1 C59.1,84.5 54.8,79.5 50.0,79.5 C45.2,79.5 40.9,84.5 35.5,85.1 C30.0,85.7 20.5,86.3 17.1,82.9 C13.7,79.5 14.3,70.0 14.9,64.5 C15.5,59.1 20.5,54.8 20.5,50.0 C20.5,45.2 15.5,40.9 14.9,35.5 C14.3,30.0 13.7,20.5 17.1,17.1 C20.5,13.7 30.0,14.3 35.5,14.9 C40.9,15.5 45.2,20.5 50.0,20.5 C54.8,20.5 59.1,15.5 64.5,14.9 C70.0,14.3 79.5,13.7 82.9,17.1 C86.3,20.5 85.7,30.0 85.1,35.5 C84.5,40.9 79.5,45.2 79.5,50.0 C79.5,54.8 84.5,59.1 85.1,64.5 C85.7,70.0 86.3,79.5 82.9,82.9Z" />
+    <path id="m3-shape-cookie" d="M50.0,3.3 C53.0,3.3 56.1,10.2 59.0,12.1 C61.9,14.1 64.0,14.9 67.5,15.2 C71.0,15.6 77.7,12.3 80.0,14.2 C82.3,16.1 80.3,23.4 81.2,26.8 C82.2,30.2 83.3,32.1 85.7,34.6 C88.2,37.1 95.5,38.9 96.0,41.9 C96.5,44.8 90.3,49.1 88.8,52.3 C87.4,55.5 87.0,57.6 87.3,61.2 C87.5,64.7 91.9,70.8 90.4,73.3 C88.9,75.9 81.5,75.2 78.3,76.7 C75.1,78.2 73.4,79.6 71.4,82.5 C69.3,85.4 68.8,92.9 66.0,93.9 C63.2,94.9 57.9,89.5 54.5,88.6 C51.1,87.8 48.9,87.8 45.5,88.6 C42.1,89.5 36.8,94.9 34.0,93.9 C31.2,92.9 30.7,85.4 28.6,82.5 C26.6,79.6 24.9,78.2 21.7,76.7 C18.5,75.2 11.1,75.9 9.6,73.4 C8.1,70.8 12.5,64.7 12.7,61.2 C13.0,57.6 12.6,55.5 11.2,52.3 C9.7,49.1 3.5,44.8 4.0,41.9 C4.5,38.9 11.8,37.1 14.3,34.6 C16.7,32.1 17.8,30.2 18.8,26.8 C19.7,23.4 17.7,16.1 20.0,14.2 C22.3,12.3 29.0,15.6 32.5,15.2 C36.0,14.9 38.1,14.1 41.0,12.1 C43.9,10.2 47.0,3.3 50.0,3.3Z" />
+    <path id="m3-shape-sunny" d="M96.5,50.0 C96.5,53.1 86.3,55.6 85.3,59.4 C84.2,63.3 91.8,70.5 90.3,73.2 C88.7,76.0 78.6,73.0 75.8,75.8 C73.0,78.6 76.0,88.7 73.2,90.3 C70.5,91.8 63.3,84.2 59.4,85.3 C55.6,86.3 53.1,96.5 50.0,96.5 C46.9,96.5 44.4,86.3 40.6,85.3 C36.7,84.2 29.5,91.8 26.8,90.3 C24.0,88.7 27.0,78.6 24.2,75.8 C21.4,73.0 11.3,76.0 9.7,73.2 C8.2,70.5 15.8,63.3 14.7,59.4 C13.7,55.6 3.5,53.1 3.5,50.0 C3.5,46.9 13.7,44.4 14.7,40.6 C15.8,36.7 8.2,29.5 9.7,26.8 C11.3,24.0 21.4,27.0 24.2,24.2 C27.0,21.4 24.0,11.3 26.7,9.7 C29.5,8.2 36.7,15.8 40.6,14.7 C44.4,13.7 46.9,3.5 50.0,3.5 C53.1,3.5 55.6,13.7 59.4,14.7 C63.3,15.8 70.5,8.2 73.2,9.7 C76.0,11.3 73.0,21.4 75.8,24.2 C78.6,27.0 88.7,24.0 90.3,26.7 C91.8,29.5 84.2,36.7 85.3,40.6 C86.3,44.4 96.5,46.9 96.5,50.0Z" />
+    <path id="m3-shape-flower" d="M50.0,3.3 C53.4,3.3 57.5,8.7 60.2,11.8 C62.9,15.0 63.2,20.3 66.1,22.0 C69.1,23.7 73.9,21.3 77.9,22.1 C82.0,22.8 88.7,23.7 90.4,26.6 C92.1,29.6 89.5,35.9 88.2,39.8 C86.8,43.7 82.3,46.6 82.3,50.0 C82.3,53.4 86.8,56.3 88.2,60.2 C89.5,64.1 92.1,70.4 90.4,73.3 C88.7,76.3 82.0,77.2 77.9,77.9 C73.9,78.7 69.1,76.3 66.1,78.0 C63.2,79.7 62.9,85.0 60.2,88.2 C57.5,91.3 53.4,96.7 50.0,96.7 C46.6,96.7 42.5,91.3 39.8,88.2 C37.1,85.0 36.8,79.7 33.9,78.0 C30.9,76.3 26.1,78.7 22.1,77.9 C18.0,77.2 11.3,76.3 9.6,73.4 C7.9,70.4 10.5,64.1 11.8,60.2 C13.2,56.3 17.7,53.4 17.7,50.0 C17.7,46.6 13.2,43.7 11.8,39.8 C10.5,35.9 7.9,29.6 9.6,26.6 C11.3,23.7 18.0,22.8 22.1,22.1 C26.1,21.3 30.9,23.7 33.8,22.0 C36.8,20.3 37.1,15.0 39.8,11.8 C42.5,8.7 46.6,3.3 50.0,3.3Z" />
+    <path id="m3-shape-burst" d="M92.8,67.7 C91.6,70.6 82.1,70.2 78.6,72.0 C75.2,73.8 73.8,75.2 72.0,78.6 C70.2,82.1 70.6,91.6 67.7,92.8 C64.8,94.0 58.5,87.0 54.7,85.8 C51.0,84.6 49.0,84.6 45.3,85.8 C41.5,87.0 35.2,94.0 32.3,92.8 C29.4,91.6 29.8,82.1 28.0,78.6 C26.2,75.2 24.8,73.8 21.4,72.0 C17.9,70.2 8.4,70.6 7.2,67.7 C6.0,64.8 13.0,58.5 14.2,54.7 C15.4,51.0 15.4,49.0 14.2,45.3 C13.0,41.5 6.0,35.2 7.2,32.3 C8.4,29.4 17.9,29.8 21.4,28.0 C24.8,26.2 26.2,24.8 28.0,21.4 C29.8,17.9 29.4,8.4 32.3,7.2 C35.2,6.0 41.5,13.0 45.3,14.2 C49.0,15.4 51.0,15.4 54.7,14.2 C58.5,13.0 64.8,6.0 67.7,7.2 C70.6,8.4 70.2,17.9 72.0,21.4 C73.8,24.8 75.2,26.2 78.6,28.0 C82.1,29.8 91.6,29.4 92.8,32.3 C94.0,35.2 87.0,41.5 85.8,45.3 C84.6,49.0 84.6,51.0 85.8,54.7 C87.0,58.5 94.0,64.8 92.8,67.7Z" />
+    <path id="m3-shape-pentagon" d="M 41.10 11.97 Q 50.00 5.50 58.90 11.97 L 83.42 29.78 Q 92.32 36.25 88.92 46.71 L 79.56 75.54 Q 76.16 86.00 65.16 86.00 L 34.84 86.00 Q 23.84 86.00 20.44 75.54 L 11.08 46.71 Q 7.68 36.25 16.58 29.78 Z" />
+    <path id="m3-shape-hexagon" d="M 40.91 11.25 Q 50.00 6.00 59.09 11.25 L 79.01 22.75 Q 88.11 28.00 88.11 38.50 L 88.11 61.50 Q 88.11 72.00 79.01 77.25 L 59.09 88.75 Q 50.00 94.00 40.91 88.75 L 20.99 77.25 Q 11.89 72.00 11.89 61.50 L 11.89 38.50 Q 11.89 28.00 20.99 22.75 Z" />
+    <path id="m3-shape-octagon" d="M 90.65 58.34 Q 90.65 66.84 84.64 72.85 L 72.85 84.64 Q 66.84 90.65 58.34 90.65 L 41.66 90.65 Q 33.16 90.65 27.15 84.64 L 15.36 72.85 Q 9.35 66.84 9.35 58.34 L 9.35 41.66 Q 9.35 33.16 15.36 27.15 L 27.15 15.36 Q 33.16 9.35 41.66 9.35 L 58.34 9.35 Q 66.84 9.35 72.85 15.36 L 84.64 27.15 Q 90.65 33.16 90.65 41.66 Z" />
+    <path id="m3-shape-squircle" d="M 83.94 65.94 Q 83.94 83.94 65.94 83.94 L 34.06 83.94 Q 16.06 83.94 16.06 65.94 L 16.06 34.06 Q 16.06 16.06 34.06 16.06 L 65.94 16.06 Q 83.94 16.06 83.94 34.06 Z" />
+    <path id="m3-shape-diamond" d="M 87.31 40.81 Q 96.50 50.00 87.31 59.19 L 59.19 87.31 Q 50.00 96.50 40.81 87.31 L 12.69 59.19 Q 3.50 50.00 12.69 40.81 L 40.81 12.69 Q 50.00 3.50 59.19 12.69 Z" />
+  </defs>
+</svg>
+
+<!-- Große geometrische Hintergrund-Formen mit gegensätzlichen dünnen Umrandungen (Farbkonzept-abhängig) -->
+<div class="m3-bg-geometry" aria-hidden="true">
+  <svg class="m3-bg-geo-shape m3-bg-geo-1" style="top:-90px; right:-110px; width:420px; height:420px;" viewBox="0 0 100 100"><use href="#m3-shape-clover"></use></svg>
+  <svg class="m3-bg-geo-outline m3-bg-geo-counter-1" style="top:-120px; right:-140px; width:485px; height:485px;" viewBox="0 0 100 100"><use href="#m3-shape-clover"></use></svg>
+  <svg class="m3-bg-geo-outline m3-bg-geo-outline--fine m3-bg-geo-counter-1b" style="top:-148px; right:-165px; width:545px; height:545px;" viewBox="0 0 100 100"><use href="#m3-shape-clover"></use></svg>
+
+  <svg class="m3-bg-geo-shape m3-bg-geo-2" style="top:30%; left:-140px; width:360px; height:360px;" viewBox="0 0 100 100"><use href="#m3-shape-hexagon"></use></svg>
+  <svg class="m3-bg-geo-outline m3-bg-geo-counter-2" style="top:27%; left:-172px; width:430px; height:430px;" viewBox="0 0 100 100"><use href="#m3-shape-hexagon"></use></svg>
+  <svg class="m3-bg-geo-outline m3-bg-geo-outline--fine m3-bg-geo-counter-2b" style="top:24%; left:-200px; width:490px; height:490px;" viewBox="0 0 100 100"><use href="#m3-shape-hexagon"></use></svg>
+
+  <svg class="m3-bg-geo-shape m3-bg-geo-3" style="bottom:-110px; right:-85px; width:440px; height:440px;" viewBox="0 0 100 100"><use href="#m3-shape-cookie"></use></svg>
+  <svg class="m3-bg-geo-outline m3-bg-geo-counter-3" style="bottom:-145px; right:-120px; width:510px; height:510px;" viewBox="0 0 100 100"><use href="#m3-shape-cookie"></use></svg>
+  <svg class="m3-bg-geo-outline m3-bg-geo-outline--fine m3-bg-geo-counter-3b" style="bottom:-175px; right:-150px; width:575px; height:575px;" viewBox="0 0 100 100"><use href="#m3-shape-cookie"></use></svg>
+</div>
+
 <!-- Responsive Vollbild Canvas für Partikel & Sprite FX -->
 <canvas id="fxCanvas" style="position:fixed; top:0; left:0; width:100vw; height:100vh; pointer-events:none; z-index:99999;"></canvas>
 
 <div class="container">
-  <header class="m3-top-app-bar">
-    <div class="m3-top-app-bar-spacer" aria-hidden="true"></div>
+  <header class="m3-top-app-bar m3-top-app-bar--dashboard">
+    <div class="m3-top-app-bar-left">
+      <div class="color-picker-wrap">
+        <button type="button" id="color-picker-btn" class="m3-icon-btn" onclick="toggleColorPopover(event)" aria-label="Farbschema wählen" aria-haspopup="true" aria-expanded="false" title="Farbschema ändern">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3a9 9 0 0 0 0 18c.83 0 1.5-.67 1.5-1.5 0-.39-.15-.74-.39-1.01-.23-.26-.38-.61-.38-.99 0-.83.67-1.5 1.5-1.5H16c2.76 0 5-2.24 5-5 0-4.42-4.03-8-9-8zm-5.5 9c-.83 0-1.5-.67-1.5-1.5S5.67 9 6.5 9 8 9.67 8 10.5 7.33 12 6.5 12zm3-4C8.67 8 8 7.33 8 6.5S8.67 5 9.5 5s1.5.67 1.5 1.5S10.33 8 9.5 8zm5 0c-.83 0-1.5-.67-1.5-1.5S13.67 5 14.5 5s1.5.67 1.5 1.5S15.33 8 14.5 8zm3 4c-.83 0-1.5-.67-1.5-1.5S16.67 9 17.5 9s1.5.67 1.5 1.5-.67 1.5-1.5 1.5z"/></svg>
+          <span class="color-swatch-dot" aria-hidden="true"></span>
+        </button>
+        <div id="color-popover" class="color-popover hidden" role="menu" aria-label="M3 Farbschema auswählen">
+          <div class="color-popover-title">Farbschema (M3)</div>
+          <button type="button" class="color-option-btn" data-accent="blue" onclick="pickAccentColor('blue')" role="menuitemradio">
+            <span class="color-option-swatch" style="background-color:#1a73e8;"></span>
+            <span>Calm Blue</span>
+            <span class="color-option-check"></span>
+          </button>
+          <button type="button" class="color-option-btn" data-accent="sage" onclick="pickAccentColor('sage')" role="menuitemradio">
+            <span class="color-option-swatch" style="background-color:#2b6e4d;"></span>
+            <span>Salbeigrün</span>
+            <span class="color-option-check"></span>
+          </button>
+          <button type="button" class="color-option-btn" data-accent="indigo" onclick="pickAccentColor('indigo')" role="menuitemradio">
+            <span class="color-option-swatch" style="background-color:#4355b9;"></span>
+            <span>Deep Indigo</span>
+            <span class="color-option-check"></span>
+          </button>
+          <button type="button" class="color-option-btn" data-accent="terracotta" onclick="pickAccentColor('terracotta')" role="menuitemradio">
+            <span class="color-option-swatch" style="background-color:#a34a36;"></span>
+            <span>Terrakotta</span>
+            <span class="color-option-check"></span>
+          </button>
+          <button type="button" class="color-option-btn" data-accent="plum" onclick="pickAccentColor('plum')" role="menuitemradio">
+            <span class="color-option-swatch" style="background-color:#7a4988;"></span>
+            <span>Pflaume</span>
+            <span class="color-option-check"></span>
+          </button>
+        </div>
+      </div>
+
+      <button type="button" id="tournament-mode-toggle" class="m3-mode-switch-btn" role="switch" aria-checked="false" onclick="handleTournamentModeToggle()" aria-label="Urlaub-/Turniermodus aktivieren" title="Urlaub-/Turniermodus (AUS = Gelegenheitsspiel)">
+        <svg class="m3-mode-switch-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M19 5h-2V3H7v2H5c-1.1 0-2 .9-2 2v1c0 2.55 1.92 4.63 4.39 4.94.63 1.5 1.98 2.63 3.61 2.96V19H7v2h10v-2h-4v-3.1c1.63-.33 2.98-1.46 3.61-2.96C19.08 12.63 21 10.55 21 8V7c0-1.1-.9-2-2-2zM5 8V7h2v3.82C5.84 10.4 5 9.3 5 8zm14 0c0 1.3-.84 2.4-2 2.82V7h2v1z"/></svg>
+        <span class="m3-mode-switch-label">Turnier</span>
+        <span class="m3-switch-track" aria-hidden="true">
+          <span class="m3-switch-thumb">
+            <svg viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
+          </span>
+        </span>
+      </button>
+    </div>
     <div class="m3-top-app-bar-title-group">
       <h1 class="m3-top-app-bar-title">Spiele-Helfer</h1>
       <p class="m3-top-app-bar-subtitle">Wähle eine Kategorie, um die Helfer anzuzeigen</p>
@@ -634,10 +621,58 @@
     </button>
   </header>
 
+  <!-- 0. Spieler- und Turnierverwaltung (nur im Urlaub-/Turniermodus sichtbar) -->
+  <details class="category hidden" id="cat-tournament">
+    <summary class="category-header">
+      <span class="category-badge m3-shape-badge m3-shape-badge--sm m3-shape-badge--category" data-anim="spin" aria-hidden="true">
+        <svg class="m3-shape-svg" viewBox="0 0 100 100"><use href="#m3-shape-sunny"></use></svg>
+        <svg class="m3-shape-symbol" viewBox="0 0 24 24"><path d="M19 5h-2V3H7v2H5c-1.1 0-2 .9-2 2v1c0 2.55 1.92 4.63 4.39 4.94.63 1.5 1.98 2.63 3.61 2.96V19H7v2h10v-2h-4v-3.1c1.63-.33 2.98-1.46 3.61-2.96C19.08 12.63 21 10.55 21 8V7c0-1.1-.9-2-2-2zM5 8V7h2v3.82C5.84 10.4 5 9.3 5 8zm14 0c0 1.3-.84 2.4-2 2.82V7h2v1z"/></svg>
+      </span>
+      <span class="category-label">Spieler- und Turnierverwaltung</span>
+      <span class="chevron" aria-hidden="true">
+        <svg viewBox="0 0 24 24"><path d="M7.41 8.59 12 13.17l4.59-4.58L18 10l-6 6-6-6z"/></svg>
+      </span>
+    </summary>
+    <div class="accordion-content">
+      <div class="tournament-hero-header" style="margin-bottom: 12px;">
+        <p id="tournament-hero-sub" style="font-size: 0.84rem; color: var(--md-sys-color-on-surface-variant); margin: 0;">
+          Spielübergreifende Urlaubs-Wertung (F1-Punktesystem)
+        </p>
+        <div class="tournament-stats-pills">
+          <span class="t-stat-pill" id="t-stat-matches">0 Partien</span>
+          <span class="t-stat-pill" id="t-stat-players">0 Spieler</span>
+        </div>
+      </div>
+
+      <div id="t-sync-bar" class="t-sync-bar"></div>
+      <div id="t-pending-banner" class="t-pending-banner hidden"></div>
+
+      <div id="t-hero-preview"></div>
+
+      <div class="tournament-action-grid">
+        <button type="button" class="btn-primary" onclick="openCeremonyModal()">
+          🥇 Siegerehrung &amp; Auswertung
+        </button>
+        <button type="button" class="btn-tonal" onclick="openManualMatchModal()">
+          ➕ Ergebnis eintragen
+        </button>
+        <button type="button" class="btn-outline" onclick="openPlayersModal()">
+          👥 Spieler verwalten
+        </button>
+        <button type="button" class="btn-outline" onclick="openCsvModal()">
+          📁 CSV Datenbank &amp; Reset
+        </button>
+      </div>
+    </div>
+  </details>
+
   <!-- 1. Kategorie: Gesellschaftsspiele -->
   <details class="category" id="cat-boardgames">
     <summary class="category-header">
-      <span class="category-badge">🎲</span>
+      <span class="category-badge m3-shape-badge m3-shape-badge--sm m3-shape-badge--category" data-anim="spin" aria-hidden="true">
+        <svg class="m3-shape-svg" viewBox="0 0 100 100"><use href="#m3-shape-cookie"></use></svg>
+        <svg class="m3-shape-symbol" viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zM7.5 18c-.83 0-1.5-.67-1.5-1.5S6.67 15 7.5 15s1.5.67 1.5 1.5S8.33 18 7.5 18zm0-9C6.67 9 6 8.33 6 7.5S6.67 6 7.5 6 9 6.67 9 7.5 8.33 9 7.5 9zm4.5 4.5c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zm4.5 4.5c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zm0-9c-.83 0-1.5-.67-1.5-1.5S15.67 6 16.5 6s1.5.67 1.5 1.5-.67 1.5-1.5 1.5z"/></svg>
+      </span>
       <span class="category-label">Gesellschaftsspiele</span>
       <span class="chevron" aria-hidden="true">
         <svg viewBox="0 0 24 24"><path d="M7.41 8.59 12 13.17l4.59-4.58L18 10l-6 6-6-6z"/></svg>
@@ -646,7 +681,10 @@
     <div class="grid">
 
       <a href="spiele/flip7.html" class="game-card">
-        <div class="icon">🃏</div>
+        <div class="icon m3-shape-badge" data-anim="spin" aria-hidden="true">
+          <svg class="m3-shape-svg" viewBox="0 0 100 100"><use href="#m3-shape-sunny"></use></svg>
+          <svg class="m3-shape-symbol" viewBox="0 0 24 24"><path d="M3 5H1v16c0 1.1.9 2 2 2h16v-2H3V5zm18-4H7c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V3c0-1.1-.9-2-2-2zm0 16H7V3h14v14zm-8-2l4-8V5h-6v2h4l-4 8h2z"/></svg>
+        </div>
         <div>
           <div class="title">Flip7</div>
           <div class="desc">Scorekeeper mit Highscore-Board & flexibler Spielerauswahl.</div>
@@ -654,7 +692,10 @@
       </a>
 
       <a href="spiele/wizard.html" class="game-card">
-        <div class="icon">🧙‍♂️</div>
+        <div class="icon m3-shape-badge" data-anim="spin" aria-hidden="true">
+          <svg class="m3-shape-svg" viewBox="0 0 100 100"><use href="#m3-shape-burst"></use></svg>
+          <svg class="m3-shape-symbol" viewBox="0 0 24 24"><path d="M7.5 5.6L10 7 8.6 4.5 10 2 7.5 3.4 5 2l1.4 2.5L5 7zm12 9.8L17 14l1.4 2.5L17 19l2.5-1.4L22 19l-1.4-2.5L22 14zM22 2l-2.5 1.4L17 2l1.4 2.5L17 7l2.5-1.4L22 7l-1.4-2.5zm-7.63 5.29a.996.996 0 0 0-1.41 0L1.29 18.96a.996.996 0 0 0 0 1.41l2.34 2.34c.39.39 1.02.39 1.41 0L16.7 11.05a.996.996 0 0 0 0-1.41l-2.33-2.35zm-1.03 5.49l-2.12-2.12 2.44-2.44 2.12 2.12-2.44 2.44z"/></svg>
+        </div>
         <div>
           <div class="title">Wizard</div>
           <div class="desc">Rechner für Vorhersagen, Stiche und Punktestände.</div>
@@ -662,7 +703,10 @@
       </a>
 
       <a href="spiele/qwirkle.html" class="game-card">
-        <div class="icon">✨</div>
+        <div class="icon m3-shape-badge" data-anim="spin" aria-hidden="true">
+          <svg class="m3-shape-svg" viewBox="0 0 100 100"><use href="#m3-shape-clover"></use></svg>
+          <svg class="m3-shape-symbol" viewBox="0 0 24 24"><path d="M13 13v8h8v-8h-8zM3 21h8v-8H3v8zM3 3v8h8V3H3zm13.66-1.31L11 7.34 16.66 13l5.66-5.66-5.66-5.65z"/></svg>
+        </div>
         <div>
           <div class="title">Qwirkle</div>
           <div class="desc">Digitaler Punkterechner für Qwirkle.</div>
@@ -670,7 +714,10 @@
       </a>
 
       <a href="spiele/cabo.html" class="game-card">
-        <div class="icon">🦄</div>
+        <div class="icon m3-shape-badge" data-anim="rock" aria-hidden="true">
+          <svg class="m3-shape-svg" viewBox="0 0 100 100"><use href="#m3-shape-diamond"></use></svg>
+          <svg class="m3-shape-symbol" viewBox="0 0 24 24"><path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/></svg>
+        </div>
         <div>
           <div class="title">Cabo</div>
           <div class="desc">Punktehelfer mit automatischer Auswertung für Cabo.</div>
@@ -678,7 +725,10 @@
       </a>
 
       <a href="spiele/tutto.html" class="game-card">
-        <div class="icon">🎲</div>
+        <div class="icon m3-shape-badge" data-anim="spin" aria-hidden="true">
+          <svg class="m3-shape-svg" viewBox="0 0 100 100"><use href="#m3-shape-cookie"></use></svg>
+          <svg class="m3-shape-symbol" viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zM7.5 18c-.83 0-1.5-.67-1.5-1.5S6.67 15 7.5 15s1.5.67 1.5 1.5S8.33 18 7.5 18zm0-9C6.67 9 6 8.33 6 7.5S6.67 6 7.5 6 9 6.67 9 7.5 8.33 9 7.5 9zm4.5 4.5c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zm4.5 4.5c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zm0-9c-.83 0-1.5-.67-1.5-1.5S15.67 6 16.5 6s1.5.67 1.5 1.5-.67 1.5-1.5 1.5z"/></svg>
+        </div>
         <div>
           <div class="title">Tutto</div>
           <div class="desc">Score-Assistant für Tutto.</div>
@@ -686,7 +736,10 @@
       </a>
 
       <a href="spiele/wuerfel_auswahl.html" class="game-card">
-        <div class="icon">🎯</div>
+        <div class="icon m3-shape-badge" data-anim="spin" aria-hidden="true">
+          <svg class="m3-shape-svg" viewBox="0 0 100 100"><use href="#m3-shape-octagon"></use></svg>
+          <svg class="m3-shape-symbol" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm0-14c-3.31 0-6 2.69-6 6s2.69 6 6 6 6-2.69 6-6-2.69-6-6-6zm0 10c-2.21 0-4-1.79-4-4s1.79-4 4-4 4 1.79 4 4-1.79 4-4 4zm0-6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"/></svg>
+        </div>
         <div>
           <div class="title">Yatzy / Kniffel</div>
           <div class="desc">Digitaler Punkteblock für Yatzy oder Kniffel.</div>
@@ -699,7 +752,10 @@
   <!-- 2. Kategorie: Outdoor Spiele -->
   <details class="category" id="cat-outdoor">
     <summary class="category-header">
-      <span class="category-badge">🌳</span>
+      <span class="category-badge m3-shape-badge m3-shape-badge--sm m3-shape-badge--category" data-anim="spin" aria-hidden="true">
+        <svg class="m3-shape-svg" viewBox="0 0 100 100"><use href="#m3-shape-clover"></use></svg>
+        <svg class="m3-shape-symbol" viewBox="0 0 24 24"><path d="M17 12h2L12 2 5.05 12H7l-3.9 6h6.92v4h3.96v-4H21z"/></svg>
+      </span>
       <span class="category-label">Outdoor-Spiele</span>
       <span class="chevron" aria-hidden="true">
         <svg viewBox="0 0 24 24"><path d="M7.41 8.59 12 13.17l4.59-4.58L18 10l-6 6-6-6z"/></svg>
@@ -707,7 +763,10 @@
     </summary>
     <div class="grid">
       <a href="spiele/minigolf.html" class="game-card">
-        <div class="icon">⛳</div>
+        <div class="icon m3-shape-badge" data-anim="rock" aria-hidden="true">
+          <svg class="m3-shape-svg" viewBox="0 0 100 100"><use href="#m3-shape-pentagon"></use></svg>
+          <svg class="m3-shape-symbol" viewBox="0 0 24 24"><path d="M19.5 19.5c0 .83-.67 1.5-1.5 1.5s-1.5-.67-1.5-1.5.67-1.5 1.5-1.5 1.5.67 1.5 1.5zM17 5.92L9 2v18H7v-1.73c-1.79.35-3 .99-3 1.73 0 1.1 2.69 2 6 2s6-.9 6-2c0-.99-2.16-1.81-5-1.97V8.98l6-3.06z"/></svg>
+        </div>
         <div>
           <div class="title">Minigolf</div>
           <div class="desc">Digitaler Minigolf-Zettel.</div>
@@ -715,7 +774,10 @@
       </a>
 
       <a href="spiele/moelkky.html" class="game-card">
-        <div class="icon">🪵</div>
+        <div class="icon m3-shape-badge" data-anim="spin" aria-hidden="true">
+          <svg class="m3-shape-svg" viewBox="0 0 100 100"><use href="#m3-shape-hexagon"></use></svg>
+          <svg class="m3-shape-symbol" viewBox="0 0 24 24"><path d="M6 20h3V6H6v14zm4.5 0h3V4h-3v16zm4.5 0h3V8h-3v12z"/></svg>
+        </div>
         <div>
           <div class="title">Mölkky</div>
           <div class="desc">Punktetracker mit Fehlwurf-Logik.</div>
@@ -727,7 +789,10 @@
   <!-- 3. Kategorie: Arcade -->
   <details class="category" id="cat-arcade">
     <summary class="category-header">
-      <span class="category-badge">🕹️</span>
+      <span class="category-badge m3-shape-badge m3-shape-badge--sm m3-shape-badge--category" data-anim="spin" aria-hidden="true">
+        <svg class="m3-shape-svg" viewBox="0 0 100 100"><use href="#m3-shape-burst"></use></svg>
+        <svg class="m3-shape-symbol" viewBox="0 0 24 24"><path d="M21.58 16.09l-1.09-7.66C20.21 6.46 18.52 5 16.53 5H7.47C5.48 5 3.79 6.46 3.51 8.43l-1.09 7.66C2.2 17.63 3.39 19 4.94 19c.68 0 1.32-.27 1.8-.75L9 16h6l2.25 2.25c.48.48 1.13.75 1.8.75 1.56 0 2.75-1.37 2.53-2.91zM11 11H9v2H8v-2H6v-1h2V8h1v2h2v1zm4-1c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1zm2 3c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1z"/></svg>
+      </span>
       <span class="category-label">Arcade</span>
       <span class="chevron" aria-hidden="true">
         <svg viewBox="0 0 24 24"><path d="M7.41 8.59 12 13.17l4.59-4.58L18 10l-6 6-6-6z"/></svg>
@@ -735,7 +800,10 @@
     </summary>
     <div class="grid">
       <a href="spiele/flappy_henri.html" class="game-card">
-        <div class="icon">🐎</div>
+        <div class="icon m3-shape-badge" data-anim="spin" aria-hidden="true">
+          <svg class="m3-shape-svg" viewBox="0 0 100 100"><use href="#m3-shape-flower"></use></svg>
+          <svg class="m3-shape-symbol" viewBox="0 0 24 24"><path d="M22 16v-2l-8.5-5V3.5c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5V9L2 14v2l8.5-2.5V19L8 20.5V22l4-1 4 1v-1.5L13.5 19v-5.5L22 16z"/></svg>
+        </div>
         <div>
           <div class="title">Flappy-Henri</div>
           <div class="desc">Arcade-Spiel mit Henri.</div>
@@ -743,7 +811,10 @@
       </a>
 
       <a href="spiele/charlie_run.html" class="game-card">
-        <div class="icon">🏃‍♀️</div>
+        <div class="icon m3-shape-badge" data-anim="rock" aria-hidden="true">
+          <svg class="m3-shape-svg" viewBox="0 0 100 100"><use href="#m3-shape-squircle"></use></svg>
+          <svg class="m3-shape-symbol" viewBox="0 0 24 24"><path d="M13.49 5.48c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm-3.6 13.9l1-4.4 2.1 2v6h2v-7.5l-2.1-2 .6-3c1.3 1.5 3.3 2.5 5.5 2.5v-2c-1.9 0-3.5-1-4.3-2.4l-1-1.6c-.4-.6-1-1-1.7-1-.3 0-.5.1-.8.1l-5.2 2.2v4.7h2v-3.4l1.8-.7-1.6 8.1-4.9-1-.4 2 7 1.4z"/></svg>
+        </div>
         <div>
           <div class="title">Charlie Runner</div>
           <div class="desc">Endless-Runner mit Charlotte.</div>
@@ -751,7 +822,10 @@
       </a>
 
       <a href="spiele/theken_tim.html" class="game-card">
-        <div class="icon">🍺</div>
+        <div class="icon m3-shape-badge" data-anim="spin" aria-hidden="true">
+          <svg class="m3-shape-svg" viewBox="0 0 100 100"><use href="#m3-shape-octagon"></use></svg>
+          <svg class="m3-shape-symbol" viewBox="0 0 24 24"><path d="M20 9h-2V7c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v11c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2v-2h2c1.1 0 2-.9 2-2v-3c0-1.1-.9-2-2-2zm-4 9H5V7h11v11zm4-4h-2v-3h2v3z"/></svg>
+        </div>
         <div>
           <div class="title">Theken Tim</div>
           <div class="desc">Zapfe Bier mit Tim.</div>
@@ -761,64 +835,75 @@
   </details>
 
   <!-- 4. Zufallsgenerator -->
-  <section class="random-picker-card" id="random-picker" aria-labelledby="random-picker-title">
-    <div class="random-picker-header">
-      <span class="random-badge" aria-hidden="true">🎲</span>
-      <div class="random-header-text">
-        <h2 id="random-picker-title" class="random-title">Zufalls-Spielauswahl</h2>
-        <p class="random-subtitle">Unentschlossen? Lass den Zufallsgenerator ein Spiel auswählen!</p>
-      </div>
-    </div>
+  <details class="category" id="cat-random">
+    <summary class="category-header">
+      <span class="category-badge m3-shape-badge m3-shape-badge--sm m3-shape-badge--category" data-anim="spin" aria-hidden="true">
+        <svg class="m3-shape-svg" viewBox="0 0 100 100"><use href="#m3-shape-octagon"></use></svg>
+        <svg class="m3-shape-symbol" viewBox="0 0 24 24"><path d="M10.59 9.17L5.41 4 4 5.41l5.17 5.17 1.42-1.41zM14.5 4l2.04 2.04L4 18.59 5.41 20 17.96 7.46 20 9.5V4h-5.5zm.33 9.41l-1.41 1.41 3.13 3.13L14.5 20H20v-5.5l-2.04 2.04-3.13-3.13z"/></svg>
+      </span>
+      <span class="category-label">Zufallsgenerator</span>
+      <span class="chevron" aria-hidden="true">
+        <svg viewBox="0 0 24 24"><path d="M7.41 8.59 12 13.17l4.59-4.58L18 10l-6 6-6-6z"/></svg>
+      </span>
+    </summary>
+    <div class="accordion-content" id="random-picker" aria-labelledby="random-picker-title">
+      <p id="random-picker-title" class="random-subtitle" style="margin-bottom: 14px;">
+        Unentschlossen? Lass den Zufallsgenerator ein Spiel auswählen!
+      </p>
 
-    <div class="random-controls">
-      <!-- Checkbox: Outdoor-Spiele mit einbeziehen -->
-      <label class="m3-checkbox-label" for="include-outdoor-cb">
-        <input type="checkbox" id="include-outdoor-cb" class="m3-checkbox-input">
-        <span class="m3-checkbox-box" aria-hidden="true">
-          <svg viewBox="0 0 24 24" class="m3-check-icon">
-            <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
+      <div class="random-controls">
+        <!-- Checkbox: Outdoor-Spiele mit einbeziehen -->
+        <label class="m3-checkbox-label" for="include-outdoor-cb">
+          <input type="checkbox" id="include-outdoor-cb" class="m3-checkbox-input">
+          <span class="m3-checkbox-box" aria-hidden="true">
+            <svg viewBox="0 0 24 24" class="m3-check-icon">
+              <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
+            </svg>
+          </span>
+          <div class="m3-checkbox-info">
+            <span class="m3-checkbox-title">Outdoor-Spiele mit einbeziehen</span>
+            <span class="m3-checkbox-desc" id="pool-status-desc">Nur Gesellschaftsspiele aktiviert</span>
+          </div>
+          <span class="pool-badge" id="pool-count-badge">6 Spiele</span>
+        </label>
+
+        <!-- Action Button -->
+        <button type="button" id="btn-roll-game" class="random-btn-roll">
+          <svg class="random-btn-icon" viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zM7.5 18c-.83 0-1.5-.67-1.5-1.5S6.67 15 7.5 15s1.5.67 1.5 1.5S8.33 18 7.5 18zm0-9C6.67 9 6 8.33 6 7.5S6.67 6 7.5 6 9 6.67 9 7.5 8.33 9 7.5 9zm4.5 4.5c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zm4.5 4.5c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zm0-9c-.83 0-1.5-.67-1.5-1.5S15.67 6 16.5 6s1.5.67 1.5 1.5-.67 1.5-1.5 1.5z"/>
           </svg>
-        </span>
-        <div class="m3-checkbox-info">
-          <span class="m3-checkbox-title">Outdoor-Spiele mit einbeziehen</span>
-          <span class="m3-checkbox-desc" id="pool-status-desc">Nur Gesellschaftsspiele aktiviert</span>
-        </div>
-        <span class="pool-badge" id="pool-count-badge">6 Spiele</span>
-      </label>
-
-      <!-- Action Button -->
-      <button type="button" id="btn-roll-game" class="random-btn-roll">
-        <svg class="random-btn-icon" viewBox="0 0 24 24" aria-hidden="true">
-          <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zM7.5 18c-.83 0-1.5-.67-1.5-1.5S6.67 15 7.5 15s1.5.67 1.5 1.5S8.33 18 7.5 18zm0-9C6.67 9 6 8.33 6 7.5S6.67 6 7.5 6 9 6.67 9 7.5 8.33 9 7.5 9zm4.5 4.5c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zm4.5 4.5c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zm0-9c-.83 0-1.5-.67-1.5-1.5S15.67 6 16.5 6s1.5.67 1.5 1.5-.67 1.5-1.5 1.5z"/>
-        </svg>
-        <span id="btn-roll-text">Zufälliges Spiel auswählen</span>
-      </button>
-    </div>
-
-    <!-- Result / Chosen Game -->
-    <div class="random-result-container" id="random-result-container">
-      <div id="random-placeholder" class="random-placeholder">
-        <span class="placeholder-icon" aria-hidden="true">🎯</span>
-        <p class="placeholder-text">Tippe auf den Button, um per Zufall ein Spiel auswählen zu lassen.</p>
+          <span id="btn-roll-text">Zufälliges Spiel auswählen</span>
+        </button>
       </div>
 
-      <a href="#" id="random-game-card" class="random-game-card hidden" aria-label="Ausgewähltes Spiel per Klick öffnen">
-        <div class="random-game-icon-wrap" id="random-card-icon">🎲</div>
-        <div class="random-game-info">
-          <div class="random-badge-row">
-            <span class="random-cat-badge" id="random-card-cat">🎲 Gesellschaftsspiel</span>
-            <span class="random-pick-pill">Treffer!</span>
-          </div>
-          <h3 class="random-game-title" id="random-card-title">Flip7</h3>
-          <p class="random-game-desc" id="random-card-desc">Scorekeeper mit Highscore-Board & flexibler Spielerauswahl.</p>
-          <div class="random-open-pill">
-            <span>Spiel jetzt öffnen</span>
-            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 13h11.86l-5.43 5.43 1.42 1.42L21.14 12l-8.29-8.29-1.42 1.42L16.86 11H5v2z"/></svg>
-          </div>
+      <!-- Result / Chosen Game -->
+      <div class="random-result-container" id="random-result-container">
+        <div id="random-placeholder" class="random-placeholder">
+          <span class="placeholder-icon m3-shape-badge m3-shape-badge--sm" aria-hidden="true">
+            <svg class="m3-shape-svg" viewBox="0 0 100 100"><use href="#m3-shape-cookie"></use></svg>
+            <svg class="m3-shape-symbol" viewBox="0 0 24 24"><path d="M10.59 9.17L5.41 4 4 5.41l5.17 5.17 1.42-1.41zM14.5 4l2.04 2.04L4 18.59 5.41 20 17.96 7.46 20 9.5V4h-5.5zm.33 9.41l-1.41 1.41 3.13 3.13L14.5 20H20v-5.5l-2.04 2.04-3.13-3.13z"/></svg>
+          </span>
+          <p class="placeholder-text">Tippe auf den Button, um per Zufall ein Spiel auswählen zu lassen.</p>
         </div>
-      </a>
+
+        <a href="#" id="random-game-card" class="random-game-card hidden" aria-label="Ausgewähltes Spiel per Klick öffnen">
+          <div class="random-game-icon-wrap" id="random-card-icon"></div>
+          <div class="random-game-info">
+            <div class="random-badge-row">
+              <span class="random-cat-badge" id="random-card-cat">Gesellschaftsspiel</span>
+              <span class="random-pick-pill">Treffer!</span>
+            </div>
+            <h3 class="random-game-title" id="random-card-title">Flip7</h3>
+            <p class="random-game-desc" id="random-card-desc">Scorekeeper mit Highscore-Board & flexibler Spielerauswahl.</p>
+            <div class="random-open-pill">
+              <span>Spiel jetzt öffnen</span>
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 13h11.86l-5.43 5.43 1.42 1.42L21.14 12l-8.29-8.29-1.42 1.42L16.86 11H5v2z"/></svg>
+            </div>
+          </div>
+        </a>
+      </div>
     </div>
-  </section>
+  </details>
 
 </div>
 
@@ -2002,6 +2087,210 @@
   }
 
   // ==========================================
+  // EFFEKT 4: URLAUBS-TURNIERMODUS POKAL-ANIMATION (VOLLBILD)
+  // ==========================================
+  class TournamentTrophyFX {
+    constructor() {
+      this.duration = 2000;
+      this.fadeDuration = 550;
+      this.trophies = [];
+      this.sparkles = [];
+      this.raysRotation = 0;
+      this.init();
+    }
+
+    init() {
+      const rootCs = getComputedStyle(document.documentElement);
+      const primary = rootCs.getPropertyValue('--md-sys-color-primary').trim() || '#1a73e8';
+      const primaryCont = rootCs.getPropertyValue('--md-sys-color-primary-container').trim() || '#d2e3fc';
+      const palette = ['#fbbf24', '#f59e0b', '#fef08a', primary, primaryCont];
+
+      // Mehrere aufsteigende Siegerpokale verteilt über die gesamte Bildschirmbreite
+      const count = 9;
+      for (let i = 0; i < count; i++) {
+        const startX = width * (0.08 + 0.84 * (i / (count - 1))) + (Math.random() - 0.5) * 35;
+        const startY = height + 40 + Math.random() * 90;
+        const driftX = (width * 0.5 - startX) * (0.15 + Math.random() * 0.25) + (Math.random() - 0.5) * 140;
+        this.trophies.push({
+          x: startX,
+          y: startY,
+          vx: driftX,
+          vy: -(height * (0.68 + Math.random() * 0.42)),
+          size: 28 + Math.random() * 20,
+          rot: (Math.random() - 0.5) * 0.45,
+          dRot: (Math.random() - 0.5) * 1.4,
+          delay: (i % 3) * 0.08 + Math.random() * 0.06
+        });
+      }
+
+      // Gold- & Akzent-Konfetti über den ganzen Bildschirm
+      for (let i = 0; i < 46; i++) {
+        const angle = Math.random() * Math.PI * 2;
+        const speed = 180 + Math.random() * Math.max(width, height) * 0.65;
+        this.sparkles.push({
+          x: width * 0.5 + (Math.random() - 0.5) * 60,
+          y: height * 0.44 + (Math.random() - 0.5) * 60,
+          vx: Math.cos(angle) * speed,
+          vy: Math.sin(angle) * speed - 120,
+          size: 4 + Math.random() * 5,
+          color: palette[i % palette.length],
+          rot: Math.random() * Math.PI * 2,
+          dRot: (Math.random() - 0.5) * 10,
+          isStar: i % 3 !== 0
+        });
+      }
+    }
+
+    update(dt, elapsedSec) {
+      this.raysRotation += dt * 0.9;
+
+      this.trophies.forEach(t => {
+        if (elapsedSec < t.delay) return;
+        t.x += t.vx * dt;
+        t.y += t.vy * dt;
+        t.vy += 420 * dt;
+        t.rot += t.dRot * dt;
+      });
+
+      this.sparkles.forEach(s => {
+        s.x += s.vx * dt;
+        s.y += s.vy * dt;
+        s.vy += 560 * dt;
+        s.vx *= 0.985;
+        s.rot += s.dRot * dt;
+      });
+    }
+
+    drawVectorTrophy(ctx, cx, cy, size, rot, glowAlpha) {
+      ctx.save();
+      ctx.translate(cx, cy);
+      ctx.rotate(rot);
+
+      if (glowAlpha > 0) {
+        ctx.shadowColor = 'rgba(251, 191, 36, ' + glowAlpha + ')';
+        ctx.shadowBlur = size * 0.45;
+      }
+
+      const grad = ctx.createLinearGradient(-size * 0.45, -size * 0.5, size * 0.45, size * 0.5);
+      grad.addColorStop(0, '#fef08a');
+      grad.addColorStop(0.45, '#fbbf24');
+      grad.addColorStop(1, '#d97706');
+
+      // Griffe links und rechts
+      ctx.strokeStyle = '#f59e0b';
+      ctx.lineWidth = Math.max(2, size * 0.085);
+      ctx.lineCap = 'round';
+      ctx.beginPath();
+      ctx.moveTo(-size * 0.34, -size * 0.28);
+      ctx.bezierCurveTo(-size * 0.62, -size * 0.32, -size * 0.60, size * 0.06, -size * 0.24, size * 0.08);
+      ctx.moveTo(size * 0.34, -size * 0.28);
+      ctx.bezierCurveTo(size * 0.62, -size * 0.32, size * 0.60, size * 0.06, size * 0.24, size * 0.08);
+      ctx.stroke();
+
+      // Kelch
+      ctx.fillStyle = grad;
+      ctx.beginPath();
+      ctx.moveTo(-size * 0.36, -size * 0.40);
+      ctx.lineTo(size * 0.36, -size * 0.40);
+      ctx.quadraticCurveTo(size * 0.34, size * 0.14, 0, size * 0.22);
+      ctx.quadraticCurveTo(-size * 0.34, size * 0.14, -size * 0.36, -size * 0.40);
+      ctx.closePath();
+      ctx.fill();
+
+      // Oberer Kelch-Rand
+      ctx.fillStyle = '#fef9c3';
+      ctx.beginPath();
+      ctx.roundRect(-size * 0.40, -size * 0.46, size * 0.80, size * 0.09, size * 0.04);
+      ctx.fill();
+
+      // Glanzlicht auf dem Kelch
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.42)';
+      ctx.beginPath();
+      ctx.ellipse(-size * 0.15, -size * 0.16, size * 0.06, size * 0.18, 0.12, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Stiel & Sockel
+      ctx.fillStyle = '#d97706';
+      ctx.fillRect(-size * 0.08, size * 0.20, size * 0.16, size * 0.17);
+      ctx.fillStyle = '#b45309';
+      ctx.beginPath();
+      ctx.roundRect(-size * 0.24, size * 0.36, size * 0.48, size * 0.09, size * 0.03);
+      ctx.fill();
+      ctx.fillStyle = '#78350f';
+      ctx.beginPath();
+      ctx.roundRect(-size * 0.32, size * 0.44, size * 0.64, size * 0.13, size * 0.04);
+      ctx.fill();
+
+      ctx.restore();
+    }
+
+    draw(ctx, alpha, elapsedMs) {
+      const elapsedSec = (elapsedMs || 0) / 1000;
+      ctx.save();
+      ctx.globalAlpha = alpha;
+
+      // 1. Konfetti & Sterne über den ganzen Bildschirm
+      this.sparkles.forEach(s => {
+        ctx.save();
+        ctx.translate(s.x, s.y);
+        ctx.rotate(s.rot);
+        ctx.fillStyle = s.color;
+        if (s.isStar) {
+          ctx.beginPath();
+          for (let i = 0; i < 4; i++) {
+            const a = (i * Math.PI) / 2;
+            ctx.lineTo(Math.cos(a) * s.size * 1.4, Math.sin(a) * s.size * 1.4);
+            ctx.lineTo(Math.cos(a + Math.PI / 4) * s.size * 0.48, Math.sin(a + Math.PI / 4) * s.size * 0.48);
+          }
+          ctx.closePath();
+          ctx.fill();
+        } else {
+          ctx.fillRect(-s.size * 0.6, -s.size * 0.4, s.size * 1.2, s.size * 0.8);
+        }
+        ctx.restore();
+      });
+
+      // 2. Aufsteigende Pokale über die volle Bildschirmbreite
+      this.trophies.forEach(t => {
+        if (elapsedSec < t.delay) return;
+        this.drawVectorTrophy(ctx, t.x, t.y, t.size, t.rot, 0.35);
+      });
+
+      // 3. Zentraler Siegerpokal mit Strahlenkranz (Pop-In Animation)
+      const popProgress = Math.min(1, elapsedSec / 0.42);
+      const backEase = 1 + 2.1 * Math.pow(popProgress - 1, 3) + 1.1 * Math.pow(popProgress - 1, 2);
+      const heroScale = Math.max(0.01, backEase);
+      const heroSize = Math.min(width, height) * 0.24 * heroScale;
+      const cx = width * 0.5;
+      const cy = height * 0.44 - Math.sin(Math.min(Math.PI, elapsedSec * 2.1)) * 18;
+
+      // Strahlende Linien hinter dem Hauptpokal
+      ctx.save();
+      ctx.translate(cx, cy);
+      ctx.rotate(this.raysRotation);
+      ctx.globalAlpha = alpha * 0.26 * Math.min(1, popProgress);
+      ctx.fillStyle = '#fbbf24';
+      const rayCount = 12;
+      const rayLen = Math.min(width, height) * 0.42;
+      for (let i = 0; i < rayCount; i++) {
+        ctx.rotate((Math.PI * 2) / rayCount);
+        ctx.beginPath();
+        ctx.moveTo(0, 0);
+        ctx.lineTo(-rayLen * 0.08, -rayLen);
+        ctx.lineTo(rayLen * 0.08, -rayLen);
+        ctx.closePath();
+        ctx.fill();
+      }
+      ctx.restore();
+
+      const heroTilt = Math.sin(elapsedSec * 5.2) * 0.06;
+      this.drawVectorTrophy(ctx, cx, cy, heroSize, heroTilt, 0.55);
+
+      ctx.restore();
+    }
+  }
+
+  // ==========================================
   // MASTER ANIMATION LOOP & LIFECYCLE
   // ==========================================
   let lastTimestamp = 0;
@@ -2012,12 +2301,14 @@
     lastTimestamp = timestamp;
 
     const elapsed = timestamp - effectStartTime;
+    const totalDur = (currentEffect && currentEffect.duration) || EFFECT_DURATION;
+    const fadeDur = (currentEffect && currentEffect.fadeDuration) || FADE_DURATION;
 
     // Berechnung des sanften Ausblendens (Fade-Out)
     let alpha = 1.0;
-    if (elapsed > EFFECT_DURATION - FADE_DURATION) {
-      const remaining = EFFECT_DURATION - elapsed;
-      alpha = Math.max(0, remaining / FADE_DURATION);
+    if (elapsed > totalDur - fadeDur) {
+      const remaining = totalDur - elapsed;
+      alpha = Math.max(0, remaining / fadeDur);
     }
 
     // Canvas leeren für neuen Frame
@@ -2025,11 +2316,11 @@
 
     if (currentEffect) {
       currentEffect.update(dt, elapsed / 1000);
-      currentEffect.draw(ctx, alpha);
+      currentEffect.draw(ctx, alpha, elapsed);
     }
 
     // Ende der Animation erreicht?
-    if (elapsed >= EFFECT_DURATION) {
+    if (elapsed >= totalDur) {
       // Loop sauber beenden & GPU entlasten
       ctx.clearRect(0, 0, width, height);
       currentEffect = null;
@@ -2061,28 +2352,34 @@
       currentEffect = new OutdoorNatureFX();
     } else if (type === 'arcade') {
       currentEffect = new ArcadeFX();
+    } else if (type === 'tournament') {
+      currentEffect = new TournamentTrophyFX();
     }
 
     animId = requestAnimationFrame(runLoop);
   }
 
+  window.isDashboardFXActive = function() {
+    return Boolean(currentEffect && animId);
+  };
+
   // ==========================================
   // EVENT LISTENER FÜR KATEGORIEN-TOGGLE
   // ==========================================
   function setupCategoryTriggers() {
+    const fxMap = {
+      'cat-boardgames': 'boardgames',
+      'cat-outdoor': 'outdoor',
+      'cat-arcade': 'arcade'
+    };
+
     document.querySelectorAll('details.category').forEach(details => {
+      const fxType = fxMap[details.id];
+      if (!fxType) return;
+
       details.addEventListener('toggle', () => {
         if (details.open) {
-          const badge = details.querySelector('.category-badge')?.textContent || '';
-          const label = details.querySelector('.category-label')?.textContent || '';
-
-          if (badge.includes('🎲') || label.includes('Gesellschaft')) {
-            startEffect('boardgames');
-          } else if (badge.includes('🌳') || label.includes('Outdoor')) {
-            startEffect('outdoor');
-          } else if (badge.includes('🕹️') || label.includes('Arcade')) {
-            startEffect('arcade');
-          }
+          startEffect(fxType);
         }
       });
 
@@ -2095,10 +2392,7 @@
           if (details.open) {
             e.preventDefault();
             e.stopPropagation();
-            const bText = badgeEl.textContent || '';
-            if (bText.includes('🎲')) startEffect('boardgames');
-            else if (bText.includes('🌳')) startEffect('outdoor');
-            else if (bText.includes('🕹️')) startEffect('arcade');
+            startEffect(fxType);
           }
         });
       }
@@ -2173,10 +2467,10 @@
         boardCat.querySelectorAll('a.game-card').forEach(function(card) {
           pool.push({
             href: card.getAttribute('href') || '#',
-            icon: card.querySelector('.icon')?.textContent?.trim() || '🎲',
+            iconHtml: card.querySelector('.m3-shape-badge')?.outerHTML || '',
             title: card.querySelector('.title')?.textContent?.trim() || 'Spiel',
             desc: card.querySelector('.desc')?.textContent?.trim() || '',
-            categoryLabel: '🎲 Gesellschaftsspiel',
+            categoryLabel: 'Gesellschaftsspiel',
             categoryType: 'boardgames',
             isOutdoor: false
           });
@@ -2190,10 +2484,10 @@
           outdoorCat.querySelectorAll('a.game-card').forEach(function(card) {
             pool.push({
               href: card.getAttribute('href') || '#',
-              icon: card.querySelector('.icon')?.textContent?.trim() || '🌳',
+              iconHtml: card.querySelector('.m3-shape-badge')?.outerHTML || '',
               title: card.querySelector('.title')?.textContent?.trim() || 'Outdoor-Spiel',
               desc: card.querySelector('.desc')?.textContent?.trim() || '',
-              categoryLabel: '🌳 Outdoor-Spiel',
+              categoryLabel: 'Outdoor-Spiel',
               categoryType: 'outdoor',
               isOutdoor: true
             });
@@ -2228,10 +2522,12 @@
     let isRolling = false;
 
     function applyGameToCard(game) {
-      const currentTheme = document.documentElement.getAttribute('data-theme') || 'dark';
+      const stateHash = typeof window.getStateHash === 'function'
+        ? window.getStateHash()
+        : ('#theme=' + (document.documentElement.getAttribute('data-theme') || 'dark'));
       const cleanHref = game.href.split('#')[0];
-      gameCard.setAttribute('href', cleanHref + '#theme=' + currentTheme);
-      cardIcon.textContent = game.icon;
+      gameCard.setAttribute('href', cleanHref + stateHash);
+      cardIcon.innerHTML = game.iconHtml || '';
       cardTitle.textContent = game.title;
       cardDesc.textContent = game.desc;
       cardCat.textContent = game.categoryLabel;
@@ -2328,6 +2624,1166 @@
       navigator.serviceWorker.register('./sw.js').catch(() => {});
     });
   }
+</script>
+
+<!-- ==========================================================================
+     URLAUBS-TURNIER MODALS & LOGIK
+     ========================================================================== -->
+
+<!-- 1. Modal: Spieler-Verwaltung -->
+<div id="tPlayersModal" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="tPlayersModalTitle">
+  <div class="modal-content t-modal-wide">
+    <div class="t-modal-header">
+      <h2 id="tPlayersModalTitle">👥 Spieler verwalten</h2>
+      <button type="button" class="t-modal-close" onclick="closeTournamentModal('tPlayersModal')" aria-label="Schließen">✕</button>
+    </div>
+    <p style="font-size: 0.86rem; color: var(--md-sys-color-on-surface-variant); margin-bottom: 12px;">
+      Lege hier alle Mitspieler an. Sie erscheinen anschließend in allen Scorekeepern als Schnell-Auswahl.
+    </p>
+    <div class="input-group">
+      <input type="text" id="t-new-player-name" placeholder="Spielername..." autocomplete="off" onkeypress="if(event.key==='Enter') handleAddTournamentPlayer()">
+      <button type="button" id="t-add-player-btn" class="btn-primary" onclick="handleAddTournamentPlayer()" style="padding: 12px 18px;">+ Anlegen</button>
+    </div>
+    <div style="margin-top: 12px; font-size: 0.78rem; font-weight: 700; color: var(--md-sys-color-on-surface-variant);">Avatar wählen:</div>
+    <div id="t-avatar-picker" class="t-avatar-picker"></div>
+
+    <div id="t-players-manage-list" class="t-player-manage-list"></div>
+  </div>
+</div>
+
+<!-- 2. Modal: Manuelles Ergebnis eintragen -->
+<div id="tManualMatchModal" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="tManualModalTitle">
+  <div class="modal-content t-modal-wide">
+    <div class="t-modal-header">
+      <h2 id="tManualModalTitle">➕ Ergebnis manuell eintragen</h2>
+      <button type="button" class="t-modal-close" onclick="closeTournamentModal('tManualMatchModal')" aria-label="Schließen">✕</button>
+    </div>
+    <p style="font-size: 0.85rem; color: var(--md-sys-color-on-surface-variant); margin-bottom: 14px;">
+      Ideal, wenn eine Partie auf echtem Papier/Block gespielt wurde.
+    </p>
+
+    <div style="margin-bottom: 14px;">
+      <label for="t-manual-game-select" style="display:block; font-size:0.82rem; font-weight:700; margin-bottom:6px;">Spiel auswählen</label>
+      <select id="t-manual-game-select" class="t-select" onchange="onManualGameChange()">
+        <option value="Kniffel">🎲 Kniffel (Höchste Pkt gewinnt)</option>
+        <option value="Yatzy">🎲 Yatzy (Höchste Pkt gewinnt)</option>
+        <option value="Wizard">🧙‍♂️ Wizard (Höchste Pkt gewinnt)</option>
+        <option value="Flip7">7️⃣ Flip7 (Höchste Pkt gewinnt)</option>
+        <option value="Qwirkle">🧩 Qwirkle (Höchste Pkt gewinnt)</option>
+        <option value="Cabo">🤫 Cabo (Niedrigste Pkt gewinnt)</option>
+        <option value="Tutto">🎲 Tutto (Höchste Pkt gewinnt)</option>
+        <option value="Minigolf">⛳ Minigolf (Niedrigste Schläge gewinnt)</option>
+        <option value="Mölkky">🪵 Mölkky (Höchste Pkt gewinnt)</option>
+        <option value="__custom__">✏️ Anderes Spiel eingeben...</option>
+      </select>
+      <input type="text" id="t-manual-custom-game" class="hidden" placeholder="Name des Spiels (z. B. Skyjo, Uno)..." style="width:100%; margin-top:8px;">
+    </div>
+
+    <div style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom:14px;">
+      <label style="flex:1; min-width:200px; display:flex; align-items:center; gap:8px; font-size:0.84rem; padding:10px; border-radius:var(--md-sys-shape-corner-md); background:var(--md-sys-color-surface-container-lowest); border:1px solid var(--md-sys-color-outline-variant); cursor:pointer;">
+        <input type="checkbox" id="t-manual-lower-wins" style="width:18px; height:18px; accent-color:var(--md-sys-color-primary);">
+        <span>Niedrigste Zahl gewinnt (z. B. Cabo/Minigolf)</span>
+      </label>
+      <label style="flex:1; min-width:200px; display:flex; align-items:center; gap:8px; font-size:0.84rem; padding:10px; border-radius:var(--md-sys-shape-corner-md); background:var(--md-sys-color-surface-container-lowest); border:1px solid var(--md-sys-color-outline-variant); cursor:pointer;">
+        <input type="checkbox" id="t-manual-rank-mode" onchange="renderManualPlayerInputs()" style="width:18px; height:18px; accent-color:var(--md-sys-color-primary);">
+        <span>Nur Platzierung eintragen (1., 2., 3.)</span>
+      </label>
+    </div>
+
+    <div style="margin-bottom: 12px;">
+      <div style="font-size:0.82rem; font-weight:700; margin-bottom:6px;">Mitspieler auswählen:</div>
+      <div id="t-manual-player-chips" class="t-chips-grid" style="margin-bottom: 10px;"></div>
+      <div class="input-group">
+        <input type="text" id="t-manual-guest-input" placeholder="Oder Gastspieler hinzufügen..." autocomplete="off" onkeypress="if(event.key==='Enter') addManualGuestPlayer()">
+        <button type="button" class="btn-tonal" onclick="addManualGuestPlayer()" style="padding: 10px 14px;">+</button>
+      </div>
+    </div>
+
+    <div id="t-manual-inputs-list" style="margin: 14px 0;"></div>
+
+    <div style="margin-bottom: 16px;">
+      <label for="t-manual-notes" style="display:block; font-size:0.82rem; font-weight:700; margin-bottom:6px;">Notiz (optional)</label>
+      <input type="text" id="t-manual-notes" placeholder="z. B. Abendrunde am Strand..." style="width:100%;">
+    </div>
+
+    <button type="button" id="t-manual-submit-btn" class="btn-primary" onclick="submitManualMatch()" style="width:100%;">
+      ✅ Runde im Turnier speichern
+    </button>
+  </div>
+</div>
+
+<!-- 3. Modal: Siegerehrung & Auswertung -->
+<div id="tCeremonyModal" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="tCeremonyModalTitle">
+  <div class="modal-content t-modal-wide">
+    <div class="t-modal-header">
+      <h2 id="tCeremonyModalTitle">🏆 Urlaubs-Siegerehrung</h2>
+      <button type="button" class="t-modal-close" onclick="closeTournamentModal('tCeremonyModal')" aria-label="Schließen">✕</button>
+    </div>
+
+    <div class="t-tabs">
+      <button type="button" class="t-tab-btn active" id="tab-btn-standings" onclick="switchCeremonyTab('standings')">🥇 Podest &amp; Rangliste</button>
+      <button type="button" class="t-tab-btn" id="tab-btn-history" onclick="switchCeremonyTab('history')">📜 Gespielte Partien</button>
+    </div>
+
+    <div id="t-ceremony-standings-view"></div>
+    <div id="t-ceremony-history-view" class="hidden"></div>
+
+    <div style="display:flex; flex-direction:column; gap:10px; margin-top:20px; padding-top:16px; border-top:1px solid var(--md-sys-color-outline-variant);">
+      <div style="display:flex; gap:10px; flex-wrap:wrap;">
+        <button type="button" class="btn-primary" onclick="shareTournamentResults()" style="flex:1; min-width:190px;">
+          📤 Siegerehrung teilen (WhatsApp)
+        </button>
+        <button type="button" class="btn-tonal" onclick="handleCsvDownload()" style="flex:1; min-width:170px;">
+          📥 CSV herunterladen
+        </button>
+      </div>
+      <button type="button" class="btn-danger-outline" onclick="openResetModalFromCeremony()" style="width:100%;">
+        🗑️ Urlaub beenden &amp; Daten löschen
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- 4. Modal: CSV Datenbank Export & Import -->
+<div id="tCsvModal" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="tCsvModalTitle">
+  <div class="modal-content t-modal-wide">
+    <div class="t-modal-header">
+      <h2 id="tCsvModalTitle">📁 Google-Drive CSV &amp; Reset</h2>
+      <button type="button" class="t-modal-close" onclick="closeTournamentModal('tCsvModal')" aria-label="Schließen">✕</button>
+    </div>
+
+    <p id="t-csv-modal-desc" style="font-size: 0.88rem; color: var(--md-sys-color-on-surface-variant); margin-bottom: 16px;">
+      Alle abgeschlossenen Partien werden zentral in der gemeinsamen Excel-kompatiblen CSV-Datei (<code>;</code>-getrennt, UTF-8) auf Google Drive gespeichert und zwischen allen Geräten synchronisiert.
+    </p>
+
+    <div style="display:flex; flex-direction:column; gap:12px;">
+      <div id="t-drive-link-box" class="t-drive-card">
+        <div style="font-weight:700; font-size:0.9rem; margin-bottom:6px;">🌐 Öffentliche Google-Drive-CSV</div>
+        <p id="t-drive-link-hint" style="font-size:0.8rem; color:var(--md-sys-color-on-surface-variant); margin-bottom:10px;">
+          Jeder kann die aktuelle Turnier-CSV direkt über Google Drive einsehen oder herunterladen.
+        </p>
+        <div style="display:flex; gap:8px; flex-wrap:wrap;">
+          <a id="t-drive-open-link" href="https://drive.google.com/drive/folders/1Oqvt-SfoJk4H5PwC1gEsb-7YZf5UqPaY" target="_blank" rel="noopener noreferrer" class="btn-tonal" style="flex:1; min-width:160px; text-align:center; text-decoration:none; display:inline-flex; align-items:center; justify-content:center;">
+            🔗 Auf Google Drive öffnen
+          </a>
+          <button type="button" class="btn-outline" onclick="copyDriveCsvLink()" style="flex:1; min-width:140px;">
+            📋 Link kopieren
+          </button>
+        </div>
+      </div>
+
+      <button type="button" class="btn-primary" onclick="handleCsvDownload()" style="width:100%;">
+        📥 Aktuelle Turnier-CSV lokal herunterladen
+      </button>
+
+      <div style="padding:14px; border-radius:var(--md-sys-shape-corner-lg); background:var(--md-sys-color-surface-container-lowest); border:1px solid var(--md-sys-color-outline-variant);">
+        <div style="font-weight:700; font-size:0.9rem; margin-bottom:6px;">📤 Bestehende CSV-Datei importieren</div>
+        <p style="font-size:0.8rem; color:var(--md-sys-color-on-surface-variant); margin-bottom:10px;">
+          Ersetzt den aktuellen Turnierstand durch eine hochgeladene CSV-Datei (bei Cloud-Sync mit Admin-Passwort geschützt).
+        </p>
+        <div id="t-csv-import-pw-wrap" class="hidden" style="margin-bottom:8px;">
+          <input type="password" id="t-csv-import-admin-pw" placeholder="Admin-Passwort für Cloud-Import..." autocomplete="off" style="width:100%; font-size:0.85rem;">
+        </div>
+        <input type="file" id="t-csv-file-input" accept=".csv,text/csv" onchange="handleCsvFileUpload(event)" style="width:100%; font-size:0.85rem;">
+      </div>
+
+      <div class="t-danger-box">
+        <div style="font-weight:700; font-size:0.95rem; margin-bottom:4px;">🏁 Urlaub abgeschlossen?</div>
+        <p style="font-size:0.82rem; margin-bottom:12px;">
+          Nach der finalen Auswertung kannst du ein Archiv-Backup sichern und die gemeinsame Drive-CSV für den nächsten Urlaub zurücksetzen.
+        </p>
+        <button type="button" class="btn-danger" onclick="openResetModalFromCsv()" style="width:100%;">
+          🗑️ Datenbank auswerten &amp; zurücksetzen...
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 5. Modal: Hard-Reset Sicherheitsabfrage -->
+<div id="tResetModal" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="tResetModalTitle">
+  <div class="modal-content">
+    <div style="font-size: 2.6rem; margin-bottom: 8px;">⚠️</div>
+    <h2 id="tResetModalTitle" style="margin-bottom: 8px;">CSV-Turnierdaten löschen?</h2>
+    <p id="t-reset-summary" style="font-size: 0.9rem; color: var(--md-sys-color-on-surface-variant); margin-bottom: 14px;">
+      Alle gespielten Partien und die Spielerliste werden aus der aktuellen CSV gelöscht (auf Google Drive wird vorher automatisch eine Archiv-Kopie erstellt).
+    </p>
+
+    <div class="t-password-box">
+      <label class="t-password-label" for="t-reset-password">Admin-Passwort zur Bestätigung erforderlich</label>
+      <input type="password" id="t-reset-password" placeholder="Admin-Passwort eingeben..." autocomplete="off" style="width:100%;">
+      <div id="t-reset-password-error" class="t-password-error hidden" role="alert">
+        Falsches Admin-Passwort! Löschvorgang abgebrochen.
+      </div>
+    </div>
+
+    <div style="display:flex; flex-direction:column; gap:10px;">
+      <button type="button" id="t-reset-btn-backup" class="btn-primary" onclick="executeBackupAndHardReset()" style="width:100%;">
+        📥 CSV-Backup lokal laden &amp; zurücksetzen
+      </button>
+      <button type="button" id="t-reset-btn-only" class="btn-danger-outline" onclick="executeHardResetOnly()" style="width:100%;">
+        🗑️ Direkt zurücksetzen (Drive-Archiv wird angelegt)
+      </button>
+      <button type="button" class="btn-outline" onclick="closeTournamentModal('tResetModal')" style="width:100%;">
+        Abbrechen
+      </button>
+    </div>
+  </div>
+</div>
+
+<div id="tToast" class="t-toast" role="status" aria-live="polite"></div>
+
+<script>
+(function() {
+  'use strict';
+
+  let selectedAvatar = Tournament.AVATARS[0];
+  let manualSelectedPlayers = [];
+  let ceremonyActiveTab = 'standings';
+
+  function showToast(msg) {
+    const el = document.getElementById('tToast');
+    if (!el) return;
+    el.textContent = msg;
+    el.classList.add('show');
+    clearTimeout(el._timer);
+    el._timer = setTimeout(() => el.classList.remove('show'), 3200);
+  }
+
+  window.openTournamentModal = function(id) {
+    const modal = document.getElementById(id);
+    if (modal) modal.classList.remove('hidden');
+  };
+
+  window.closeTournamentModal = function(id) {
+    const modal = document.getElementById(id);
+    if (modal) modal.classList.add('hidden');
+    if (id === 'tCeremonyModal') {
+      updatePollingState();
+    }
+  };
+
+  // Backdrop click & Escape key to close modals
+  document.addEventListener('click', function(e) {
+    if (e.target && e.target.classList && e.target.classList.contains('modal-overlay')) {
+      if (['tPlayersModal', 'tManualMatchModal', 'tCeremonyModal', 'tCsvModal', 'tResetModal'].includes(e.target.id)) {
+        e.target.classList.add('hidden');
+        if (e.target.id === 'tCeremonyModal') updatePollingState();
+      }
+    }
+  });
+
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+      ['tResetModal', 'tCsvModal', 'tCeremonyModal', 'tManualMatchModal', 'tPlayersModal'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el && !el.classList.contains('hidden')) {
+          el.classList.add('hidden');
+          if (id === 'tCeremonyModal') updatePollingState();
+        }
+      });
+    }
+  });
+
+  function formatSyncTime(iso) {
+    if (!iso) return '';
+    try {
+      const d = new Date(iso);
+      return d.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    } catch (e) {
+      return '';
+    }
+  }
+
+  function renderSyncBar() {
+    const bar = document.getElementById('t-sync-bar');
+    const pendingBanner = document.getElementById('t-pending-banner');
+    if (!bar) return;
+
+    const st = Tournament.getCloudStatus();
+    let statusClass = '';
+    let statusLabel = '';
+
+    if (!st.configured) {
+      statusClass = 'is-warn';
+      statusLabel = '⚠️ Apps-Script-URL in tournament.js noch nicht eingetragen (nur lokal)';
+    } else if (st.syncing) {
+      statusLabel = '⏳ Synchronisiere mit Google Drive...';
+    } else if (st.lastSyncError) {
+      statusClass = 'is-warn';
+      statusLabel = `🔴 ${st.lastSyncError}`;
+    } else if (st.lastSyncAt) {
+      statusClass = 'is-ok';
+      statusLabel = `🟢 Drive-CSV synchronisiert (${formatSyncTime(st.lastSyncAt)})`;
+    } else {
+      statusLabel = '☁️ Bereit für Google-Drive-Sync';
+    }
+
+    const driveLink = st.csvUrl || st.folderUrl;
+    bar.innerHTML = `
+      <span class="t-sync-status-text ${statusClass}">${Tournament.escapeHtml(statusLabel)}</span>
+      <div class="t-sync-actions">
+        ${st.configured ? `<button type="button" class="t-sync-mini-btn" onclick="handleManualCloudSync()" ${st.syncing ? 'disabled' : ''}>🔄 Sync</button>` : ''}
+        ${st.configured ? `<button type="button" class="t-sync-mini-btn" onclick="handleManagePin()" title="${st.hasPin ? 'Turnier-PIN wechseln / zurücksetzen' : 'Turnier-PIN eingeben'}">${st.hasPin ? '🔑 PIN aktiv' : '🔒 PIN'}</button>` : ''}
+        <a href="${Tournament.escapeHtml(driveLink)}" target="_blank" rel="noopener noreferrer" class="t-sync-mini-btn" title="Öffentliche Google-Drive-CSV öffnen">🌐 Drive-CSV</a>
+      </div>
+    `;
+
+    if (pendingBanner) {
+      if (st.pendingCount > 0 && st.configured) {
+        pendingBanner.classList.remove('hidden');
+        pendingBanner.innerHTML = `
+          <span>⏳ ${st.pendingCount} ${st.pendingCount === 1 ? 'Spielergebnis wartet' : 'Spielergebnisse warten'} auf Upload zu Google Drive.</span>
+          <button type="button" class="btn-primary" style="padding:6px 12px; font-size:0.78rem;" onclick="handleFlushPendingUploads()">📤 Jetzt hochladen</button>
+        `;
+      } else {
+        pendingBanner.classList.add('hidden');
+        pendingBanner.innerHTML = '';
+      }
+    }
+  }
+
+  function updatePollingState() {
+    const enabled = typeof window.isTournamentMode === 'function' ? window.isTournamentMode() : false;
+    const cat = document.getElementById('cat-tournament');
+    const ceremony = document.getElementById('tCeremonyModal');
+    const isCatOpen = !!(cat && cat.open);
+    const isCeremonyOpen = !!(ceremony && !ceremony.classList.contains('hidden'));
+    if (enabled && (isCatOpen || isCeremonyOpen)) {
+      Tournament.startAutoSync();
+    } else {
+      Tournament.stopAutoSync();
+    }
+  }
+
+  window.handleManualCloudSync = async function() {
+    const res = await Tournament.syncFromCloud({ force: true });
+    if (res.ok) {
+      showToast('Turnierdaten von Google Drive aktualisiert!');
+    } else if (!res.notConfigured) {
+      showToast('Sync fehlgeschlagen: ' + (res.error || 'Netzwerkfehler'));
+    }
+  };
+
+  window.handleFlushPendingUploads = async function() {
+    const res = await Tournament.flushPendingUploads({ interactive: true });
+    if (res.sent > 0 && res.remaining === 0) {
+      showToast(`${res.sent} ausstehende(s) Ergebnis(se) hochgeladen!`);
+    } else if (res.remaining > 0 && !res.cancelled) {
+      showToast(`Noch ${res.remaining} Ergebnis(se) ausstehend.`);
+    }
+  };
+
+  window.handleManagePin = async function() {
+    if (Tournament.getStoredPin()) {
+      if (confirm('Gespeicherte Turnier-PIN auf diesem Gerät entfernen / neu eingeben?')) {
+        Tournament.clearStoredPin();
+        await Tournament.requestPin('Gib die aktuelle Turnier-PIN für dieses Gerät ein:');
+      }
+    } else {
+      const pin = await Tournament.requestPin('Gib die Turnier-PIN ein, um auf diesem Gerät Ergebnisse speichern zu können:');
+      if (pin) showToast('Turnier-PIN auf diesem Gerät gespeichert.');
+    }
+  };
+
+  // --- Dashboard Hero Render ---
+  function renderDashboardHero() {
+    renderSyncBar();
+    const data = Tournament.calculateStandings();
+    const matchPill = document.getElementById('t-stat-matches');
+    const playerPill = document.getElementById('t-stat-players');
+    const previewEl = document.getElementById('t-hero-preview');
+    if (!previewEl) return;
+
+    matchPill.textContent = `${data.totalMatches} ${data.totalMatches === 1 ? 'Partie' : 'Partien'}`;
+    playerPill.textContent = `${data.registeredPlayersCount} Spieler`;
+
+    const active = data.standings.filter(p => p.matchesPlayed > 0);
+    if (active.length === 0) {
+      previewEl.innerHTML = `
+        <div class="tournament-empty-banner">
+          Noch keine gewerteten Partien im aktuellen Urlaub. Lege Spieler an oder starte ein Gesellschafts- oder Outdoorspiel!
+        </div>
+      `;
+      return;
+    }
+
+    const medals = { 1: '🥇', 2: '🥈', 3: '🥉' };
+    const top3 = active.slice(0, 3);
+    previewEl.innerHTML = `
+      <div class="tournament-top3-preview">
+        ${top3.map(p => `
+          <div class="t-preview-card ${p.rank === 1 ? 'rank-1' : ''}">
+            <span class="t-preview-medal">${medals[p.rank] || (p.rank + '.')}</span>
+            <div class="t-preview-info">
+              <div class="t-preview-name">${Tournament.escapeHtml(p.avatar)} ${Tournament.escapeHtml(p.name)}</div>
+              <div class="t-preview-meta"><strong>${p.tournamentPoints} Pkt</strong> &bull; ${p.gold}x 🥇 (${p.matchesPlayed} Sp.)</div>
+            </div>
+          </div>
+        `).join('')}
+      </div>
+    `;
+  }
+
+  // --- Modal 1: Spieler-Verwaltung ---
+  function renderAvatarPicker() {
+    const picker = document.getElementById('t-avatar-picker');
+    if (!picker) return;
+    picker.innerHTML = Tournament.AVATARS.map(av => `
+      <button type="button" class="t-avatar-btn ${av === selectedAvatar ? 'active' : ''}" onclick="selectTournamentAvatar('${av}')">${av}</button>
+    `).join('');
+  }
+
+  window.selectTournamentAvatar = function(av) {
+    selectedAvatar = av;
+    renderAvatarPicker();
+  };
+
+  function renderPlayersManageList() {
+    const listEl = document.getElementById('t-players-manage-list');
+    if (!listEl) return;
+    const players = Tournament.getPlayers();
+    if (players.length === 0) {
+      listEl.innerHTML = `<div style="text-align:center; padding:14px; font-size:0.85rem; color:var(--md-sys-color-on-surface-variant);">Noch keine Spieler angelegt.</div>`;
+      return;
+    }
+    listEl.innerHTML = players.map(p => `
+      <div class="t-player-manage-item">
+        <div style="display:flex; align-items:center; gap:10px; font-weight:700;">
+          <span style="font-size:1.3rem;">${Tournament.escapeHtml(p.avatar)}</span>
+          <span>${Tournament.escapeHtml(p.name)}</span>
+        </div>
+        <button type="button" class="btn-outline" style="padding:6px 12px; font-size:0.8rem; border-color:var(--md-sys-color-error); color:var(--md-sys-color-error);" data-player-name="${Tournament.escapeHtml(p.name)}" onclick="handleRemoveTournamentPlayer(this.dataset.playerName)">Entfernen</button>
+      </div>
+    `).join('');
+  }
+
+  window.openPlayersModal = function() {
+    const players = Tournament.getPlayers();
+    const used = new Set(players.map(p => p.avatar));
+    selectedAvatar = Tournament.AVATARS.find(a => !used.has(a)) || Tournament.AVATARS[0];
+    renderAvatarPicker();
+    renderPlayersManageList();
+    openTournamentModal('tPlayersModal');
+    setTimeout(() => document.getElementById('t-new-player-name').focus(), 80);
+  };
+
+  window.handleAddTournamentPlayer = async function() {
+    const input = document.getElementById('t-new-player-name');
+    const addBtn = document.getElementById('t-add-player-btn');
+    const nameVal = input.value;
+    if (addBtn) {
+      addBtn.disabled = true;
+      addBtn.textContent = '⏳...';
+    }
+    const res = await Tournament.addPlayer(nameVal, selectedAvatar);
+    if (addBtn) {
+      addBtn.disabled = false;
+      addBtn.textContent = '+ Anlegen';
+    }
+    if (!res.ok) {
+      if (!res.cancelled) alert(res.error);
+      return;
+    }
+    input.value = '';
+    const players = Tournament.getPlayers();
+    const used = new Set(players.map(p => p.avatar));
+    selectedAvatar = Tournament.AVATARS.find(a => !used.has(a)) || Tournament.AVATARS[0];
+    renderAvatarPicker();
+    renderPlayersManageList();
+    showToast(`Spieler "${res.player.name}" hinzugefügt!`);
+  };
+
+  window.handleRemoveTournamentPlayer = async function(name) {
+    const res = await Tournament.removePlayer(name);
+    if (!res.ok) {
+      if (!res.cancelled) alert(res.error || 'Spieler konnte nicht entfernt werden.');
+      return;
+    }
+    renderPlayersManageList();
+    showToast('Spieler entfernt.');
+  };
+
+  // --- Modal 2: Manuelles Ergebnis ---
+  window.openManualMatchModal = function() {
+    const existingPlayers = Tournament.getPlayers().map(p => p.name);
+    manualSelectedPlayers = existingPlayers.slice();
+    document.getElementById('t-manual-game-select').value = 'Kniffel';
+    document.getElementById('t-manual-custom-game').classList.add('hidden');
+    document.getElementById('t-manual-custom-game').value = '';
+    document.getElementById('t-manual-lower-wins').checked = false;
+    document.getElementById('t-manual-rank-mode').checked = false;
+    document.getElementById('t-manual-notes').value = '';
+    renderManualPlayerChips();
+    renderManualPlayerInputs();
+    openTournamentModal('tManualMatchModal');
+  };
+
+  window.onManualGameChange = function() {
+    const sel = document.getElementById('t-manual-game-select').value;
+    const customInput = document.getElementById('t-manual-custom-game');
+    const lowerCb = document.getElementById('t-manual-lower-wins');
+
+    if (sel === '__custom__') {
+      customInput.classList.remove('hidden');
+      customInput.focus();
+      lowerCb.checked = false;
+    } else {
+      customInput.classList.add('hidden');
+      const meta = Tournament.GAMES[sel];
+      lowerCb.checked = meta ? meta.lowerIsBetter : false;
+    }
+  };
+
+  function renderManualPlayerChips() {
+    const container = document.getElementById('t-manual-player-chips');
+    const players = Tournament.getPlayers();
+    const allNames = [...new Set([...players.map(p => p.name), ...manualSelectedPlayers])];
+
+    if (allNames.length === 0) {
+      container.innerHTML = `<span style="font-size:0.82rem; color:var(--md-sys-color-on-surface-variant);">Noch keine Spieler vorhanden – unten Namen eintippen.</span>`;
+      return;
+    }
+
+    container.innerHTML = allNames.map(name => {
+      const pObj = players.find(p => p.name.toLowerCase() === name.toLowerCase());
+      const avatar = pObj ? pObj.avatar : '🎲';
+      const active = manualSelectedPlayers.some(n => n.toLowerCase() === name.toLowerCase());
+      return `
+        <button type="button" class="t-player-chip ${active ? 'is-selected' : ''}" onclick="toggleManualPlayer('${Tournament.escapeHtml(name)}')">
+          <span class="t-chip-avatar">${Tournament.escapeHtml(avatar)}</span>
+          <span class="t-chip-name">${Tournament.escapeHtml(name)}</span>
+          <span class="t-chip-check">${active ? '✓' : '+'}</span>
+        </button>
+      `;
+    }).join('');
+  }
+
+  window.toggleManualPlayer = function(name) {
+    const idx = manualSelectedPlayers.findIndex(n => n.toLowerCase() === name.toLowerCase());
+    if (idx >= 0) {
+      manualSelectedPlayers.splice(idx, 1);
+    } else {
+      manualSelectedPlayers.push(name);
+    }
+    renderManualPlayerChips();
+    renderManualPlayerInputs();
+  };
+
+  window.addManualGuestPlayer = function() {
+    const input = document.getElementById('t-manual-guest-input');
+    const name = input.value.trim();
+    if (!name) return;
+    if (!manualSelectedPlayers.some(n => n.toLowerCase() === name.toLowerCase())) {
+      manualSelectedPlayers.push(name);
+    }
+    input.value = '';
+    renderManualPlayerChips();
+    renderManualPlayerInputs();
+  };
+
+  window.renderManualPlayerInputs = function() {
+    const listEl = document.getElementById('t-manual-inputs-list');
+    const isRankMode = document.getElementById('t-manual-rank-mode').checked;
+
+    if (manualSelectedPlayers.length === 0) {
+      listEl.innerHTML = `<div style="text-align:center; padding:12px; font-size:0.85rem; color:var(--md-sys-color-on-surface-variant);">Wähle mindestens einen Spieler aus.</div>`;
+      return;
+    }
+
+    listEl.innerHTML = manualSelectedPlayers.map((name, idx) => `
+      <div class="t-manual-row">
+        <span style="font-weight:700;">${Tournament.escapeHtml(name)}</span>
+        <input type="number" class="t-manual-val-input" data-player="${Tournament.escapeHtml(name)}" placeholder="${isRankMode ? 'Platz (1..)' : 'Punkte'}" value="${isRankMode ? (idx + 1) : ''}" min="${isRankMode ? 1 : ''}" inputmode="numeric" style="padding:8px 10px; text-align:center;">
+      </div>
+    `).join('');
+  };
+
+  window.submitManualMatch = async function() {
+    const sel = document.getElementById('t-manual-game-select').value;
+    const gameName = sel === '__custom__' ? document.getElementById('t-manual-custom-game').value.trim() : sel;
+    if (!gameName) {
+      alert('Bitte gib einen Spielnamen ein.');
+      return;
+    }
+    if (manualSelectedPlayers.length === 0) {
+      alert('Bitte wähle mindestens einen Spieler aus.');
+      return;
+    }
+
+    const isRankMode = document.getElementById('t-manual-rank-mode').checked;
+    const lowerIsBetter = document.getElementById('t-manual-lower-wins').checked;
+    const notes = document.getElementById('t-manual-notes').value.trim();
+
+    const inputs = document.querySelectorAll('.t-manual-val-input');
+    const entries = [];
+    for (const inp of inputs) {
+      const name = inp.getAttribute('data-player');
+      const val = parseFloat(inp.value);
+      if (isNaN(val)) {
+        alert(`Bitte gib ${isRankMode ? 'einen Platz' : 'eine Punktzahl'} für ${name} ein.`);
+        return;
+      }
+      if (isRankMode) {
+        entries.push({ name, score: 0, rank: Math.max(1, Math.round(val)) });
+      } else {
+        entries.push({ name, score: val });
+      }
+    }
+
+    const submitBtn = document.getElementById('t-manual-submit-btn');
+    if (submitBtn) {
+      submitBtn.disabled = true;
+      submitBtn.textContent = '⏳ Wird gespeichert...';
+    }
+
+    const res = await Tournament.recordMatch({
+      game: gameName,
+      players: entries,
+      lowerIsBetter,
+      notes
+    });
+
+    if (submitBtn) {
+      submitBtn.disabled = false;
+      submitBtn.textContent = '✅ Runde im Turnier speichern';
+    }
+
+    if (res.ok) {
+      closeTournamentModal('tManualMatchModal');
+      showToast(`Partie "${gameName}" (#${res.matchId}) im Turnier gespeichert!`);
+    } else if (res.queued) {
+      closeTournamentModal('tManualMatchModal');
+      showToast('Keine Verbindung – Partie für Upload vorgemerkt.');
+    } else if (!res.cancelled) {
+      alert(res.error);
+    }
+  };
+
+  // --- Modal 3: Siegerehrung ---
+  window.openCeremonyModal = function() {
+    ceremonyActiveTab = 'standings';
+    switchCeremonyTab('standings');
+    openTournamentModal('tCeremonyModal');
+    updatePollingState();
+    Tournament.syncFromCloud({ force: true });
+  };
+
+  window.switchCeremonyTab = function(tab) {
+    ceremonyActiveTab = tab;
+    document.getElementById('tab-btn-standings').classList.toggle('active', tab === 'standings');
+    document.getElementById('tab-btn-history').classList.toggle('active', tab === 'history');
+    document.getElementById('t-ceremony-standings-view').classList.toggle('hidden', tab !== 'standings');
+    document.getElementById('t-ceremony-history-view').classList.toggle('hidden', tab !== 'history');
+    renderCeremonyViews();
+  };
+
+  function renderCeremonyViews() {
+    const data = Tournament.calculateStandings();
+    const standingsView = document.getElementById('t-ceremony-standings-view');
+    const historyView = document.getElementById('t-ceremony-history-view');
+
+    const active = data.standings.filter(p => p.matchesPlayed > 0);
+    if (active.length === 0) {
+      standingsView.innerHTML = `
+        <div class="tournament-empty-banner" style="margin: 24px 0;">
+          🏆 Noch keine Partien abgeschlossen!<br>Sobald ihr Ergebnisse speichert, erscheint hier das Siegerpodest.
+        </div>
+      `;
+    } else {
+      const top3 = active.slice(0, 3);
+      const podiumHtml = `
+        <div class="t-podium-stage">
+          ${top3.map((p, idx) => {
+            const place = idx + 1;
+            const medal = place === 1 ? '🥇' : (place === 2 ? '🥈' : '🥉');
+            return `
+              <div class="t-podium-col t-podium-place-${place}">
+                <div class="t-podium-avatar">${Tournament.escapeHtml(p.avatar)}</div>
+                <div class="t-podium-name">${Tournament.escapeHtml(p.name)}</div>
+                <div class="t-podium-pts">${p.tournamentPoints} Pkt</div>
+                <div class="t-podium-bar">${medal}</div>
+              </div>
+            `;
+          }).join('')}
+        </div>
+      `;
+
+      const medals = { 1: '🥇', 2: '🥈', 3: '🥉' };
+      const listHtml = `
+        <h3 style="text-align:left; font-size:0.95rem; margin-bottom:10px;">Gesamtrangliste (${data.totalMatches} ${data.totalMatches === 1 ? 'Partie' : 'Partien'})</h3>
+        <div class="t-standings-list">
+          ${active.map(p => `
+            <div class="t-standing-row">
+              <div class="t-standing-rank">${medals[p.rank] || (p.rank + '.')}</div>
+              <div class="t-standing-main">
+                <div class="t-standing-name">
+                  <span>${Tournament.escapeHtml(p.avatar)}</span>
+                  <span>${Tournament.escapeHtml(p.name)}</span>
+                </div>
+                <div class="t-standing-sub">
+                  ${p.matchesPlayed} ${p.matchesPlayed === 1 ? 'Partie' : 'Partien'} &bull; Siegquote: ${p.winRate}%
+                </div>
+              </div>
+              <div class="t-medals-group" title="Medaillenspiegel (Gold / Silber / Bronze)">
+                <span>🥇${p.gold}</span>
+                <span>🥈${p.silver}</span>
+                <span>🥉${p.bronze}</span>
+              </div>
+              <div class="t-standing-pts">${p.tournamentPoints} Pkt</div>
+            </div>
+          `).join('')}
+        </div>
+      `;
+
+      const awardsHtml = data.awards.length > 0 ? `
+        <h3 style="text-align:left; font-size:0.95rem; margin-bottom:10px;">🏅 Urlaubs-Auszeichnungen</h3>
+        <div class="t-awards-grid">
+          ${data.awards.map(a => `
+            <div class="t-award-card">
+              <div class="t-award-icon">${Tournament.escapeHtml(a.icon)}</div>
+              <div>
+                <div class="t-award-title">${Tournament.escapeHtml(a.title)}</div>
+                <div class="t-award-winner">${Tournament.escapeHtml(a.avatar)} ${Tournament.escapeHtml(a.winner)}</div>
+                <div class="t-award-detail">${Tournament.escapeHtml(a.detail)}</div>
+              </div>
+            </div>
+          `).join('')}
+        </div>
+      ` : '';
+
+      standingsView.innerHTML = podiumHtml + listHtml + awardsHtml;
+    }
+
+    // History Tab
+    if (data.matches.length === 0) {
+      historyView.innerHTML = `<div class="tournament-empty-banner">Noch keine Partien gespeichert.</div>`;
+    } else {
+      historyView.innerHTML = `
+        <div class="t-history-list">
+          ${data.matches.map(m => {
+            const gameMeta = Tournament.GAMES[m.game];
+            const icon = gameMeta ? gameMeta.icon : '🎲';
+            return `
+              <div class="t-match-item">
+                <div class="t-match-head">
+                  <div>
+                    <div class="t-match-title">${icon} ${Tournament.escapeHtml(m.game)} <span style="font-size:0.75rem; opacity:0.6;">#${m.id}</span></div>
+                    <div class="t-match-meta">${Tournament.escapeHtml(m.date.split('-').reverse().join('.'))} um ${Tournament.escapeHtml(m.time)}${m.notes ? ' &bull; ' + Tournament.escapeHtml(m.notes) : ''}</div>
+                  </div>
+                  <button type="button" class="btn-outline" style="padding:4px 10px; font-size:0.78rem; border-color:var(--md-sys-color-error); color:var(--md-sys-color-error);" onclick="handleDeleteMatch(${m.id})" title="Partie löschen">🗑️</button>
+                </div>
+                <div class="t-match-results">
+                  ${m.results.map(r => `
+                    <span class="t-match-res-pill ${r.rank === 1 ? 'is-first' : ''}">
+                      ${r.rank === 1 ? '🥇' : r.rank + '.'} ${Tournament.escapeHtml(r.name)}: ${r.score} Pkt (+${r.tournamentPoints} TP)
+                    </span>
+                  `).join('')}
+                </div>
+              </div>
+            `;
+          }).join('')}
+        </div>
+      `;
+    }
+  }
+
+  window.handleDeleteMatch = async function(matchId) {
+    if (!confirm(`Möchtest du Partie #${matchId} wirklich aus der Turnierwertung löschen?`)) return;
+    const res = await Tournament.deleteMatch(matchId);
+    if (!res.ok) {
+      if (!res.cancelled) alert(res.error || 'Partie konnte nicht gelöscht werden.');
+      return;
+    }
+    renderCeremonyViews();
+    showToast(`Partie #${matchId} gelöscht.`);
+  };
+
+  window.shareTournamentResults = async function() {
+    const data = Tournament.calculateStandings();
+    if (data.totalMatches === 0) {
+      alert('Es gibt noch keine Partien zum Teilen.');
+      return;
+    }
+    const text = Tournament.buildShareText();
+    if (navigator.share) {
+      try {
+        await navigator.share({ title: 'Urlaubs-Turnier Siegerehrung', text: text });
+        return;
+      } catch (e) {
+        if (e && e.name === 'AbortError') return;
+      }
+    }
+    try {
+      await navigator.clipboard.writeText(text);
+      showToast('Siegerehrung in Zwischenablage kopiert!');
+    } catch (e) {
+      prompt('Kopiere diesen Text für WhatsApp:', text);
+    }
+  };
+
+  // --- Modal 4 & 5: CSV & Reset ---
+  function updateCsvModalDriveLinks() {
+    const st = Tournament.getCloudStatus();
+    const openLink = document.getElementById('t-drive-open-link');
+    const hintEl = document.getElementById('t-drive-link-hint');
+    const pwWrap = document.getElementById('t-csv-import-pw-wrap');
+    const pwInput = document.getElementById('t-csv-import-admin-pw');
+    const url = st.csvUrl || st.folderUrl;
+    if (openLink) {
+      openLink.href = url;
+      openLink.textContent = st.csvUrl ? '🔗 Drive-CSV öffnen' : '📂 Drive-Ordner öffnen';
+    }
+    if (hintEl) {
+      hintEl.textContent = st.csvUrl
+        ? 'Direktlink zur gemeinsamen CSV-Datei auf Google Drive (zum Ansehen/Herunterladen).'
+        : 'Zielordner auf Google Drive (der direkte CSV-Link erscheint automatisch nach dem ersten Sync).';
+    }
+    if (pwWrap) {
+      pwWrap.classList.toggle('hidden', !st.configured);
+    }
+    if (pwInput) {
+      pwInput.value = '';
+    }
+  }
+
+  window.copyDriveCsvLink = async function() {
+    const st = Tournament.getCloudStatus();
+    const link = st.csvUrl || st.folderUrl;
+    try {
+      await navigator.clipboard.writeText(link);
+      showToast('Google-Drive-Link kopiert!');
+    } catch (e) {
+      prompt('Google-Drive-Link kopieren:', link);
+    }
+  };
+
+  window.openCsvModal = function() {
+    document.getElementById('t-csv-file-input').value = '';
+    updateCsvModalDriveLinks();
+    openTournamentModal('tCsvModal');
+  };
+
+  window.handleCsvDownload = function() {
+    const data = Tournament.calculateStandings();
+    if (data.totalMatches === 0 && data.registeredPlayersCount === 0) {
+      alert('Es sind noch keine Partien zum Exportieren vorhanden.');
+      return;
+    }
+    const filename = Tournament.downloadCSV();
+    showToast(`CSV "${filename}" heruntergeladen!`);
+  };
+
+  window.handleCsvFileUpload = function(event) {
+    const file = event.target.files && event.target.files[0];
+    if (!file) return;
+
+    const isCloud = Tournament.isCloudConfigured();
+    const pwInput = document.getElementById('t-csv-import-admin-pw');
+    const adminPw = pwInput ? pwInput.value : '';
+
+    if (isCloud && !adminPw) {
+      alert('Bitte gib zuerst das Admin-Passwort über dem Dateifeld ein, um die gemeinsame Google-Drive-CSV zu überschreiben.');
+      event.target.value = '';
+      if (pwInput) pwInput.focus();
+      return;
+    }
+
+    const currentData = Tournament.calculateStandings();
+    if (currentData.totalMatches > 0) {
+      if (!confirm('Achtung: Durch den CSV-Import werden die aktuell gespeicherten Partien ersetzt. Fortfahren?')) {
+        event.target.value = '';
+        return;
+      }
+    }
+
+    const reader = new FileReader();
+    reader.onload = async function(e) {
+      const res = isCloud
+        ? await Tournament.uploadCSVToCloud(e.target.result, adminPw)
+        : Tournament.importCSV(e.target.result);
+      if (res.ok) {
+        closeTournamentModal('tCsvModal');
+        showToast(`${res.matchesImported} Partien & ${res.playersImported} Spieler importiert!`);
+      } else {
+        alert(res.error || 'CSV-Import fehlgeschlagen.');
+      }
+      event.target.value = '';
+    };
+    reader.readAsText(file, 'UTF-8');
+  };
+
+  function prepareResetModal() {
+    const data = Tournament.calculateStandings();
+    document.getElementById('t-reset-summary').textContent =
+      `Aktuell gespeichert: ${data.totalMatches} ${data.totalMatches === 1 ? 'Partie' : 'Partien'} und ${data.registeredPlayersCount} Spieler. Vor dem Leeren wird automatisch ein Archiv in deinem Google-Drive-Ordner erstellt.`;
+    const pwInput = document.getElementById('t-reset-password');
+    const pwErr = document.getElementById('t-reset-password-error');
+    const btnB = document.getElementById('t-reset-btn-backup');
+    const btnO = document.getElementById('t-reset-btn-only');
+    if (pwInput) pwInput.value = '';
+    if (pwErr) pwErr.classList.add('hidden');
+    if (btnB) btnB.disabled = false;
+    if (btnO) btnO.disabled = false;
+    openTournamentModal('tResetModal');
+    if (pwInput) setTimeout(() => pwInput.focus(), 40);
+  }
+
+  function getResetPasswordInput() {
+    const pwInput = document.getElementById('t-reset-password');
+    const pwErr = document.getElementById('t-reset-password-error');
+    const entered = pwInput ? pwInput.value : '';
+    if (!entered) {
+      if (pwErr) {
+        pwErr.textContent = 'Bitte das Admin-Passwort eingeben.';
+        pwErr.classList.remove('hidden');
+      }
+      if (pwInput) pwInput.focus();
+      return null;
+    }
+    if (pwErr) pwErr.classList.add('hidden');
+    return entered;
+  }
+
+  function showResetError(msg) {
+    const pwInput = document.getElementById('t-reset-password');
+    const pwErr = document.getElementById('t-reset-password-error');
+    if (pwErr) {
+      pwErr.textContent = msg || 'Falsches Admin-Passwort! Löschvorgang abgebrochen.';
+      pwErr.classList.remove('hidden');
+    }
+    if (pwInput) pwInput.focus();
+  }
+
+  function setResetButtonsBusy(busy) {
+    const btnB = document.getElementById('t-reset-btn-backup');
+    const btnO = document.getElementById('t-reset-btn-only');
+    if (btnB) btnB.disabled = busy;
+    if (btnO) btnO.disabled = busy;
+  }
+
+  window.openResetModalFromCeremony = function() {
+    closeTournamentModal('tCeremonyModal');
+    prepareResetModal();
+  };
+
+  window.openResetModalFromCsv = function() {
+    closeTournamentModal('tCsvModal');
+    prepareResetModal();
+  };
+
+  window.executeBackupAndHardReset = async function() {
+    const entered = getResetPasswordInput();
+    if (!entered) return;
+
+    const data = Tournament.calculateStandings();
+    const csvSnap = data.totalMatches > 0 ? Tournament.generateCSV() : null;
+
+    setResetButtonsBusy(true);
+    const res = await Tournament.hardReset(entered);
+    setResetButtonsBusy(false);
+
+    if (!res.ok) {
+      showResetError(res.error);
+      return;
+    }
+
+    if (csvSnap) {
+      const blob = new Blob([csvSnap.content], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = csvSnap.filename;
+      document.body.appendChild(a);
+      a.click();
+      setTimeout(() => {
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      }, 150);
+    }
+
+    closeTournamentModal('tResetModal');
+    showToast(res.archivedFilename
+      ? `Archiv "${res.archivedFilename}" in Drive gesichert & CSV zurückgesetzt!`
+      : 'CSV gesichert & alle Turnierdaten gelöscht!');
+  };
+
+  window.executeHardResetOnly = async function() {
+    const entered = getResetPasswordInput();
+    if (!entered) return;
+    if (!confirm('Wirklich ALLE aktuellen Turnierdaten in der Drive-CSV zurücksetzen (ein Archiv-Backup wird in Drive abgelegt)?')) return;
+
+    setResetButtonsBusy(true);
+    const res = await Tournament.hardReset(entered);
+    setResetButtonsBusy(false);
+
+    if (!res.ok) {
+      showResetError(res.error);
+      return;
+    }
+
+    closeTournamentModal('tResetModal');
+    showToast(res.archivedFilename
+      ? `Archiv "${res.archivedFilename}" angelegt & Turnier zurückgesetzt.`
+      : 'Alle Turnierdaten wurden vollständig gelöscht.');
+  };
+
+  // --- Urlaub-/Turniermodus Umschalter ---
+  function syncTournamentModeUI() {
+    const enabled = typeof window.isTournamentMode === 'function' ? window.isTournamentMode() : false;
+    const toggleBtn = document.getElementById('tournament-mode-toggle');
+    const catTournament = document.getElementById('cat-tournament');
+
+    if (toggleBtn) {
+      toggleBtn.setAttribute('aria-checked', enabled ? 'true' : 'false');
+      toggleBtn.setAttribute('title', enabled
+        ? 'Urlaub-/Turniermodus AKTIV (Turnierverwaltung sichtbar)'
+        : 'Urlaub-/Turniermodus AUS (Gelegenheitsspiel ohne CSV)');
+    }
+    if (catTournament) {
+      catTournament.classList.toggle('hidden', !enabled);
+      if (!enabled) {
+        catTournament.open = false;
+      } else {
+        renderDashboardHero();
+      }
+    }
+    updatePollingState();
+  }
+
+  window.handleTournamentModeToggle = function() {
+    const nextEnabled = typeof window.toggleTournamentMode === 'function'
+      ? window.toggleTournamentMode()
+      : false;
+    syncTournamentModeUI();
+    if (nextEnabled && typeof window.startDashboardFX === 'function') {
+      window.startDashboardFX('tournament');
+    }
+    showToast(nextEnabled
+      ? 'Urlaub-/Turniermodus aktiviert'
+      : 'Gelegenheitsspiel-Modus (ohne Turnier-CSV)');
+  };
+
+  // --- Initialisierung & Reaktive Updates ---
+  window.addEventListener('tournament-mode-changed', syncTournamentModeUI);
+
+  window.addEventListener('tournament-sync-status', function() {
+    renderSyncBar();
+    if (!document.getElementById('tCsvModal').classList.contains('hidden')) {
+      updateCsvModalDriveLinks();
+    }
+  });
+
+  window.addEventListener('tournament-updated', function() {
+    renderDashboardHero();
+    if (!document.getElementById('tPlayersModal').classList.contains('hidden')) {
+      renderPlayersManageList();
+    }
+    if (!document.getElementById('tCeremonyModal').classList.contains('hidden')) {
+      renderCeremonyViews();
+    }
+  });
+
+  window.addEventListener('storage', function(e) {
+    if (e.key === 'spiele_turnier_db') {
+      renderDashboardHero();
+    }
+  });
+
+  const catTournamentEl = document.getElementById('cat-tournament');
+  if (catTournamentEl) {
+    catTournamentEl.addEventListener('toggle', function() {
+      updatePollingState();
+      if (catTournamentEl.open && Tournament.isCloudConfigured()) {
+        Tournament.syncFromCloud();
+      }
+    });
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', function() {
+      syncTournamentModeUI();
+      renderDashboardHero();
+    });
+  } else {
+    syncTournamentModeUI();
+    renderDashboardHero();
+  }
+})();
+</script>
+
+<script>
+(function() {
+  'use strict';
+
+  function syncColorPopoverUI() {
+    const active = typeof window.getAccent === 'function' ? window.getAccent() : 'blue';
+    document.querySelectorAll('#color-popover .color-option-btn').forEach(function(btn) {
+      const accent = btn.getAttribute('data-accent');
+      const isMatch = accent === active;
+      btn.classList.toggle('active', isMatch);
+      btn.setAttribute('aria-checked', isMatch ? 'true' : 'false');
+      const checkEl = btn.querySelector('.color-option-check');
+      if (checkEl) checkEl.textContent = isMatch ? '✓' : '';
+    });
+  }
+
+  window.toggleColorPopover = function(e) {
+    if (e) e.stopPropagation();
+    const pop = document.getElementById('color-popover');
+    const btn = document.getElementById('color-picker-btn');
+    if (!pop || !btn) return;
+    const isHidden = pop.classList.contains('hidden');
+    if (isHidden) {
+      syncColorPopoverUI();
+      pop.classList.remove('hidden');
+      btn.setAttribute('aria-expanded', 'true');
+    } else {
+      pop.classList.add('hidden');
+      btn.setAttribute('aria-expanded', 'false');
+    }
+  };
+
+  window.pickAccentColor = function(accent) {
+    if (typeof window.setAccent === 'function') {
+      window.setAccent(accent);
+    }
+    syncColorPopoverUI();
+    const pop = document.getElementById('color-popover');
+    const btn = document.getElementById('color-picker-btn');
+    if (pop) pop.classList.add('hidden');
+    if (btn) btn.setAttribute('aria-expanded', 'false');
+  };
+
+  document.addEventListener('click', function(e) {
+    const pop = document.getElementById('color-popover');
+    const wrap = document.querySelector('.color-picker-wrap');
+    if (!pop || pop.classList.contains('hidden')) return;
+    if (wrap && !wrap.contains(e.target)) {
+      pop.classList.add('hidden');
+      const btn = document.getElementById('color-picker-btn');
+      if (btn) btn.setAttribute('aria-expanded', 'false');
+    }
+  });
+
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+      const pop = document.getElementById('color-popover');
+      const btn = document.getElementById('color-picker-btn');
+      if (pop && !pop.classList.contains('hidden')) {
+        pop.classList.add('hidden');
+        if (btn) btn.setAttribute('aria-expanded', 'false');
+      }
+    }
+  });
+
+  window.addEventListener('theme-changed', syncColorPopoverUI);
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', syncColorPopoverUI);
+  } else {
+    syncColorPopoverUI();
+  }
+})();
 </script>
 </body>
 </html>

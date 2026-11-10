@@ -1,16 +1,18 @@
 // ⚠️ WICHTIG: Erhöhe diese Versionsnummer (z. B. v1 -> v2) bei JEDER Änderung!
-const CACHE_NAME = 'spiele-dashboard-v5.5';
+const CACHE_NAME = 'spiele-dashboard-v13.0';
 
 const ASSETS_TO_CACHE = [
   './',
   './index.html',
   './styles.css',
+  './theme.js',
+  './tournament.js',
   './manifest.json',
   './spiele/cabo.html',
   './spiele/charlie_run.html',
-  './spiele/charlie_run_deluxe.html',
+  './spiele/Testspiele/charlie_run_deluxe.html',
   './spiele/flappy_henri.html',
-  './spiele/flappy_henri_deluxe.html',
+  './spiele/Testspiele/flappy_henri_deluxe.html',
   './spiele/flip7.html',
   './spiele/flip7_v2.html',
   './spiele/kniffel.html',
@@ -18,7 +20,7 @@ const ASSETS_TO_CACHE = [
   './spiele/moelkky.html',
   './spiele/qwirkle.html',
   './spiele/theken_tim.html',
-  './spiele/theken_tim_deluxe.html',
+  './spiele/Testspiele/theken_tim_deluxe.html',
   './spiele/tutto.html',
   './spiele/wizard.html',
   './spiele/wuerfel_auswahl.html',
@@ -51,9 +53,23 @@ self.addEventListener('activate', (event) => {
   );
 });
 
-// 3. Fetch: Network-First (Online = Immer aktuell, Offline = Aus Cache)
+// 3. Fetch: Network-First für lokale Assets (Cloud-Sync immer direkt ans Netz)
 self.addEventListener('fetch', (event) => {
   if (event.request.method !== 'GET') return;
+
+  try {
+    const reqUrl = new URL(event.request.url);
+    if (
+      reqUrl.origin !== self.location.origin ||
+      reqUrl.hostname.includes('script.google.com') ||
+      reqUrl.hostname.includes('script.googleusercontent.com') ||
+      reqUrl.hostname.includes('drive.google.com')
+    ) {
+      return;
+    }
+  } catch (e) {
+    return;
+  }
 
   event.respondWith(
     fetch(event.request)
