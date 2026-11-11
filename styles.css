@@ -887,8 +887,7 @@ button:disabled,
 }
 
 .btn-tonal,
-.btn-secondary,
-.btn-add {
+.btn-secondary {
   background-color: var(--md-sys-color-secondary-container);
   color: var(--md-sys-color-on-secondary-container);
   border: none;
@@ -896,9 +895,44 @@ button:disabled,
 }
 
 .btn-tonal:hover:not(:disabled),
-.btn-secondary:hover:not(:disabled),
+.btn-secondary:hover:not(:disabled) {
+  filter: brightness(0.96);
+}
+
+button.btn-add,
+.btn-add {
+  width: 46px;
+  height: 46px;
+  min-width: 46px;
+  min-height: 46px;
+  max-width: 46px;
+  max-height: 46px;
+  padding: 0;
+  margin: 0;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  align-self: center;
+  flex-shrink: 0;
+  font-size: 1.35rem;
+  font-weight: 700;
+  line-height: 1;
+  background-color: var(--md-sys-color-secondary-container);
+  color: var(--md-sys-color-on-secondary-container);
+  border: none;
+  box-shadow: var(--md-sys-elevation-1);
+}
+
 .btn-add:hover:not(:disabled) {
   filter: brightness(0.96);
+}
+
+.btn-add svg {
+  display: block;
+  width: 22px;
+  height: 22px;
+  pointer-events: none;
 }
 
 .btn-tertiary {
@@ -1142,7 +1176,7 @@ input[type="password"]:focus {
 .input-group {
   display: flex;
   gap: 8px;
-  align-items: stretch;
+  align-items: center;
 }
 
 /* ==========================================================================
@@ -1301,12 +1335,16 @@ button.btn-tournament-save {
   box-shadow: var(--md-sys-elevation-1);
 }
 
-button.btn-tournament-save.is-saved {
-  background-color: var(--md-sys-color-tertiary-container);
-  color: var(--md-sys-color-on-tertiary-container);
-  border: 1px solid var(--md-sys-color-tertiary);
+button.btn-tournament-save.is-saved,
+button.btn-tournament-save:disabled {
+  background-color: var(--md-sys-color-surface-container-highest);
+  color: var(--md-sys-color-on-surface-variant);
+  border: 1px solid var(--md-sys-color-outline-variant);
   box-shadow: none;
-  opacity: 1 !important;
+  opacity: 0.68 !important;
+  cursor: not-allowed;
+  filter: grayscale(1);
+  pointer-events: none;
 }
 
 .t-save-status {
@@ -2003,5 +2041,4 @@ button.btn-tournament-save.is-pending {
   border-radius: var(--md-sys-shape-corner-lg);
   background-color: var(--md-sys-color-surface-container-lowest);
   border: 1px solid var(--md-sys-color-outline-variant);
-   
 }
