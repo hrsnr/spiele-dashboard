@@ -76,7 +76,6 @@
             flex: 1;
             padding: 10px 14px;
         }
-        .btn-add { width: 46px; font-size: 1.25rem; padding: 0; }
         .btn-undo { padding: 0 14px; width: auto; }
 
         /* Scroll-Bereich optimiert */
@@ -190,7 +189,12 @@
         </div>
         <div class="admin-area">
             <input type="text" id="playerName" placeholder="Spieler..." autocomplete="off" onkeypress="if(event.key==='Enter') addPlayer()">
-            <button class="btn btn-add" onclick="addPlayer()">+</button>
+            <button type="button" class="btn-add" onclick="addPlayer()" title="Spieler hinzufügen" aria-label="Spieler hinzufügen">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <line x1="12" y1="5" x2="12" y2="19"></line>
+                    <line x1="5" y1="12" x2="19" y2="12"></line>
+                </svg>
+            </button>
             <button class="btn btn-undo" id="undoBtn" onclick="undo()" disabled>↩</button>
         </div>
     </div>

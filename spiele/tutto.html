@@ -190,7 +190,12 @@
         <h3 class="card-title">Spieler hinzufügen</h3>
         <div class="input-group">
             <input type="text" id="playerNameInput" placeholder="Name eingeben..." onkeypress="if(event.key==='Enter') addPlayer()">
-            <button class="btn-add" onclick="addPlayer()">+</button>
+            <button type="button" class="btn-add" onclick="addPlayer()" title="Spieler hinzufügen" aria-label="Spieler hinzufügen">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <line x1="12" y1="5" x2="12" y2="19"></line>
+                    <line x1="5" y1="12" x2="19" y2="12"></line>
+                </svg>
+            </button>
         </div>
         <div id="t-player-chips"></div>
         <div id="setupPlayerList" style="margin-top: 15px;"></div>
@@ -252,9 +257,10 @@
     <!-- HIGHSCORE SCREEN -->
     <div id="highscoreScreen" class="card" style="display:none;">
         <h2 style="text-align: center; margin-top: 0; color: var(--md-sys-color-primary);">🏆 Highscore</h2>
-        <p style="text-align: center; color: var(--md-sys-color-on-surface-variant); font-size: 0.85rem; margin-bottom: 16px;">Gewonnene Runden</p>
+        <p style="text-align: center; color: var(--md-sys-color-on-surface-variant); font-size: 0.85rem; margin-bottom: 16px;">Gesamtpunkte &amp; gewonnene Runden</p>
         <div id="highscoreList"></div>
-        <button class="btn-primary" onclick="startNextRoundSamePlayers()" style="margin-top: 20px;">🔄 Nächste Runde (Gleiche Spieler)</button>
+        <div id="t-save-container" class="t-save-wrapper" style="margin-top: 18px;"></div>
+        <button class="btn-primary" onclick="startNextRoundSamePlayers()" style="margin-top: 16px;">🔄 Nächste Runde (Gleiche Spieler)</button>
         <button class="btn-undo" onclick="resetEntireGame()" style="margin-top: 10px;">Neues Spiel (Neue Spieler)</button>
     </div>
 </div>
@@ -278,7 +284,6 @@
     <div class="modal-content">
         <h2>🎉 Spiel beendet!</h2>
         <p id="winnerAnnouncement" style="font-size: 1.1rem; margin: 12px 0 20px 0;"></p>
-        <div id="t-save-container" class="t-save-wrapper" style="margin-bottom: 14px;"></div>
         <div class="modal-actions">
             <button class="btn-primary" style="margin-top:0;" onclick="startNextRoundSamePlayers()">Weitere Runde mit denselben Spielern</button>
             <button class="btn-special" style="padding: 14px; width: 100%; justify-content: center; border-radius: var(--md-sys-shape-corner-full);" onclick="showHighscore()">Highscore anzeigen</button>
@@ -301,7 +306,7 @@
         const input = document.getElementById('playerNameInput');
         const name = input.value.trim();
         if (name !== "") {
-            players.push({ name: name, score: 0, roundsPlayed: 0, wins: 0 });
+            players.push({ name: name, score: 0, totalScore: 0, roundsPlayed: 0, wins: 0 });
             input.value = "";
             renderSetupList();
         }
@@ -338,7 +343,7 @@
             onToggle: (name) => {
                 const idx = players.findIndex(p => p.name.toLowerCase() === name.toLowerCase());
                 if (idx >= 0) players.splice(idx, 1);
-                else players.push({ name: name, score: 0, roundsPlayed: 0, wins: 0 });
+                else players.push({ name: name, score: 0, totalScore: 0, roundsPlayed: 0, wins: 0 });
                 renderSetupList();
             }
         });
@@ -434,6 +439,9 @@
         const activePlayer = players[currentPlayerIndex];
         activePlayer.score = Math.max(activePlayer.score, TARGET_SCORE);
         activePlayer.wins += 1;
+        players.forEach(p => {
+            p.totalScore = (p.totalScore || 0) + p.score;
+        });
         
         triggerWinScreen(`${activePlayer.name} hat mit dem Kleeblatt sofort gewonnen! 🍀`);
     }
@@ -474,6 +482,9 @@
         const winners = players.filter(p => p.score === maxScore);
 
         winners.forEach(w => w.wins += 1);
+        players.forEach(p => {
+            p.totalScore = (p.totalScore || 0) + p.score;
+        });
 
         let msg = "";
         if (winners.length === 1) {
@@ -487,7 +498,6 @@
 
     function triggerWinScreen(messageHtml) {
         shootConfetti();
-        if (tSaveCtrl) tSaveCtrl.reset();
         document.getElementById('winnerAnnouncement').innerHTML = messageHtml;
         document.getElementById('gameOverModal').style.display = 'flex';
     }
@@ -539,15 +549,19 @@
         const hsList = document.getElementById('highscoreList');
         hsScreen.style.display = 'block';
 
-        const sorted = [...players].sort((a, b) => b.wins - a.wins);
+        const sorted = [...players].sort((a, b) => (b.totalScore || 0) - (a.totalScore || 0) || b.wins - a.wins);
+        const maxTotal = sorted.length > 0 ? (sorted[0].totalScore || 0) : 0;
 
         hsList.innerHTML = sorted.map((p, idx) => `
             <div class="player-card">
                 <div>
-                    <span class="player-name">${idx === 0 && p.wins > 0 ? '👑 ' : ''}${p.name}</span>
+                    <span class="player-name">${idx === 0 && maxTotal > 0 ? '👑 ' : ''}${p.name}</span>
+                    <div style="font-size: 0.78rem; color: var(--md-sys-color-on-surface-variant); margin-top: 2px;">
+                        ${p.wins} ${p.wins === 1 ? 'Sieg' : 'Siege'}
+                    </div>
                 </div>
-                <div style="font-weight: 800; color: var(--md-sys-color-primary); font-size: 1.1rem;">
-                    ${p.wins} ${p.wins === 1 ? 'Sieg' : 'Siege'}
+                <div style="font-weight: 800; color: var(--md-sys-color-primary); font-size: 1.15rem;">
+                    ${p.totalScore || 0} Pkt
                 </div>
             </div>
         `).join('');
@@ -570,6 +584,7 @@
         document.getElementById('highscoreScreen').style.display = 'none';
         document.getElementById('gameScreen').style.display = 'none';
         document.getElementById('setupScreen').style.display = 'block';
+        if (tSaveCtrl) tSaveCtrl.reset();
         renderSetupList();
     }
 
@@ -606,7 +621,7 @@
     const tSaveCtrl = window.Tournament ? Tournament.mountSaveButton('t-save-container', {
         gameName: 'Tutto',
         lowerIsBetter: false,
-        getEntries: () => players.map(p => ({ name: p.name, score: p.score }))
+        getEntries: () => players.map(p => ({ name: p.name, score: p.totalScore || 0 }))
     }) : null;
 
     renderTournamentChips();

@@ -557,7 +557,6 @@
     <div class="modal-content">
         <h2 style="margin-top:0;">🎉 Runde beendet!</h2>
         <p id="modalWinnerDesc" style="color: var(--md-sys-color-on-surface-variant); margin: 12px 0 16px 0;"></p>
-        <div id="t-save-round-container" class="t-save-wrapper" style="margin-bottom: 14px;"></div>
         <p style="font-weight: 600; margin-bottom: 16px;">Wie möchtest du fortfahren?</p>
         <div class="modal-actions">
             <!-- 1. Weitere Runde mit denselben Spielern -->
@@ -827,8 +826,6 @@
                 p.wins += 1;
             }
         });
-        if (tSaveRoundCtrl) tSaveRoundCtrl.reset();
-        if (tSaveTotalCtrl) tSaveTotalCtrl.reset();
     }
 
     function showGameOverModal(maxScore) {
@@ -1216,6 +1213,7 @@
         document.getElementById('gameArea').style.display = 'none';
         document.getElementById('setupCard').style.display = 'block';
         document.getElementById('playerName').value = '';
+        if (tSaveTotalCtrl) tSaveTotalCtrl.reset();
         renderSetupChips();
         updateRoundBadge();
     }
@@ -1275,12 +1273,6 @@
             }
         }());
     }
-
-    const tSaveRoundCtrl = window.Tournament ? Tournament.mountSaveButton('t-save-round-container', {
-        gameName: 'Flip7',
-        lowerIsBetter: false,
-        getEntries: () => getActivePlayers().map(p => ({ name: p.name, score: p.currentScore }))
-    }) : null;
 
     const tSaveTotalCtrl = window.Tournament ? Tournament.mountSaveButton('t-save-container', {
         gameName: 'Flip7',

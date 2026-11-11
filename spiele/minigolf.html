@@ -45,10 +45,9 @@
             max-width: 440px;
         }
 
-        .input-group { display: flex; gap: 8px; margin-bottom: 14px; }
+        .input-group { display: flex; align-items: center; gap: 8px; margin-bottom: 14px; }
         .input-group input { flex-grow: 1; }
 
-        .btn-add { width: 52px; font-size: 1.4rem; padding: 0; }
         .btn-start { width: 100%; padding: 14px; margin-top: 14px; }
         
         .player-tag {
@@ -214,7 +213,12 @@
             <p style="font-size: 0.8rem; color: var(--md-sys-color-on-surface-variant); margin-bottom: 12px; text-align: center;">Klicke Namen zum Entfernen</p>
             <div class="input-group">
                 <input type="text" id="player-input" placeholder="Name..." autocomplete="off">
-                <button class="btn-add" onclick="addPlayer()">+</button>
+                <button type="button" class="btn-add" onclick="addPlayer()" title="Spieler hinzufügen" aria-label="Spieler hinzufügen">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <line x1="12" y1="5" x2="12" y2="19"></line>
+                        <line x1="5" y1="12" x2="19" y2="12"></line>
+                    </svg>
+                </button>
             </div>
             <div id="t-player-chips"></div>
             <div id="player-list" style="min-height: 40px; margin-bottom: 15px; text-align: center;"></div>

@@ -214,7 +214,12 @@
         <h3 class="card-title">Spieler hinzufügen</h3>
         <div class="input-group">
             <input type="text" id="playerNameInput" placeholder="Name eingeben..." onkeypress="if(event.key==='Enter') addPlayer()">
-            <button class="btn-add" onclick="addPlayer()">+</button>
+            <button type="button" class="btn-add" onclick="addPlayer()" title="Spieler hinzufügen" aria-label="Spieler hinzufügen">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <line x1="12" y1="5" x2="12" y2="19"></line>
+                    <line x1="5" y1="12" x2="19" y2="12"></line>
+                </svg>
+            </button>
         </div>
         <div id="t-player-chips"></div>
         <div id="setupPlayerList" style="margin-top: 15px;"></div>
